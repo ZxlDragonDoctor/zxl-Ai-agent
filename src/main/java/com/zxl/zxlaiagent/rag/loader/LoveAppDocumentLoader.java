@@ -12,6 +12,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+
+/**
+ * reader 组件：MarkdownDocumentReader
+ */
 @Component
 @Slf4j
 public class LoveAppDocumentLoader {
@@ -25,11 +29,14 @@ public class LoveAppDocumentLoader {
             Resource[] resources = this.resourcePatternResolver.getResources("classpath:document/*.md");
             for(Resource resource:resources){
                 String filename = resource.getFilename();
+                // 提取文档倒数第 3 和第 2 个字作为标签
+                String status = filename.substring(filename.length() - 6, filename.length() - 4);
                 MarkdownDocumentReaderConfig config = MarkdownDocumentReaderConfig.builder()
                         .withHorizontalRuleCreateDocument(true)
                         .withIncludeCodeBlock(false)
                         .withIncludeBlockquote(false)
                         .withAdditionalMetadata("filename", filename)
+                        .withAdditionalMetadata("status", status)
                         .build();
                 MarkdownDocumentReader reader = new MarkdownDocumentReader(resource, config);
                 documents.addAll(reader.get());

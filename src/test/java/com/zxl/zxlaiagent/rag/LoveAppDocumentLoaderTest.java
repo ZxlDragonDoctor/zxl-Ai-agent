@@ -12,6 +12,6 @@ class LoveAppDocumentLoaderTest {
     private LoveAppDocumentLoader loveAppDocumentLoader;
     @Test
     void loadDocuments() {
-        loveAppDocumentLoader.loadDocuments();
+        loveAppDocumentLoader.loadMarkdownDocuments();
     }
 }

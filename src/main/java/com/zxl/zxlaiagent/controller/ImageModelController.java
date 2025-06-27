@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+/**
+ *  ImageModel 图形chat
+ *  @Description: 根据输入生成图片
+ */
 @RestController
 public class ImageModelController {
     private final ImageModel imageModel;

@@ -11,7 +11,7 @@ import java.util.List;
  * 文档切分器
  */
 @Component
-public class MyTokenTextSplitter {
+public class  MyTokenTextSplitter {
     public List<Document> splitDocuments(List<Document> documents) {
         TokenTextSplitter splitter = new TokenTextSplitter();
         return splitter.apply(documents);
