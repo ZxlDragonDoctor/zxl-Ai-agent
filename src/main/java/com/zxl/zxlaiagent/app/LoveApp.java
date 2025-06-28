@@ -13,6 +13,7 @@ import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.stereotype.Component;
 
@@ -61,10 +62,8 @@ public class LoveApp {
                 .defaultSystem(SYSTEM_PROMPT) //设置系统提示词
                 .defaultAdvisors(
                         new MessageChatMemoryAdvisor(fileChatMemory),
-                        new MyLoggerAdviser(),
-                        LoveAppRagCustomAdvisorFactory.createLoveAppRagCustomAdvisor(
-                                loveAppVectorStore, "已婚"
-                        )// 配置自定义文档检索规则
+                        new MyLoggerAdviser()
+
                 )
                 .build();
     }
@@ -133,10 +132,38 @@ public class LoveApp {
         String rewrittenMessage = queryRewriter.doQueryRewrite(message);
         ChatResponse chatResponse = chatClient
                 .prompt()
+                .advisors(
+                        LoveAppRagCustomAdvisorFactory.createLoveAppRagCustomAdvisor(loveAppVectorStore, "已婚")
+                        // 配置文档检索增强
+                )
                 .user(rewrittenMessage)
                 .call()
                 .chatResponse();
         String content = chatResponse.getResult().getOutput().getText();
+        return content;
+    }
+
+
+    @Resource
+    private ToolCallback[] allTools;
+
+    /**
+     * 工具调用对话
+     * @param message
+     * @param chatId
+     * @return
+     */
+    public String doChatWithTools(String message, String chatId) {
+        ChatResponse response = chatClient
+                .prompt()
+                .user(message)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+                .tools(allTools)
+                .call()
+                .chatResponse();
+        String content = response.getResult().getOutput().getText();
+        log.info("content: {}", content);
         return content;
     }
 

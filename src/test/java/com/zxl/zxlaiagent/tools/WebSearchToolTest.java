@@ -2,7 +2,10 @@ package com.zxl.zxlaiagent.tools;
 
 import com.zxl.zxlaiagent.tools.WebSearchTool;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
 public class WebSearchToolTest {
