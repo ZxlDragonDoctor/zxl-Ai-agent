@@ -24,7 +24,12 @@
             <artifactId>spring-ai-alibaba-starter</artifactId>
             <version>1.0.0-M6.1</version>
         </dependency>
-
+<!--         mcp-client-->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-mcp-client-spring-boot-starter</artifactId>
+            <version>1.0.0-M6</version>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -80,7 +85,7 @@
         </dependency>
         <dependency>
             <groupId>cn.hutool</groupId>
-            <artifactId>hutool-bom</artifactId>
+            <artifactId>hutool-all</artifactId>
             <version>5.8.38</version>
         </dependency>
         <dependency>
