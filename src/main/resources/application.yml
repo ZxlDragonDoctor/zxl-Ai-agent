@@ -3,10 +3,28 @@ spring:
     name: zxl-ai-agent
   profiles:
     active: local
+  ai:
+    mcp:
+      client:
+#        stdio:
+#          # 指定MCP服务器配置文件路径（推荐）
+#          servers-configuration: classpath:/mcp-servers.json
+        # sse模式
+        sse:
+          connections:
+            server1:
+              url: http://localhost:8127
+        # stdio:
+        # servers-configuration: classpath:mcp-servers.json
+
+
+
 server:
   port: 8123
   servlet:
     context-path: /api
+
+
 # springdoc-openapi
 springdoc:
   swagger-ui:

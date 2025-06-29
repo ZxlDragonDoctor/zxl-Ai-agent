@@ -34,7 +34,7 @@ class LoveAppTest {
     @Test
     void doChatWithRePort() {
         String chatId = UUID.randomUUID().toString();
-        String message = "你好，我是程序员猪教授，我想让另一半（编程导航）更爱我，但我不知道该怎么做";
+        String message = "你好，我是程序员猪教授，我想让另一半（坤坤）更爱我，但我不知道该怎么做";
         LoveApp.LoveReport loveReport = loveApp.doChatWithRePort(message, chatId);
         Assertions.assertNotNull(loveReport);
     }
@@ -85,6 +85,30 @@ class LoveAppTest {
     private void testMessage(String message) {
         String chatId = UUID.randomUUID().toString();
         String answer = loveApp.doChatWithTools(message, chatId);
+        Assertions.assertNotNull(answer);
+    }
+
+
+    /**
+     * 测试高德地图mcp服务
+     */
+    @Test
+    void doChatWithMcp1() {
+        String chatId = UUID.randomUUID().toString();
+        // 测试地图 MCP
+        String message = "我的另一半居住在重庆渝北区，请根帮我找到 5 公里内合适的约会地点，返回相关地址图片";
+        String answer =  loveApp.doChatWithMcp(message, chatId);
+    }
+
+    /**
+     * 测试zxl-image-search-mcp服务
+     */
+    @Test
+    void doChatWithMcp2() {
+        String chatId = UUID.randomUUID().toString();
+        // 测试图片搜索 MCP
+        String message = "帮我搜索一些哄另一半开心的图片";
+        String answer =  loveApp.doChatWithMcp(message, chatId);
         Assertions.assertNotNull(answer);
     }
 
