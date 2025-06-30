@@ -1,5 +1,5 @@
 application-local.yml
-
+tmp /
 
 HELP.md
 target/
@@ -34,3 +34,4 @@ build/
 
 ### VS Code ###
 .vscode/
+/chat-memory/
