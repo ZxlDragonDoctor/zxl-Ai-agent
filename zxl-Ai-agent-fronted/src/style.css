@@ -85,7 +85,7 @@ body {
 
 @keyframes shooting-star-animation {
   0% {
-    transform: translateX(-100%) translateY(0);
+    transform: translateX(100%) translateY(-100%);
     opacity: 1;
   }
   20% {
@@ -95,7 +95,7 @@ body {
     opacity: 0.8;
   }
   100% {
-    transform: translateX(200%) translateY(100%);
+    transform: translateX(-200%) translateY(100%);
     opacity: 0;
   }
 }

@@ -38,12 +38,12 @@ function createShootingStar() {
   const sizeClass = sizes[Math.floor(Math.random() * sizes.length)]
   star.className = `shooting-star ${sizeClass}`
   
-  // 随机起始位置（右侧区域）
-  const startX = 50 + Math.random() * 50 // 50-100%
-  const startY = Math.random() * 50 // 0-50%
+  // 随机起始位置（右上角区域）
+  const startX = 70 + Math.random() * 30 // 70-100%
+  const startY = Math.random() * 20 // 0-20%
   
   // 设置流星长度
-  const length = 100 + Math.random() * 150 // 100-250px
+  const length = 150 + Math.random() * 200 // 150-350px
   star.style.width = `${length}px`
   
   // 设置位置
@@ -61,17 +61,17 @@ function createShootingStar() {
 // 持续创建流星
 function startShootingStars() {
   // 初始化创建多个流星
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 8; i++) {
     setTimeout(() => createShootingStar(), i * 200)
   }
   
   // 持续创建新流星
   return setInterval(() => {
-    const count = Math.floor(Math.random() * 3) + 1 // 随机创建1-3个流星
+    const count = Math.floor(Math.random() * 3) + 2 // 随机创建2-4个流星
     for (let i = 0; i < count; i++) {
       setTimeout(() => createShootingStar(), i * 200)
     }
-  }, 1000)
+  }, 800)
 }
 
 let shootingStarsInterval
