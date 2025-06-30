@@ -1,0 +1,217 @@
+<template>
+  <div class="chat-room">
+    <div class="chat-history glass">
+      <div v-for="(msg, idx) in messages" :key="idx" :class="['message', msg.role]">
+        <div class="avatar">
+          <span v-if="msg.role === 'ai'">🤖</span>
+          <span v-else>👤</span>
+        </div>
+        <div class="msg-content glass">{{ msg.content }}</div>
+      </div>
+    </div>
+    <div class="chat-input glass">
+      <input
+        :value="modelValue"
+        @input="e => emit('update:modelValue', e.target.value)"
+        @keyup.enter="send"
+        placeholder="请输入消息..."
+        class="input-field"
+      />
+      <button @click="send" class="send-btn glow">
+        <span>发送</span>
+        <span class="icon">✨</span>
+      </button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+const props = defineProps({
+  modelValue: String,
+  messages: Array,
+  onSend: Function
+})
+
+const emit = defineEmits(['update:modelValue'])
+
+function send() {
+  if (props.modelValue?.trim()) {
+    props.onSend(props.modelValue)
+    emit('update:modelValue', '')
+  }
+}
+</script>
+
+<style scoped>
+.chat-room {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 20px;
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  height: calc(100vh - 120px);
+  overflow: hidden;
+}
+
+.chat-history {
+  flex: 1;
+  overflow-y: auto;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  margin-right: 6px; /* 为滚动条留出空间 */
+}
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  max-width: 80%;
+  transition: all 0.3s ease;
+}
+
+.message:hover {
+  transform: translateY(-2px);
+}
+
+.message.user {
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5em;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  flex-shrink: 0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.msg-content {
+  padding: 12px 20px;
+  border-radius: 20px;
+  position: relative;
+  word-break: break-word;
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+.user .msg-content {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+}
+
+.ai .msg-content {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+}
+
+.chat-input {
+  display: flex;
+  padding: 15px 20px;
+  gap: 15px;
+  border-radius: 25px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.input-field {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.input-field::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.input-field:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+.send-btn {
+  padding: 12px 25px;
+  border: none;
+  border-radius: 20px;
+  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+}
+
+.send-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
+}
+
+.send-btn .icon {
+  font-size: 1.2em;
+}
+
+/* 自定义滚动条 */
+.chat-history::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-history::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.chat-history::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.chat-history::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 768px) {
+  .chat-room {
+    padding: 15px;
+  }
+  
+  .chat-history {
+    padding: 20px;
+  }
+
+  .message {
+    max-width: 90%;
+    gap: 10px;
+  }
+  
+  .send-btn {
+    padding: 12px 20px;
+  }
+}
+</style> 
