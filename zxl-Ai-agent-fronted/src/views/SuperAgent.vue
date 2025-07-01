@@ -3,6 +3,7 @@
     <div class="chat-header glass">
       <div class="header-content">
         <h2 class="neon-text">AI 超级智能体</h2>
+        <div v-if="error" class="error-message">{{ error }}</div>
       </div>
       <router-link to="/" class="back-btn glass">
         <span class="icon">🏠</span>
@@ -24,26 +25,95 @@ import { chatWithManusSse } from '../api/chat'
 
 const input = ref('')
 const messages = ref([])
+const error = ref('')
 let eventSource = null
+let typingTimer = null
+let currentStep = ''
+let messageQueue = []
+let isTyping = false
+
+function processNextMessage() {
+  if (messageQueue.length > 0 && !isTyping) {
+    const nextMessage = messageQueue.shift()
+    addNewMessage(nextMessage)
+  }
+}
+
+function addNewMessage(data) {
+  isTyping = true
+  messages.value.push({ 
+    role: 'ai', 
+    content: data, 
+    displayContent: '',
+    isTyping: true 
+  })
+
+  const currentMessage = messages.value[messages.value.length - 1]
+  
+  function typeNextChar() {
+    const fullContent = currentMessage.content
+    let currentIndex = currentMessage.displayContent.length
+
+    if (currentIndex < fullContent.length) {
+      currentMessage.displayContent = fullContent.slice(0, currentIndex + 1)
+      typingTimer = setTimeout(typeNextChar, 15)
+    } else {
+      typingTimer = null
+      currentMessage.isTyping = false
+      isTyping = false
+      // 处理队列中的下一条消息
+      processNextMessage()
+    }
+  }
+
+  // 开始打字效果
+  typeNextChar()
+}
 
 function sendMessage(msg) {
   // 防止空消息
   if (!msg.trim()) return
 
-  // 关闭现有连接
+  // 清空消息队列
+  messageQueue = []
+  
+  // 关闭现有连接和打字定时器
   if (eventSource) {
     eventSource.close()
     eventSource = null
   }
+  if (typingTimer) {
+    clearTimeout(typingTimer)
+    typingTimer = null
+  }
 
+  // 重置打字状态
+  isTyping = false
+
+  // 添加用户消息
   messages.value.push({ role: 'user', content: msg })
   
   // 创建新连接
   eventSource = chatWithManusSse(msg, (data) => {
-    if (messages.value[messages.value.length - 1]?.role === 'ai') {
-      messages.value[messages.value.length - 1].content += data
-    } else {
-      messages.value.push({ role: 'ai', content: data })
+    // 检查是否是新的步骤
+    if (data.startsWith('Step')) {
+      // 将新步骤添加到消息队列
+      messageQueue.push(data)
+      // 如果当前没有正在打字的消息，开始处理
+      if (!isTyping) {
+        processNextMessage()
+      }
+    } else if (messages.value[messages.value.length - 1]?.role === 'ai') {
+      // 如果是当前步骤的后续内容，直接追加
+      const currentMessage = messages.value[messages.value.length - 1]
+      currentMessage.content += data
+    }
+  }, (errorMsg) => {
+    error.value = errorMsg
+    const currentMessage = messages.value[messages.value.length - 1]
+    if (currentMessage?.role === 'ai' && !currentMessage.content) {
+      // 如果是空消息，则移除
+      messages.value.pop()
     }
   })
 }
@@ -52,6 +122,10 @@ onUnmounted(() => {
   if (eventSource) {
     eventSource.close()
     eventSource = null
+  }
+  if (typingTimer) {
+    clearTimeout(typingTimer)
+    typingTimer = null
   }
 })
 </script>
@@ -84,6 +158,12 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 5px;
+}
+
+.error-message {
+  color: #ff4444;
+  font-size: 0.9em;
+  margin-top: 5px;
 }
 
 h2 {

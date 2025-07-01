@@ -27,6 +27,7 @@ const chatId = ref('')
 const input = ref('')
 const messages = ref([])
 let eventSource = null
+let typingTimer = null
 
 function generateChatId() {
   return 'chat_' + Math.random().toString(36).substr(2, 9)
@@ -36,20 +37,56 @@ function sendMessage(msg) {
   // 防止空消息
   if (!msg.trim()) return
 
-  // 关闭现有连接
+  // 关闭现有连接和打字定时器
   if (eventSource) {
     eventSource.close()
     eventSource = null
   }
+  if (typingTimer) {
+    clearTimeout(typingTimer)
+    typingTimer = null
+  }
 
+  // 添加用户消息
   messages.value.push({ role: 'user', content: msg })
   
+  // 添加AI消息占位
+  messages.value.push({ 
+    role: 'ai', 
+    content: '', 
+    displayContent: '',
+    isTyping: true 
+  })
+
   // 创建新连接
   eventSource = chatWithLoveAppSse(msg, chatId.value, (data) => {
-    if (messages.value[messages.value.length - 1]?.role === 'ai') {
-      messages.value[messages.value.length - 1].content += data
-    } else {
-      messages.value.push({ role: 'ai', content: data })
+    const currentMessage = messages.value[messages.value.length - 1]
+    if (currentMessage?.role === 'ai') {
+      // 更新完整内容
+      currentMessage.content += data
+      
+      // 如果正在打字，不启动新的打字效果
+      if (typingTimer) return
+
+      // 模拟打字效果
+      function typeNextChar() {
+        const fullContent = currentMessage.content
+        let currentIndex = currentMessage.displayContent.length
+
+        if (currentIndex < fullContent.length) {
+          currentMessage.displayContent = fullContent.slice(0, currentIndex + 1)
+          typingTimer = setTimeout(typeNextChar, 30) // 加快打字速度到30ms
+        } else {
+          typingTimer = null
+          // 只有在没有新的文本碎片时才设置isTyping为false
+          if (currentMessage.displayContent.length === currentMessage.content.length) {
+            currentMessage.isTyping = false
+          }
+        }
+      }
+
+      // 开始打字效果
+      typeNextChar()
     }
   })
 }
@@ -62,6 +99,10 @@ onUnmounted(() => {
   if (eventSource) {
     eventSource.close()
     eventSource = null
+  }
+  if (typingTimer) {
+    clearTimeout(typingTimer)
+    typingTimer = null
   }
 })
 </script>

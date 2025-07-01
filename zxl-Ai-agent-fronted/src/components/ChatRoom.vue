@@ -6,7 +6,15 @@
           <span v-if="msg.role === 'ai'">🤖</span>
           <span v-else>👤</span>
         </div>
-        <div class="msg-content glass">{{ msg.content }}</div>
+        <div class="msg-content glass">
+          <template v-if="msg.role === 'user'">
+            {{ msg.content }}
+          </template>
+          <template v-else>
+            <span :class="{ 'typing-text': msg.isTyping }">{{ msg.displayContent }}</span>
+            <span v-if="msg.isTyping" class="cursor"></span>
+          </template>
+        </div>
       </div>
     </div>
     <div class="chat-input glass">
@@ -28,7 +36,10 @@
 <script setup>
 const props = defineProps({
   modelValue: String,
-  messages: Array,
+  messages: {
+    type: Array,
+    default: () => []
+  },
   onSend: Function
 })
 
@@ -212,6 +223,27 @@ function send() {
   
   .send-btn {
     padding: 12px 20px;
+  }
+}
+
+.typing-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.cursor {
+  display: inline-block;
+  width: 3px;
+  height: 1.2em;
+  background-color: currentColor;
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: cursor-blink 0.8s step-start infinite;
+}
+
+@keyframes cursor-blink {
+  50% {
+    opacity: 0;
   }
 }
 </style> 
