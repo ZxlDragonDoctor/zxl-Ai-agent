@@ -20,5 +20,14 @@ class ZxlManusTest {
         String answer = zxlManus.run(userPrompt);
         System.out.println(answer);
         Assertions.assertNotNull(answer);
-    }  
+    }
+
+    @Test
+    void run1() {
+        String userPrompt = """  
+                找出一张关于原神的图片""";
+        String answer = zxlManus.run(userPrompt);
+        System.out.println(answer);
+        Assertions.assertNotNull(answer);
+    }
 }

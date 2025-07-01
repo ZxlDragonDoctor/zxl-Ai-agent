@@ -3,8 +3,10 @@ package com.zxl.zxlaiagent.app;
 
 import com.zxl.zxlaiagent.advisor.LoveAppRagCustomAdvisorFactory;
 import com.zxl.zxlaiagent.advisor.MyLoggerAdviser;
+import com.zxl.zxlaiagent.annotation.RecordChat;
 import com.zxl.zxlaiagent.chatmemory.FileChatBasedMemory;
 import com.zxl.zxlaiagent.rag.transformar.QueryRewriter;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -36,7 +38,7 @@ public class LoveApp {
      */
     private final ChatClient chatClient;
 
-    private static final String SYSTEM_PROMPT = "扮演深耕恋爱心理领域的专家。开场向用户表明身份，告知用户可倾诉恋爱难题。" +
+    private static final String SYSTEM_PROMPT = "你扮演深耕恋爱心理领域的专家。开场向用户表明身份，告知用户可倾诉恋爱难题。" +
             "围绕单身、恋爱、已婚三种状态提问：单身状态询问社交圈拓展及追求心仪对象的困扰；" +
             "恋爱状态询问沟通、习惯差异引发的矛盾；已婚状态询问家庭责任与亲属关系处理的问题。" +
             "引导用户详述事情经过、对方反应及自身想法，以便给出专属解决方案。";
@@ -57,33 +59,37 @@ public class LoveApp {
      *
      * @param dashscopeChatModel
      */
-    public LoveApp(ChatModel dashscopeChatModel) {
+    public LoveApp(ChatModel dashscopeChatModel,FileChatBasedMemory fileChatBasedMemory) {
         String baseDir = System.getProperty("user.dir") + "/chat-memory";
-        ChatMemory fileChatMemory = new FileChatBasedMemory(baseDir);
+        fileChatBasedMemory.setBaseDir(baseDir);
         chatClient = ChatClient.builder(dashscopeChatModel)
                 .defaultSystem(SYSTEM_PROMPT) //设置系统提示词
                 .defaultAdvisors(
-                        new MessageChatMemoryAdvisor(fileChatMemory),
+                        new MessageChatMemoryAdvisor(fileChatBasedMemory), // 基于文件保存对话
                         new MyLoggerAdviser()
-
                 )
                 .build();
     }
 
-    //编写对话方法
+
+    record LoveReport(String title, List<String> suggestions) {
+    }
+
+
+
+    @RecordChat
     public String doChat(String message, String chatId) {
         ChatResponse chatResponse = chatClient.prompt()
                 .user(message)
-                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId) //设置会话Id
-                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))  //设置保存的最新会话数量
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
                 .call()
                 .chatResponse();
+
         String content = chatResponse.getResult().getOutput().getText();
         log.info("content:{}", content);
-        return content;
-    }
 
-    record LoveReport(String title, List<String> suggestions) {
+        return content;
     }
 
     //普通对话方法
@@ -100,24 +106,24 @@ public class LoveApp {
         return entity;
     }
 
-//    /**
-//     * 基于云端Rag知识库的会话
-//     */
-//    public String doChatWithRag(String message,String chatId){
-//        ChatResponse chatResponse = chatClient
-//                .prompt()
-//                .system(SYSTEM_PROMPT + "每次对话后都要生成恋爱结果，标题为{用户名}的恋爱报告，内容为建议列表\"")
-//                .user(message)
-//                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId) //设置会话Id
-//                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))  //设置保存的最新会话数量
-//                //.advisors(new QuestionAnswerAdvisor(loveAppVectorStore)) // 应用知识库进行回答
-//                .advisors(loveAppRagCloudAdvisor) //基于应用检索增强
-//                .call()
-//                .chatResponse();
-//        String content = chatResponse.getResult().getOutput().getText();
-//        log.info("content: {}",content);
-//        return content;
-//    }
+    /**
+     * 基于云端Rag知识库的会话
+     */
+    public String doChatWithRag1(String message,String chatId){
+        ChatResponse chatResponse = chatClient
+                .prompt()
+                .system(SYSTEM_PROMPT + "每次对话后都要生成恋爱结果，标题为{用户名}的恋爱报告，内容为建议列表\"")
+                .user(message)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId) //设置会话Id
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))  //设置保存的最新会话数量
+                //.advisors(new QuestionAnswerAdvisor(loveAppVectorStore)) // 应用知识库进行回答
+                .advisors(loveAppRagCloudAdvisor) //基于应用检索增强
+                .call()
+                .chatResponse();
+        String content = chatResponse.getResult().getOutput().getText();
+        log.info("content: {}",content);
+        return content;
+    }
 
     @Resource
     private QueryRewriter queryRewriter;

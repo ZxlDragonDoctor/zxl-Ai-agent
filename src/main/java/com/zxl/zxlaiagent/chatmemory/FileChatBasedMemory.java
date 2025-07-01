@@ -6,16 +6,18 @@ import com.esotericsoftware.kryo.io.Output;
 import org.objenesis.strategy.StdInstantiatorStrategy;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
-
+import org.springframework.stereotype.Component;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+
+@Component
 public class FileChatBasedMemory implements ChatMemory {
 
-   private final String BASE_DIR;
+   private  String BASE_DIR;
    private static  final Kryo kryo =  new Kryo();
 
     static {
@@ -24,8 +26,20 @@ public class FileChatBasedMemory implements ChatMemory {
         kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
     }
 
-    // 构造函数时，指定文件保存目录
-    public FileChatBasedMemory(String dir){
+    public FileChatBasedMemory(){
+
+    }
+//    // 构造函数时，指定文件保存目录
+//    public FileChatBasedMemory(String dir){
+//        this.BASE_DIR = dir;
+//        File file = new File(dir);
+//        if(!file.exists()){
+//            file.mkdir();
+//        }
+//    }
+
+    public void setBaseDir(String dir){
+        this.BASE_DIR = dir;
         this.BASE_DIR = dir;
         File file = new File(dir);
         if(!file.exists()){
@@ -58,7 +72,7 @@ public class FileChatBasedMemory implements ChatMemory {
     @Override
     public void add(String conversationId, List<Message> messages) {
         List<Message> messageList = getOrCreateConversation(conversationId);
-        messageList.addAll(messageList);
+        messageList.addAll(messages);
         saveConversation(conversationId, messageList);
     }
 
