@@ -33,10 +33,12 @@
   justify-content: center;
   position: relative;
   overflow: hidden;
-  padding: 20px;
+  padding: var(--padding-desktop);
 }
 
 .content {
+  width: 100%;
+  max-width: var(--max-width-desktop);
   padding: 40px;
   text-align: center;
   position: relative;
@@ -44,7 +46,7 @@
 }
 
 .title {
-  font-size: 3em;
+  font-size: clamp(2rem, 5vw, 3rem);
   margin-bottom: 40px;
   background: linear-gradient(45deg, #ff6b6b, #ff69b4);
   -webkit-background-clip: text;
@@ -54,14 +56,15 @@
 
 .buttons {
   display: flex;
-  gap: 20px;
+  gap: clamp(10px, 3vw, 20px);
   justify-content: center;
   flex-wrap: wrap;
+  padding: 0 clamp(10px, 3vw, 20px);
 }
 
 .btn {
-  padding: 15px 30px;
-  font-size: 1.2em;
+  padding: clamp(12px, 2vw, 15px) clamp(20px, 4vw, 30px);
+  font-size: clamp(1rem, 2vw, 1.2rem);
   border: none;
   border-radius: 25px;
   background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
@@ -71,6 +74,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 200px;
 }
 
 .btn:hover {
@@ -123,18 +127,80 @@
   transform: translate(-50%, -50%);
 }
 
+/* 平板适配 */
+@media (max-width: 1024px) {
+  .home {
+    padding: var(--padding-tablet);
+  }
+  
+  .content {
+    padding: 30px;
+  }
+  
+  .circle-1 {
+    width: 250px;
+    height: 250px;
+  }
+  
+  .circle-2 {
+    width: 180px;
+    height: 180px;
+  }
+}
+
+/* 手机适配 */
 @media (max-width: 768px) {
-  .title {
-    font-size: 2em;
+  .home {
+    padding: var(--padding-mobile);
+  }
+  
+  .content {
+    padding: 20px;
   }
   
   .buttons {
     flex-direction: column;
+    align-items: center;
   }
   
   .btn {
     width: 100%;
+    max-width: 300px;
     justify-content: center;
+  }
+  
+  .circle-1 {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .circle-2 {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .circle-3 {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+/* 横屏模式适配 */
+@media (orientation: landscape) and (max-height: 600px) {
+  .home {
+    padding: 20px;
+  }
+  
+  .content {
+    padding: 20px;
+  }
+  
+  .title {
+    margin-bottom: 20px;
+  }
+  
+  .buttons {
+    flex-direction: row;
   }
 }
 </style> 

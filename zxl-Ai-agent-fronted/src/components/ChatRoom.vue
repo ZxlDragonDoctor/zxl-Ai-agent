@@ -58,32 +58,33 @@ function send() {
   display: flex;
   flex-direction: column;
   flex: 1;
-  gap: 20px;
+  gap: clamp(10px, 2vw, 20px);
   width: 100%;
-  max-width: 1600px;
+  max-width: var(--max-width-desktop);
   margin: 0 auto;
-  height: calc(100vh - 120px);
+  height: calc(100vh - clamp(80px, 10vh, 120px));
+  padding: clamp(10px, 2vw, 20px);
   overflow: hidden;
 }
 
 .chat-history {
   flex: 1;
   overflow-y: auto;
-  padding: 30px;
+  padding: clamp(20px, 3vw, 30px);
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: clamp(10px, 2vw, 20px);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  margin-right: 6px; /* 为滚动条留出空间 */
+  margin-right: 6px;
 }
 
 .message {
   display: flex;
   align-items: flex-start;
-  gap: 15px;
-  max-width: 80%;
+  gap: clamp(8px, 1.5vw, 15px);
+  max-width: min(80%, 800px);
   transition: all 0.3s ease;
 }
 
@@ -97,13 +98,13 @@ function send() {
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
+  width: clamp(32px, 5vw, 40px);
+  height: clamp(32px, 5vw, 40px);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5em;
+  font-size: clamp(1.2rem, 2vw, 1.5rem);
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(5px);
   flex-shrink: 0;
@@ -112,12 +113,12 @@ function send() {
 }
 
 .msg-content {
-  padding: 12px 20px;
-  border-radius: 20px;
+  padding: clamp(8px, 1.5vw, 12px) clamp(12px, 2vw, 20px);
+  border-radius: clamp(12px, 2vw, 20px);
   position: relative;
   word-break: break-word;
   line-height: 1.6;
-  font-size: 16px;
+  font-size: clamp(14px, 1vw, 16px);
 }
 
 .user .msg-content {
@@ -134,9 +135,9 @@ function send() {
 
 .chat-input {
   display: flex;
-  padding: 15px 20px;
-  gap: 15px;
-  border-radius: 25px;
+  padding: clamp(10px, 2vw, 15px) clamp(15px, 2.5vw, 20px);
+  gap: clamp(10px, 1.5vw, 15px);
+  border-radius: clamp(15px, 2.5vw, 25px);
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -145,12 +146,12 @@ function send() {
 
 .input-field {
   flex: 1;
-  padding: 12px 20px;
+  padding: clamp(8px, 1.5vw, 12px) clamp(15px, 2vw, 20px);
   border: none;
-  border-radius: 20px;
+  border-radius: clamp(12px, 2vw, 20px);
   background: rgba(255, 255, 255, 0.1);
   color: white;
-  font-size: 16px;
+  font-size: clamp(14px, 1vw, 16px);
   transition: all 0.3s ease;
 }
 
@@ -165,18 +166,19 @@ function send() {
 }
 
 .send-btn {
-  padding: 12px 25px;
+  padding: clamp(8px, 1.5vw, 12px) clamp(20px, 2.5vw, 25px);
   border: none;
-  border-radius: 20px;
+  border-radius: clamp(12px, 2vw, 20px);
   background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
   color: white;
-  font-size: 16px;
+  font-size: clamp(14px, 1vw, 16px);
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 8px;
   box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+  white-space: nowrap;
 }
 
 .send-btn:hover {
@@ -207,22 +209,58 @@ function send() {
   background: rgba(255, 255, 255, 0.3);
 }
 
+/* 平板适配 */
+@media (max-width: 1024px) {
+  .chat-room {
+    height: calc(100vh - 100px);
+  }
+  
+  .message {
+    max-width: 85%;
+  }
+}
+
+/* 手机适配 */
 @media (max-width: 768px) {
   .chat-room {
-    padding: 15px;
+    height: calc(100vh - 80px);
+    padding: 10px;
   }
   
   .chat-history {
-    padding: 20px;
+    padding: 15px;
   }
-
+  
   .message {
     max-width: 90%;
-    gap: 10px;
+  }
+  
+  .send-btn span:not(.icon) {
+    display: none;
   }
   
   .send-btn {
-    padding: 12px 20px;
+    padding: 12px;
+    aspect-ratio: 1;
+  }
+  
+  .send-btn .icon {
+    margin: 0;
+  }
+}
+
+/* 横屏模式适配 */
+@media (orientation: landscape) and (max-height: 600px) {
+  .chat-room {
+    height: calc(100vh - 60px);
+  }
+  
+  .chat-history {
+    padding: 10px;
+  }
+  
+  .message {
+    max-width: 70%;
   }
 }
 

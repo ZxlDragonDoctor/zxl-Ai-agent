@@ -13,7 +13,11 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@types/node": "^24.0.10",
+    "@types/vue": "^1.0.31",
     "@vitejs/plugin-vue": "^6.0.0",
+    "@vue/compiler-sfc": "^3.5.17",
+    "@vue/runtime-dom": "^3.5.17",
     "@vue/tsconfig": "^0.7.0",
     "typescript": "~5.8.3",
     "vite": "^7.0.0",
