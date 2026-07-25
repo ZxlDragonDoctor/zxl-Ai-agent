@@ -1,0 +1,20 @@
+package com.zxl.zxlaiagent.multiagent.model;
+
+public enum EventType {
+    TASK_STARTED,
+    TASK_COMPLETED,
+    TASK_FAILED,
+    TASK_PROGRESS,
+    AGENT_REGISTERED,
+    AGENT_UNREGISTERED,
+    AGENT_BUSY,
+    AGENT_IDLE,
+    AGENT_ERROR,
+    PLAN_STARTED,
+    PLAN_COMPLETED,
+    PLAN_FAILED,
+    MESSAGE_SENT,
+    MESSAGE_RECEIVED,
+    TOOL_CALLED,
+    TOOL_RESULT
+}
