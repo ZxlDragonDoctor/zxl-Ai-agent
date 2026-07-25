@@ -15,6 +15,12 @@
             AI 超级智能体
           </button>
         </router-link>
+        <router-link to="/multiagent">
+          <button class="btn glow" style="background: linear-gradient(45deg, #00b4d8, #0077b6);">
+            <span class="icon">🧠</span>
+            多智能体系统
+          </button>
+        </router-link>
       </div>
     </div>
     <div class="decoration">

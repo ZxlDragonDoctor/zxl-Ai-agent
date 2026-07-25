@@ -35,3 +35,9 @@ build/
 ### VS Code ###
 .vscode/
 /chat-memory/
+
+tmp/
+chat-memory/
+*.kryo
+.DS_Store
+*.log
