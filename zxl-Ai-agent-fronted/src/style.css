@@ -1,225 +1,108 @@
-/* 全局样式 */
+@charset "UTF-8";
+
 :root {
-  --primary-color: #ff6b6b;
-  --secondary-color: #ff69b4;
-  --max-width-desktop: 1200px;
-  --max-width-tablet: 768px;
-  --max-width-mobile: 480px;
-  --padding-desktop: 40px;
-  --padding-tablet: 30px;
-  --padding-mobile: 20px;
-  --text-color: #ffffff;
+  --color-bg: #faf8f5;
+  --color-bg-alt: #f5f2ed;
+  --color-surface: #ffffff;
+  --color-surface-hover: #faf8f5;
+  --color-border: #ece8e1;
+  --color-border-light: #f3f0ea;
+
+  --color-text: #1c1917;
+  --color-text-secondary: #78716c;
+  --color-text-tertiary: #a8a29e;
+  --color-text-inverse: #ffffff;
+
+  --color-primary: #7a9c8c;
+  --color-primary-hover: #6b8a7c;
+  --color-primary-light: #e8f0ec;
+  --color-primary-subtle: rgba(122, 156, 140, 0.08);
+
+  --color-accent: #d4836d;
+  --color-accent-hover: #c4735d;
+  --color-accent-light: #f6e8e4;
+
+  --color-success: #5b8a72;
+  --color-success-light: #eaf1ec;
+  --color-warning: #c49b5e;
+  --color-warning-light: #f5efe4;
+  --color-error: #c45a5a;
+  --color-error-light: #f5e8e8;
+  --color-info: #5b8a9c;
+  --color-info-light: #e8f0f2;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+
+  --shadow-xs: 0 1px 2px rgba(28, 25, 23, 0.04);
+  --shadow-sm: 0 1px 3px rgba(28, 25, 23, 0.06), 0 1px 2px rgba(28, 25, 23, 0.04);
+  --shadow-md: 0 4px 12px rgba(28, 25, 23, 0.06), 0 1px 3px rgba(28, 25, 23, 0.04);
+  --shadow-lg: 0 12px 32px rgba(28, 25, 23, 0.07), 0 4px 12px rgba(28, 25, 23, 0.04);
+  --shadow-xl: 0 24px 48px rgba(28, 25, 23, 0.08);
+
+  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 响应式布局基础设置 */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 html {
-  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
-  overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  color: var(--text-color);
-}
-
-/* 响应式容器 */
-.container {
-  width: 100%;
-  max-width: var(--max-width-desktop);
-  margin: 0 auto;
-  padding: 0 var(--padding-desktop);
-  box-sizing: border-box;
-}
-
-/* 响应式文本大小 */
-h1 {
-  font-size: 2.5rem;
-}
-
-h2 {
-  font-size: 2rem;
-}
-
-p {
-  font-size: 1rem;
+  font-family: var(--font-sans);
+  font-size: 15px;
   line-height: 1.6;
-}
-
-#app {
-  width: 100%;
+  color: var(--color-text);
+  background-color: var(--color-bg);
   min-height: 100vh;
-  position: relative;
 }
 
-/* 星空背景 */
-.stars {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: -1;
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
-.star {
-  position: absolute;
-  background: #fff;
-  border-radius: 50%;
-  animation: twinkle 1s infinite;
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: inherit;
 }
 
-/* 流星雨效果 */
-.shooting-stars {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: -1;
-  transform: rotate(-30deg);
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
 }
 
-.shooting-star {
-  position: absolute;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 100%);
-  animation: shooting-star-animation 3s linear infinite;
+img {
+  max-width: 100%;
+  display: block;
 }
 
-.shooting-star::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 100%);
-  filter: blur(1px);
-}
+.fade-enter-active { transition: opacity 0.35s ease, transform 0.35s ease; }
+.fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.fade-enter-from { opacity: 0; transform: translateY(10px); }
+.fade-leave-to { opacity: 0; transform: translateY(-8px); }
 
-.shooting-star:nth-child(1) { top: 10%; left: 90%; animation-delay: 0s; width: 100px; }
-.shooting-star:nth-child(2) { top: 20%; left: 70%; animation-delay: 0.4s; width: 80px; }
-.shooting-star:nth-child(3) { top: 30%; left: 85%; animation-delay: 0.8s; width: 120px; }
-.shooting-star:nth-child(4) { top: 40%; left: 75%; animation-delay: 1.2s; width: 90px; }
-.shooting-star:nth-child(5) { top: 50%; left: 80%; animation-delay: 1.6s; width: 110px; }
-.shooting-star:nth-child(6) { top: 60%; left: 95%; animation-delay: 2.0s; width: 150px; }
-.shooting-star:nth-child(7) { top: 70%; left: 65%; animation-delay: 2.4s; width: 70px; }
-.shooting-star:nth-child(8) { top: 80%; left: 90%; animation-delay: 2.8s; width: 130px; }
-.shooting-star:nth-child(9) { top: 15%; left: 75%; animation-delay: 3.2s; width: 100px; }
-.shooting-star:nth-child(10) { top: 35%; left: 85%; animation-delay: 3.6s; width: 140px; }
-.shooting-star:nth-child(11) { top: 45%; left: 95%; animation-delay: 4.0s; width: 90px; }
-.shooting-star:nth-child(12) { top: 55%; left: 70%; animation-delay: 4.4s; width: 120px; }
-.shooting-star:nth-child(13) { top: 65%; left: 85%; animation-delay: 4.8s; width: 110px; }
-.shooting-star:nth-child(14) { top: 75%; left: 80%; animation-delay: 5.2s; width: 100px; }
-.shooting-star:nth-child(15) { top: 85%; left: 90%; animation-delay: 5.6s; width: 130px; }
-
-@keyframes shooting-star-animation {
-  0% {
-    transform: translateX(0) translateY(0);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(-200%) translateY(0);
-    opacity: 0;
-  }
-}
-
-@keyframes twinkle {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.3;
-  }
-}
-
-/* 玻璃态效果 */
-.glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-}
-
-/* 霓虹灯效果 */
-.neon-text {
-  text-shadow: 0 0 10px currentColor;
-  animation: neon-glow 2s ease-in-out infinite;
-}
-
-@keyframes neon-glow {
-  0%, 100% {
-    text-shadow: 0 0 10px currentColor;
-  }
-  50% {
-    text-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
-  }
-}
-
-/* 平板电脑断点 */
-@media (max-width: 1024px) {
-  html {
-    font-size: 15px;
-  }
-  
-  .container {
-    padding: 0 var(--padding-tablet);
-  }
-  
-  h1 {
-    font-size: 2.2rem;
-  }
-  
-  h2 {
-    font-size: 1.8rem;
-  }
-}
-
-/* 手机断点 */
-@media (max-width: 768px) {
-  html {
-    font-size: 14px;
-  }
-  
-  .container {
-    padding: 0 var(--padding-mobile);
-  }
-  
-  h1 {
-    font-size: 2rem;
-  }
-  
-  h2 {
-    font-size: 1.6rem;
-  }
-}
-
-/* 小屏手机断点 */
-@media (max-width: 480px) {
-  html {
-    font-size: 13px;
-  }
-  
-  h1 {
-    font-size: 1.8rem;
-  }
-  
-  h2 {
-    font-size: 1.4rem;
-  }
-}
-
-/* 适配横屏模式 */
-@media (orientation: landscape) and (max-height: 600px) {
-  .container {
-    padding: var(--padding-mobile);
-  }
-}
+.slide-enter-active { transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.slide-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.slide-enter-from { opacity: 0; transform: translateY(16px) scale(0.97); }
+.slide-leave-to { opacity: 0; transform: translateY(-12px) scale(0.97); }

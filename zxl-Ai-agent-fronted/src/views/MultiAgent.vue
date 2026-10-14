@@ -1,155 +1,72 @@
-<template>
-  <div class="multi-agent-container">
-    <div class="dashboard-header glass">
-      <div class="header-left">
-        <h2 class="neon-text">🤖 多智能体系统</h2>
-        <div class="status-badge" :class="systemStatus.online ? 'online' : 'offline'">
-          {{ systemStatus.online ? '系统在线' : '系统离线' }}
-        </div>
-      </div>
-      <div class="header-actions">
-        <button class="action-btn" @click="refreshStatus">🔄 刷新</button>
-        <router-link to="/" class="action-btn">🏠 首页</router-link>
-      </div>
-    </div>
-
-    <div class="dashboard-grid">
-      <!-- 控制面板 -->
-      <div class="panel glass" style="grid-area: control">
-        <h3>🎯 任务编排</h3>
-        <div class="input-group">
-          <input v-model="goalInput" @keyup.enter="submitGoal" placeholder="输入你的目标，例如：帮我分析并实现一个用户登录功能..." class="input-field" />
-          <button @click="submitGoal" class="btn-primary" :disabled="isRunning">
-            {{ isRunning ? '执行中...' : '🚀 执行' }}
-          </button>
-        </div>
-        <div v-if="isRunning" class="progress-bar">
-          <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
-        </div>
-        <div v-if="orchestrationResult" class="result-box">
-          <div class="result-header">
-            <span>✅ 执行结果</span>
-            <button @click="orchestrationResult = ''" class="close-btn">×</button>
-          </div>
-          <pre class="result-content">{{ orchestrationResult }}</pre>
-        </div>
-      </div>
-
-      <!-- Agent 状态 -->
-      <div class="panel glass" style="grid-area: agents">
-        <h3>👥 智能体状态</h3>
-        <div class="agent-list">
-          <div v-for="agent in agents" :key="agent.id" class="agent-card" :class="agent.state.toLowerCase()">
-            <div class="agent-icon">{{ getAgentIcon(agent.type) }}</div>
-            <div class="agent-info">
-              <div class="agent-name">{{ getAgentLabel(agent.type) }}</div>
-              <div class="agent-type">{{ agent.id }}</div>
-            </div>
-            <div class="agent-state" :class="agent.state.toLowerCase()">
-              {{ agent.state === 'IDLE' ? '空闲' : agent.state === 'BUSY' ? '工作中' : agent.state }}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 实时事件 -->
-      <div class="panel glass" style="grid-area: events">
-        <h3>📡 实时事件</h3>
-        <div class="event-list">
-          <div v-for="(event, idx) in recentEvents" :key="idx" class="event-item">
-            <span class="event-time">{{ formatTime(event.timestamp) }}</span>
-            <span class="event-type" :class="getEventClass(event.type)">{{ event.type }}</span>
-            <span class="event-agent">{{ event.agentId }}</span>
-          </div>
-          <div v-if="recentEvents.length === 0" class="empty-state">暂无事件</div>
-        </div>
-      </div>
-
-      <!-- Benchmark -->
-      <div class="panel glass" style="grid-area: benchmark">
-        <h3>📊 性能评估</h3>
-        <button @click="runBenchmark" class="btn-secondary" :disabled="benchmarkRunning">
-          {{ benchmarkRunning ? '测试中...' : '🏃 运行基准测试' }}
-        </button>
-        <div v-if="benchmarkResult" class="benchmark-result">
-          <div v-for="(result, idx) in benchmarkResult" :key="idx" class="benchmark-item">
-            <div class="benchmark-agent">{{ result.agentId }}</div>
-            <div class="benchmark-stats">
-              <span>成功率: {{ (result.report.successRate || 0).toFixed(1) }}%</span>
-              <span>平均耗时: {{ (result.report.avgResponseTimeMs || 0).toFixed(0) }}ms</span>
-              <span>P95: {{ (result.report.p95ResponseTimeMs || 0) }}ms</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 系统指标 -->
-      <div class="panel glass" style="grid-area: metrics">
-        <h3>📈 系统指标</h3>
-        <div class="metrics-grid">
-          <div class="metric">
-            <div class="metric-value">{{ systemStatus.activePlans || 0 }}</div>
-            <div class="metric-label">活跃任务</div>
-          </div>
-          <div class="metric">
-            <div class="metric-value">{{ agents.length }}</div>
-            <div class="metric-label">智能体数</div>
-          </div>
-          <div class="metric">
-            <div class="metric-value">{{ systemStatus.pendingTasks || 0 }}</div>
-            <div class="metric-label">排队中</div>
-          </div>
-          <div class="metric">
-            <div class="metric-value">{{ systemStatus.observer?.totalTasksAcrossAgents || 0 }}</div>
-            <div class="metric-label">总任务</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import {
   orchestrateGoal,
-  orchestrateGoalStream,
   getSystemStatus,
   listAgents,
   getRecentEvents,
   runBenchmark as runBenchmarkApi
 } from '../api/multiagent'
+import { locale, t } from '../i18n'
 
 const goalInput = ref('')
 const isRunning = ref(false)
 const orchestrationResult = ref('')
 const progressPercent = ref(0)
-const agents = ref([])
-const recentEvents = ref([])
-const systemStatus = ref({ online: true })
-const benchmarkResult = ref(null)
+type AgentInfo = { id: string; type: string; state: string }
+type AgentEvent = { timestamp: number | string; type: string; agentId: string }
+type BenchmarkResult = {
+  agentId: string
+  report: { successRate?: number; avgResponseTimeMs?: number; p95ResponseTimeMs?: number }
+}
+type SystemStatus = {
+  online: boolean
+  activePlans?: number
+  pendingTasks?: number
+  observer?: { totalTasksAcrossAgents?: number }
+}
+const agents = ref<AgentInfo[]>([])
+const recentEvents = ref<AgentEvent[]>([])
+const systemStatus = ref<SystemStatus>({ online: true })
+const benchmarkResult = ref<BenchmarkResult[] | null>(null)
 const benchmarkRunning = ref(false)
-let statusInterval = null
+let statusInterval: ReturnType<typeof setInterval> | undefined
 
-function getAgentIcon(type) {
-  const icons = { orchestrator: '🧠', planner: '📋', code: '💻', research: '🔍', supervisor: '👁', browser: '🌐' }
-  return icons[type] || '🤖'
+function getAgentIcon(type: string): string {
+  const icons: Record<string, string> = { orchestrator: '◇', planner: '△', code: '◈', research: '○', supervisor: '□', browser: '◎' }
+  return icons[type] || '◇'
 }
 
-function getAgentLabel(type) {
-  const labels = { orchestrator: '编排器', planner: '规划器', code: '代码助手', research: '研究员', supervisor: '监督员', browser: '浏览器' }
-  return labels[type] || type
+function getAgentLabel(type: string): string {
+  const labels: Record<string, string> = {
+    orchestrator: 'agent.orchestrator',
+    planner: 'agent.planner',
+    code: 'agent.code',
+    research: 'agent.research',
+    supervisor: 'agent.supervisor',
+    browser: 'agent.browser',
+  }
+  return labels[type] ? t(labels[type]) : type
 }
 
-function getEventClass(type) {
+function getStateLabel(state: string): string {
+  const labels: Record<string, string> = {
+    IDLE: 'state.idle',
+    BUSY: 'state.busy',
+    ERROR: 'state.error',
+  }
+  return labels[state] ? t(labels[state]) : state
+}
+
+function getEventClass(type: string): string {
   if (type.includes('COMPLETED') || type.includes('IDLE')) return 'event-success'
   if (type.includes('FAILED') || type.includes('ERROR')) return 'event-error'
   if (type.includes('STARTED') || type.includes('BUSY')) return 'event-warn'
   return 'event-info'
 }
 
-function formatTime(timestamp) {
-  return new Date(timestamp).toLocaleTimeString()
+function formatTime(timestamp: number | string): string {
+  return new Date(timestamp).toLocaleTimeString(locale.value === 'zh-CN' ? 'zh-CN' : 'en-US')
 }
 
 async function submitGoal() {
@@ -166,9 +83,9 @@ async function submitGoal() {
     const result = await orchestrateGoal(goalInput.value)
     clearInterval(progressTimer)
     progressPercent.value = 100
-    orchestrationResult.value = result.result || result.error
+    orchestrationResult.value = result.result || result.error || ''
     setTimeout(() => { progressPercent.value = 0 }, 1000)
-  } catch (e) {
+  } catch (e: any) {
     orchestrationResult.value = `Error: ${e.message}`
   } finally {
     isRunning.value = false
@@ -213,193 +130,457 @@ onUnmounted(() => {
 })
 </script>
 
+<template>
+  <div class="agent-dashboard">
+    <header class="dash-header">
+      <div class="dash-header-left">
+        <h1 class="dash-title">{{ t('dashboard.title') }}</h1>
+        <span class="dash-badge" :class="systemStatus.online ? 'online' : 'offline'">
+          <span class="dash-dot"></span>
+          {{ systemStatus.online ? t('status.online') : t('status.offline') }}
+        </span>
+      </div>
+      <button class="btn-ghost" @click="refreshStatus">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        {{ t('action.refresh') }}
+      </button>
+    </header>
+
+    <div class="dash-grid">
+      <!-- Orchestration Panel -->
+      <section class="card card--wide">
+        <div class="card-head">
+          <h2 class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            {{ t('task.title') }}
+          </h2>
+        </div>
+        <div class="input-row">
+          <input
+            v-model="goalInput"
+            @keyup.enter="submitGoal"
+            :placeholder="t('task.placeholder')"
+            class="input-field"
+          />
+          <button @click="submitGoal" class="btn-primary" :disabled="isRunning">
+            {{ isRunning ? t('action.running') : t('action.execute') }}
+          </button>
+        </div>
+        <div v-if="isRunning" class="progress-track">
+          <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
+        </div>
+        <div v-if="orchestrationResult" class="result-card">
+          <div class="result-head">
+            <span>{{ t('result.title') }}</span>
+            <button @click="orchestrationResult = ''" class="btn-close">&times;</button>
+          </div>
+          <pre class="result-body">{{ orchestrationResult }}</pre>
+        </div>
+      </section>
+
+      <!-- Agent Status -->
+      <section class="card">
+        <div class="card-head">
+          <h2 class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            {{ t('agents.title') }}
+          </h2>
+          <span class="card-count">{{ agents.length }}</span>
+        </div>
+        <div class="agent-list">
+          <div
+            v-for="agent in agents"
+            :key="agent.id"
+            class="agent-row"
+            :class="agent.state.toLowerCase()"
+          >
+            <span class="agent-icon">{{ getAgentIcon(agent.type) }}</span>
+            <div class="agent-meta">
+              <span class="agent-name">{{ getAgentLabel(agent.type) }}</span>
+              <span class="agent-id">{{ agent.id }}</span>
+            </div>
+            <span class="agent-state" :class="agent.state.toLowerCase()">
+              {{ getStateLabel(agent.state) }}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Live Events -->
+      <section class="card">
+        <div class="card-head">
+          <h2 class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            {{ t('events.title') }}
+          </h2>
+          <span class="card-count">{{ recentEvents.length }}</span>
+        </div>
+        <div class="event-list">
+          <div v-for="(event, idx) in recentEvents" :key="idx" class="event-row">
+            <span class="event-time">{{ formatTime(event.timestamp) }}</span>
+            <span class="event-tag" :class="getEventClass(event.type)">{{ event.type }}</span>
+            <span class="event-agent">{{ event.agentId }}</span>
+          </div>
+          <div v-if="recentEvents.length === 0" class="empty-state">{{ t('events.empty') }}</div>
+        </div>
+      </section>
+
+      <!-- Benchmark -->
+      <section class="card">
+        <div class="card-head">
+          <h2 class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            {{ t('benchmark.title') }}
+          </h2>
+        </div>
+        <button @click="runBenchmark" class="btn-secondary" :disabled="benchmarkRunning">
+          {{ benchmarkRunning ? t('action.running') : t('benchmark.run') }}
+        </button>
+        <div v-if="benchmarkResult" class="bench-list">
+          <div v-for="(result, idx) in benchmarkResult" :key="idx" class="bench-row">
+            <div class="bench-agent">{{ result.agentId }}</div>
+            <div class="bench-stats">
+              <span>{{ t('benchmark.success') }}: {{ (result.report.successRate || 0).toFixed(1) }}%</span>
+              <span>{{ t('benchmark.average') }}: {{ (result.report.avgResponseTimeMs || 0).toFixed(0) }}ms</span>
+              <span>{{ t('benchmark.p95') }}: {{ (result.report.p95ResponseTimeMs || 0) }}ms</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- System Metrics -->
+      <section class="card">
+        <div class="card-head">
+          <h2 class="card-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            {{ t('metrics.title') }}
+          </h2>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric-cell">
+            <span class="metric-val">{{ systemStatus.activePlans || 0 }}</span>
+            <span class="metric-lbl">{{ t('metrics.activePlans') }}</span>
+          </div>
+          <div class="metric-cell">
+            <span class="metric-val">{{ agents.length }}</span>
+            <span class="metric-lbl">{{ t('metrics.agents') }}</span>
+          </div>
+          <div class="metric-cell">
+            <span class="metric-val">{{ systemStatus.pendingTasks || 0 }}</span>
+            <span class="metric-lbl">{{ t('metrics.pending') }}</span>
+          </div>
+          <div class="metric-cell">
+            <span class="metric-val">{{ systemStatus.observer?.totalTasksAcrossAgents || 0 }}</span>
+            <span class="metric-lbl">{{ t('metrics.totalTasks') }}</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</template>
+
 <style scoped>
-.multi-agent-container {
-  height: 100vh;
-  padding: 20px;
+.agent-dashboard {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  overflow-y: auto;
+  gap: 24px;
+  padding-bottom: 32px;
 }
 
-.dashboard-header {
-  padding: 15px 25px;
-  border-radius: 16px;
+.dash-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  background: rgba(13, 20, 43, 0.7);
-  border: 1px solid rgba(255,255,255,0.1);
 }
 
-.header-left {
+.dash-header-left {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 14px;
 }
 
-.status-badge {
+.dash-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+}
+
+.dash-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8em;
+  border-radius: 999px;
+  font-size: 12px;
   font-weight: 500;
 }
 
-.status-badge.online { background: rgba(0, 200, 83, 0.2); color: #00c853; }
-.status-badge.offline { background: rgba(255, 68, 68, 0.2); color: #ff4444; }
+.dash-badge.online { background: var(--color-success-light); color: var(--color-success); }
+.dash-badge.offline { background: var(--color-error-light); color: var(--color-error); }
 
-.header-actions { display: flex; gap: 10px; }
-.action-btn {
-  padding: 8px 16px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.1);
-  color: #fff;
-  text-decoration: none;
-  border: 1px solid rgba(255,255,255,0.2);
-  cursor: pointer;
-  font-size: 0.9em;
-  transition: all 0.3s;
+.dash-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
-.action-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
 
-.dashboard-grid {
-  flex: 1;
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.btn-ghost:hover {
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.dash-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto auto auto;
-  grid-template-areas:
-    "control control"
-    "agents events"
-    "benchmark metrics";
-  gap: 20px;
+  gap: 16px;
 }
 
-.panel {
-  padding: 20px;
-  border-radius: 16px;
-  background: rgba(13, 20, 43, 0.5);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-
-.panel h3 {
-  margin: 0 0 15px;
-  font-size: 1.1em;
-  color: rgba(255,255,255,0.9);
-}
-
-.input-group {
+.card {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  gap: 16px;
+  transition: border-color var(--transition-fast);
+}
+
+.card:hover {
+  border-color: var(--color-border);
+}
+
+.card--wide {
+  grid-column: 1 / -1;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.card-title svg {
+  color: var(--color-primary);
+}
+
+.card-count {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-bg-alt);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
 }
 
 .input-field {
   flex: 1;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.1);
-  color: white;
-  font-size: 0.95em;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 14px;
+  transition: all var(--transition-fast);
 }
-.input-field::placeholder { color: rgba(255,255,255,0.4); }
-.input-field:focus { outline: none; background: rgba(255,255,255,0.15); }
 
-.btn-primary, .btn-secondary {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.95em;
-  transition: all 0.3s;
-  white-space: nowrap;
+.input-field:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-subtle);
 }
+
+.input-field::placeholder {
+  color: var(--color-text-tertiary);
+}
+
 .btn-primary {
-  background: linear-gradient(45deg, #00b4d8, #0077b6);
-  color: white;
-}
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-secondary {
-  background: rgba(255,255,255,0.1);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.2);
-  width: 100%;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  background: var(--color-text);
+  color: var(--color-text-inverse);
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
 }
 
-.progress-bar {
-  margin-top: 10px;
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-primary);
+}
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-alt);
+  color: var(--color-text);
+  font-size: 13.5px;
+  font-weight: 500;
+  border: 1px solid var(--color-border);
+  transition: all var(--transition-fast);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.progress-track {
   height: 4px;
-  background: rgba(255,255,255,0.1);
+  background: var(--color-bg-alt);
   border-radius: 2px;
   overflow: hidden;
 }
+
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #00b4d8, #48cae4);
-  transition: width 0.3s;
+  background: var(--color-primary);
+  border-radius: 2px;
+  transition: width 300ms ease;
 }
 
-.result-box {
-  margin-top: 15px;
-  border-radius: 10px;
-  background: rgba(0,0,0,0.3);
+.result-card {
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
-.result-header {
+
+.result-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 15px;
-  background: rgba(0,200,83,0.1);
-  font-size: 0.9em;
+  padding: 10px 14px;
+  background: var(--color-success-light);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-success);
 }
-.close-btn {
-  background: none;
-  border: none;
-  color: rgba(255,255,255,0.6);
-  cursor: pointer;
-  font-size: 1.2em;
+
+.btn-close {
+  font-size: 18px;
+  color: var(--color-text-tertiary);
+  transition: color var(--transition-fast);
 }
-.result-content {
-  padding: 15px;
+
+.btn-close:hover { color: var(--color-text); }
+
+.result-body {
+  padding: 14px;
   margin: 0;
   max-height: 200px;
   overflow-y: auto;
-  font-size: 0.85em;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+  color: var(--color-text-secondary);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
 }
 
-.agent-list { display: flex; flex-direction: column; gap: 8px; }
+.agent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-.agent-card {
+.agent-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.05);
-  transition: all 0.3s;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  transition: all var(--transition-fast);
 }
-.agent-card:hover { background: rgba(255,255,255,0.1); }
-.agent-card.busy { border-left: 3px solid #ff9800; }
-.agent-card.idle { border-left: 3px solid #00c853; }
-.agent-card.error { border-left: 3px solid #ff4444; }
 
-.agent-icon { font-size: 1.5em; }
-.agent-info { flex: 1; }
-.agent-name { font-size: 0.95em; font-weight: 500; }
-.agent-type { font-size: 0.75em; opacity: 0.6; }
+.agent-row:hover {
+  background: var(--color-surface-hover);
+}
+
+.agent-row.busy { border-left: 3px solid var(--color-warning); }
+.agent-row.idle { border-left: 3px solid var(--color-success); }
+.agent-row.error { border-left: 3px solid var(--color-error); }
+
+.agent-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-alt);
+  font-size: 13px;
+  color: var(--color-primary);
+}
+
+.agent-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.agent-name {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.agent-id {
+  font-size: 11.5px;
+  color: var(--color-text-tertiary);
+}
+
 .agent-state {
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.75em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
   font-weight: 500;
 }
-.agent-state.idle { background: rgba(0,200,83,0.2); color: #00c853; }
-.agent-state.busy { background: rgba(255,152,0,0.2); color: #ff9800; }
-.agent-state.error { background: rgba(255,68,68,0.2); color: #ff4444; }
+
+.agent-state.idle { background: var(--color-success-light); color: var(--color-success); }
+.agent-state.busy { background: var(--color-warning-light); color: var(--color-warning); }
+.agent-state.error { background: var(--color-error-light); color: var(--color-error); }
 
 .event-list {
   max-height: 240px;
@@ -408,56 +589,108 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 4px;
 }
-.event-item {
+
+.event-row {
   display: flex;
+  align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: 6px;
-  font-size: 0.8em;
-  background: rgba(255,255,255,0.03);
+  border-radius: 4px;
+  font-size: 12.5px;
 }
-.event-time { opacity: 0.5; min-width: 70px; }
-.event-type { padding: 1px 6px; border-radius: 4px; font-weight: 500; }
-.event-success { background: rgba(0,200,83,0.2); color: #00c853; }
-.event-error { background: rgba(255,68,68,0.2); color: #ff4444; }
-.event-warn { background: rgba(255,152,0,0.2); color: #ff9800; }
-.event-info { background: rgba(33,150,243,0.2); color: #2196f3; }
-.event-agent { opacity: 0.6; margin-left: auto; }
 
-.empty-state { text-align: center; padding: 20px; opacity: 0.5; }
-
-.benchmark-result { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
-.benchmark-item {
-  padding: 10px;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.05);
+.event-row:nth-child(odd) {
+  background: var(--color-bg);
 }
-.benchmark-agent { font-size: 0.85em; font-weight: 500; margin-bottom: 4px; }
-.benchmark-stats { display: flex; gap: 12px; font-size: 0.75em; opacity: 0.7; }
+
+.event-time {
+  color: var(--color-text-tertiary);
+  min-width: 70px;
+  font-variant-numeric: tabular-nums;
+}
+
+.event-tag {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 11px;
+}
+
+.event-success { background: var(--color-success-light); color: var(--color-success); }
+.event-error { background: var(--color-error-light); color: var(--color-error); }
+.event-warn { background: var(--color-warning-light); color: var(--color-warning); }
+.event-info { background: var(--color-info-light); color: var(--color-info); }
+
+.event-agent {
+  margin-left: auto;
+  color: var(--color-text-tertiary);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 24px;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+}
+
+.bench-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bench-row {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.bench-agent {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--color-text);
+}
+
+.bench-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
 
 .metrics-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
 }
-.metric {
-  text-align: center;
-  padding: 15px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.05);
-}
-.metric-value { font-size: 1.8em; font-weight: 700; color: #48cae4; }
-.metric-label { font-size: 0.8em; opacity: 0.6; margin-top: 4px; }
 
-@media (max-width: 900px) {
-  .dashboard-grid {
+.metric-cell {
+  text-align: center;
+  padding: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.metric-val {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.metric-lbl {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  margin-top: 4px;
+}
+
+@media (max-width: 720px) {
+  .dash-grid {
     grid-template-columns: 1fr;
-    grid-template-areas:
-      "control"
-      "agents"
-      "events"
-      "benchmark"
-      "metrics";
   }
+  .card { padding: 18px; }
 }
 </style>

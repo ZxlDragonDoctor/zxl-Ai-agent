@@ -1,227 +1,305 @@
-# Spring AI 核心特性应用实战
+# Zxl AI Agent
 
-一个基于 Spring AI 的智能代理系统，集成了多种 AI 能力和工具，支持 RAG（检索增强生成）、MCP（模型上下文协议）等功能。
+基于 **Java、Spring Boot 和 Spring AI Alibaba** 的 Agent 学习与开发项目，包含带会话记忆的聊天助手、可调用工具的单 Agent，以及多 Agent 任务编排。前端使用 Vue 3 + TypeScript，支持中文和英文即时切换。
 
-## 项目架构
+学习主线：**模型调用 → 上下文与记忆 → 工具调用 → Agent 执行循环 → 多 Agent 编排 → 可靠性与评估**。
 
-### 后端主模块 (zxl-Ai-agent)
-- **框架**: Spring Boot 3.4.6 + Java 17
-- **AI框架**: Spring AI Alibaba 1.0.0-M6.1
-- **协议支持**: Spring AI MCP Client 1.0.0-M6
+当前为开发阶段：前端可以独立运行；完整后端联调还需要补齐编排初始化修复与 MCP 模块获取方式，详见[当前边界与后续方向](#当前边界与后续方向)。
 
-### 前端模块 (zxl-Ai-agent-fronted)
-- **技术栈**: Vue 3 + TypeScript + Vite
+[页面预览](#页面预览) · [功能](#功能与实现范围) · [架构](#架构) · [快速开始](#快速开始) · [API](#主要-api) · [开发指南](#开发指南)
 
-### MCP服务模块 (zxl-image-search-mcp)
-- **框架**: Spring Boot 3.5.3 + Java 21
-- **功能**: 图片搜索 MCP 服务器
+## 页面预览
 
-## 核心功能
+以下为实际本地联调页面截图，后端运行环境包含尚未提交的初始化修复。图片存放在仓库内，点击可查看原图；仅克隆当前提交可以运行前端界面，在线 Agent 状态还依赖后端修复。
 
-### 1. AI Agent 系统
-- **ReActAgent**: 基于 ReAct 模式的推理执行代理
-- **ToolCallAgent**: 工具调用代理
-- **ZxlManus**: 自定义 Manus 代理实现
-- 支持多种 Agent 状态和生命周期管理
+| 首页 | Agent 协作中心 · 中文 |
+| --- | --- |
+| [![中文首页：平台介绍与功能入口](docs/images/home-zh.jpg)](docs/images/home-zh.jpg) | [![中文 Agent 协作中心：任务编排、五个智能体、事件与系统指标](docs/images/agent-hub-zh.jpg)](docs/images/agent-hub-zh.jpg) |
+| **恋爱大师 · 输入界面** | **Agent Hub · English** |
+| [![恋爱大师输入界面：会话标识与消息输入框](docs/images/love-master-zh.jpg)](docs/images/love-master-zh.jpg) | [![英文 Agent Hub：任务编排、智能体状态与性能面板](docs/images/agent-hub-en.jpg)](docs/images/agent-hub-en.jpg) |
 
-### 2. RAG (检索增强生成)
-- **文档加载**: 支持 Markdown 文档加载
-- **向量存储**: 基于向量的文档检索
-- **查询增强**: 上下文查询增强器
-- **文本处理**: 自定义 Token 分割器和关键词扩展
-- **查询重写**: 智能查询重写器
+顶部 `EN / 中文` 按钮切换界面语言，选择保存在浏览器中。用户消息、模型回复和后端事件代码保留原文。
 
-### 3. 工具集 (Tools)
-- **文件操作**: 文件读写、操作工具
-- **网页爬取**: WebScrapingTool 支持网页内容提取
-- **网页搜索**: WebSearchTool 搜索引擎集成
-- **PDF生成**: PDFGenerationTool 基于 iText 的 PDF 生成
-- **终端操作**: TerminalOperationTool 系统命令执行
-- **资源管理**: ResourceDownloadTool 资源下载工具
-- **图片处理**: ImageSplitterTool 图片分割工具
+## 功能与实现范围
 
-### 4. 聊天记忆系统
-- **持久化存储**: FileChatBasedMemory 基于文件的聊天记忆
-- **切面支持**: ChatMemoryAspect 聊天记忆切面
-- **注解支持**: @RecordChat 注解实现聊天记录
+| 模块 | 已有实现 | 当前使用边界 |
+| --- | --- | --- |
+| 恋爱大师 `LoveApp` | 角色提示词、同步聊天、SSE 流式响应、文件会话记忆 | 前端默认调用普通流式聊天；RAG 与工具调用有独立后端方法 |
+| 超级智能体 `ZxlManus` | 模型选择工具、执行工具、结果回填、逐步执行与终止 | 每次请求创建一个 Agent，最多执行 20 步；SSE 返回步骤结果 |
+| 多 Agent 编排 | 规划、任务依赖、就绪任务并行执行、角色分派、结果汇总 | 当前以分工生成文本为主，可靠性机制仍在完善 |
+| 工具集 | 文件读写、网页搜索与抓取、资源下载、终端操作、PDF 生成、图片分割、终止 | 执行能力由注册的 `ToolCallback` 提供；外部服务需要有效配置 |
+| RAG | Markdown 加载、关键词元数据、Embedding、内存向量库、查询重写、本地与云端检索方法 | 默认聊天页面尚未接入 RAG 方法 |
+| MCP | MCP 客户端工具合并、独立图片搜索服务 | 图片搜索依赖 Pexels 服务与凭据 |
+| 图片生成 | 文本生成图片、主题/环境/尺寸/风格参数接口 | 后端接口已提供，前端尚无专门页面 |
+| 观察与基准 | Agent 状态、事件接口、执行报告、成功率与耗时分位数 | 前端每 5 秒刷新；基准成功率衡量执行是否报错，尚不评价答案质量 |
+| 前端 | 首页、Agent 协作中心、恋爱大师、超级智能体、聊天组件、中英文切换 | `/chat-room` 独立页面尚未实现，当前导航会重定向到首页 |
 
-### 5. Advisor 增强器
-- **日志增强**: MyLoggerAdviser 日志记录
-- **重读增强**: ReReadingAdvisor 重复读取增强
-- **RAG增强**: LoveAppRagCustomAdvisorFactory 恋爱咨询专用 RAG 增强
+多 Agent 实现定义了 **5 个角色**，它们可以使用同一个模型，通过不同提示词与任务输入分工。截图中的角色注册来自完成本地初始化修复后的运行环境：
+
+| 角色 | 职责 | 实现 |
+| --- | --- | --- |
+| Orchestrator | 创建计划、分派任务、协调执行与汇总 | [OrchestratorAgent](src/main/java/com/zxl/zxlaiagent/multiagent/orchestration/OrchestratorAgent.java) |
+| Planner | 将目标转为 JSON 任务计划，声明依赖与所需能力 | [PlannerAgent](src/main/java/com/zxl/zxlaiagent/multiagent/agents/PlannerAgent.java) |
+| Code | 生成代码、分析与实现建议 | [CodeAgent](src/main/java/com/zxl/zxlaiagent/multiagent/agents/CodeAgent.java) |
+| Research | 生成研究与分析内容 | [ResearchAgent](src/main/java/com/zxl/zxlaiagent/multiagent/agents/ResearchAgent.java) |
+| Supervisor | 审阅并汇总其他角色的输出 | [SupervisorAgent](src/main/java/com/zxl/zxlaiagent/multiagent/agents/SupervisorAgent.java) |
+
+CodeAgent 和 ResearchAgent 目前主要调用模型生成文本。能力描述中声明 `web_search` 或 `code_generation`，不等同于已接入真实搜索、文件编辑或代码执行工具；这些工具执行能力主要位于 ZxlManus 的调用链中。
+
+## 架构
+
+```mermaid
+flowchart TD
+    UI[Vue 前端] --> API[Spring Boot HTTP / SSE 接口]
+    API --> Chat[LoveApp 对话助手]
+    API --> Single[ZxlManus 单 Agent 循环]
+    API --> Multi[Orchestrator 多 Agent 编排]
+    Chat --> Memory[文件会话记忆]
+    Chat -. 独立 RAG 方法 .-> RAG[文档检索与向量库]
+    Single --> Tools[本地工具 / MCP 工具]
+    Multi --> Planner[Planner 任务规划]
+    Multi --> Workers[Code / Research 执行]
+    Multi --> Supervisor[Supervisor 汇总]
+    Multi --> Bus[消息总线与事件观察]
+    Chat --> Model[DashScope 模型服务]
+    Single --> Model
+    Workers --> Model
+    Planner --> Model
+    Supervisor --> Model
+```
+
+单 Agent 的核心循环是：准备上下文 → 请求模型 → 执行模型选择的工具 → 将工具结果加入上下文 → 继续或结束。模型提出工具名和参数，Java 应用负责执行工具。
+
+多 Agent 的核心流程是：用户目标 → 任务计划 → 依赖就绪检查 → 角色执行 → 汇总结果。它与单 Agent 工具循环是两套独立实现。
 
 ## 技术栈
 
-### 核心依赖
-```xml
-- Spring Boot Starter Web
-- Spring AI Alibaba Starter
-- Spring AI MCP Client
-- Lombok
-- Spring AOP
-```
+| 部分 | 技术 / 当前版本 |
+| --- | --- |
+| 主应用 | Java 17、Spring Boot 3.4.6 |
+| AI 接入 | Spring AI Alibaba 1.0.0-M6.1、DashScope |
+| MCP 客户端 / 服务端 | Spring AI MCP 1.0.0-M6 |
+| 图片搜索 MCP 服务 | Java 21、Spring Boot 3.5.3 |
+| 前端 | Vue 3.5、Vue Router 4、TypeScript 5.8、Vite 7 |
+| 文档与工具 | Markdown Reader、Jsoup、Hutool、iText |
+| 会话持久化 / API 文档 | Kryo / Springdoc、Knife4j |
 
-### 文档处理
-```xml
-- Spring AI Markdown Document Reader
-- iText Core (PDF处理)
-- Jsoup (网页爬取)
-```
-
-### 工具库
-```xml
-- Hutool All
-- JSON Schema Generator (结构化输出)
-- Kryo (序列化)
-- Knife4j (API文档)
-```
+本项目采用 Spring AI 的 M6 版本。学习或扩展时，应对照当前代码与依赖版本，官方最新文档中的部分 API 写法可能不同。
 
 ## 快速开始
 
-### 环境要求
-- JDK 17+ (主模块)
-- JDK 21+ (MCP模块)
-- Maven 3.6+
-- Node.js 16+ (前端)
+### 1. 准备环境
 
-### 后端启动
+- **JDK**：主应用需要 17+；图片搜索 MCP 服务需要 21+，可统一使用 JDK 21。
+- **Node.js**：Vite 7 要求 `20.19+` 或 `22.12+`。
+- **Maven**：可使用仓库自带的 Maven Wrapper 3.9.9。
+- **模型服务**：准备可用的 DashScope API Key。
 
-1. **配置环境变量**
 ```bash
-# 配置 AI 模型 API Key (根据使用的模型配置)
-export AI_API_KEY=your_api_key
-```
-
-2. **启动主应用**
-```bash
+git clone https://github.com/ZxlDragonDoctor/zxl-Ai-agent.git
 cd zxl-Ai-agent
-./mvnw spring-boot:run
-# 或使用 Maven
-mvn spring-boot:run
 ```
 
-应用将在 `http://localhost:8123/api` 启动
+### 2. 独立启动前端
 
-3. **启动 MCP 图片搜索服务**
-```bash
-cd zxl-image-search-mcp
-./mvnw spring-boot:run
-```
-
-服务将在 `http://localhost:8127` 启动
-
-### 前端启动
+在仓库根目录执行：
 
 ```bash
 cd zxl-Ai-agent-fronted
-npm install
+npm ci
 npm run dev
 ```
 
-## 配置说明
+浏览器打开 **http://localhost:5173**。如果端口已占用，以终端打印的地址为准。前端可独立展示页面与语言切换，聊天和在线状态需要后端服务。
 
-### 主应用配置 (application.yml)
+前端开发环境请求 `http://localhost:8123/api`。生产构建使用 `/api`，部署时需要由同域后端或反向代理提供该路径。
+
+以下后端步骤适用于已完成编排初始化修复，并已准备兼容 MCP 服务的开发环境。
+
+### 3. 配置本地凭据
+
+在 `src/main/resources/application-local.yml` 新建以下配置。该文件已被 `.gitignore` 忽略：
+
 ```yaml
 spring:
   ai:
-    mcp:
-      client:
-        sse:
-          connections:
-            server1:
-              url: http://localhost:8127  # MCP服务器地址
-server:
-  port: 8123
-  servlet:
-    context-path: /api
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY}
+      chat:
+        options:
+          model: qwen-plus
+
+search-api:
+  api-key: ${SEARCH_API_KEY:}
 ```
 
-### 配置文件
-- `application.yml` - 主配置
-- `application-local.yml` - 本地环境配置
-- `mcp-servers.json` - MCP 服务器配置（可选）
+在启动**主应用的终端**设置环境变量。Windows PowerShell：
 
-## API 文档
+```powershell
+$env:DASHSCOPE_API_KEY = "你的 DashScope API Key"
+$env:SEARCH_API_KEY = "你的 SearchAPI.io API Key"
+```
 
-项目使用 Knife4j 提供 API 文档，启动后访问：
-- Swagger UI: `http://localhost:8123/api/swagger-ui.html`
-- Knife4j UI: `http://localhost:8123/api/doc.html`
+macOS / Linux：
 
-## 应用场景
+```bash
+export DASHSCOPE_API_KEY="你的 DashScope API Key"
+export SEARCH_API_KEY="你的 SearchAPI.io API Key"
+```
 
-### 1. 恋爱咨询助手 (LoveApp)
-基于 RAG 的恋爱问题咨询服务，集成：
-- 单身篇、恋爱篇、已婚篇常见问题库
-- 向量检索增强
-- 上下文感知对话
+`DASHSCOPE_API_KEY` 用于聊天和知识库初始化。`SEARCH_API_KEY` 用于网页搜索；仅体验普通聊天时可以留空。环境变量需要设置在实际启动应用的终端或 IDE 运行配置中。
 
-### 2. 通用 AI 助手
-- 支持工具调用的智能对话
-- 文件操作和代码执行
-- 网页搜索和内容提取
-- PDF 文档生成
+### 4. 准备 MCP 服务
 
-### 3. 图片搜索服务
-通过 MCP 协议提供图片搜索能力
+已提交的主应用默认配置通过 `spring.ai.mcp.client.sse.connections.server1.url` 连接 `http://localhost:8127` 的 MCP 服务；STDIO / `mcp-servers.json` 配置当前被注释停用。
+
+**模块获取限制**：`zxl-image-search-mcp` 当前是 Git 子模块指针，但仓库没有 `.gitmodules` 获取地址。普通克隆不会提供该模块源码，增加 `--recurse-submodules` 也无法补齐地址。完整联调需要先取得该模块源码，或准备兼容的 MCP SSE 服务。
+
+仅当本地目录中已包含 `zxl-image-search-mcp/pom.xml` 时，可在独立终端执行以下命令，再启动主应用。
+
+在仓库根目录执行，Windows PowerShell：
+
+```powershell
+.\mvnw.cmd -f .\zxl-image-search-mcp\pom.xml spring-boot:run
+```
+
+macOS / Linux：
+
+```bash
+sh ./mvnw -f zxl-image-search-mcp/pom.xml spring-boot:run
+```
+
+本地图片搜索服务默认使用 SSE 模式，端口为 **8127**。服务端工具还需要通过 `ToolCallbackProvider` 导出。本地副本的图片搜索工具调用 Pexels，凭据当前采用源码常量，未读取 `PEXELS_API_KEY` 环境变量；部署前应改为环境配置。
+
+### 5. 启动主应用
+
+**初始化限制**：当前已提交的 `MultiAgentConfig` 在手动构造的 Orchestrator 上使用尚未初始化的消息总线，注册角色时会触发空引用错误。应先完成该初始化修复，再运行以下命令。页面截图所用的本地环境已应用修复，当前仓库提交尚未包含它。
+
+在已设置模型环境变量的终端，从仓库根目录执行：
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+macOS / Linux 使用 `sh ./mvnw spring-boot:run`。根目录 Wrapper 当前没有 Unix 可执行文件位，使用 `sh` 可直接运行脚本。
+
+主应用默认地址为 **http://localhost:8123/api**。启动会加载 Markdown 知识文档，并调用模型与 Embedding 服务初始化内存向量库，因此需要模型服务可达。
+
+API 文档：[Knife4j](http://localhost:8123/api/doc.html) · [Swagger UI](http://localhost:8123/api/swagger-ui.html)。
+
+### 6. 开始体验
+
+聊天、工具执行与多 Agent 编排示例需要在上述后端联调前提满足后体验。
+
+- **恋爱大师**：发送普通消息，再追问上一轮内容，观察同一会话的上下文。
+- **超级智能体**：先在 `tmp/file` 放入演示文件，再请求读取并概括内容，观察真实工具执行结果。
+- **Agent 协作中心**：提交“为 Java 登录接口提供需求分析、实现示例和审查建议”，观察任务分工与最终输出。
+- **中英文切换**：点击顶部按钮，再刷新页面，确认语言选择仍被保留。
+
+聊天、Embedding、搜索、图片生成以及基准任务会调用外部服务，使用前请准备相应服务配置与额度。
+
+## 主要 API
+
+下表路径包含主应用的 `/api` 前缀：
+
+| 方法 | 路径 | 用途 |
+| --- | --- | --- |
+| GET | `/api/ai/love_app/chat/sync` | 同步聊天；参数 `message`、`chatId` |
+| GET | `/api/ai/love_app/chat/sse` | 恋爱助手流式聊天；参数 `message`、`chatId` |
+| GET | `/api/ai/manus/chat` | 单 Agent 步骤流；参数 `message` |
+| POST | `/api/ai/multiagent/orchestrate` | 编排目标；JSON 请求体 `{"goal":"目标描述"}` |
+| GET | `/api/ai/multiagent/orchestrate/stream` | 编排 SSE；参数 `goal` |
+| GET | `/api/ai/multiagent/agents` | 注册 Agent 列表 |
+| GET | `/api/ai/multiagent/status` | 系统与观察指标 |
+| GET | `/api/ai/multiagent/events` | 最近事件；参数 `limit` |
+| GET | `/api/ai/multiagent/harness/{agentId}` | 运行单个 Agent 基准任务；参数 `task` |
+| GET | `/api/ai/multiagent/harness/benchmark` | 运行整组基准任务 |
+| GET | `/api/image/multipleConditions` | 图片生成；参数 `subject`、`environment`、`height`、`width`、`style` |
+
+`harness` 接口会实际执行 Agent 并调用模型，不是只读的历史报表查询。
 
 ## 项目结构
 
-```
+```text
 zxl-Ai-agent/
 ├── src/main/java/com/zxl/zxlaiagent/
-│   ├── advisor/          # 增强器
-│   ├── agent/            # Agent实现
-│   ├── annotation/       # 自定义注解
-│   ├── app/              # 应用层
-│   ├── chatmemory/       # 聊天记忆
-│   ├── config/           # 配置类
-│   ├── controller/       # 控制器
-│   ├── constant/         # 常量定义
-│   ├── rag/              # RAG相关
-│   └── tools/            # 工具集
-├── src/main/resources/
-│   ├── document/         # 文档库
-│   └── application.yml   # 配置文件
-├── zxl-Ai-agent-fronted/ # 前端项目
-└── zxl-image-search-mcp/ # MCP服务
+│   ├── agent/          # 单 Agent 生命周期、ReAct、工具执行、ZxlManus
+│   ├── app/            # LoveApp 聊天、记忆、RAG 与工具调用方法
+│   ├── advisor/        # 日志、记忆与检索相关增强
+│   ├── chatmemory/     # 文件会话记忆
+│   ├── controller/     # 聊天、编排与图片生成 HTTP 接口
+│   ├── multiagent/     # 多 Agent 角色、计划、消息总线、观察与基准
+│   ├── rag/            # 文档加载、转换、检索与向量库配置
+│   └── tools/          # 本地工具与 ToolCallback 注册
+├── src/main/resources/document/  # 恋爱知识库 Markdown 文档
+├── zxl-Ai-agent-fronted/         # Vue 前端
+│   └── src/i18n/                # 语言状态与中英文词典
+├── zxl-image-search-mcp/         # MCP 子模块指针，获取地址尚待补齐
+└── docs/images/                 # README 页面预览
 ```
+
+运行后，会话文件保存在 `chat-memory`，工具输出默认保存在 `tmp`。这两个目录已被 Git 忽略。
 
 ## 开发指南
 
-### 添加新工具
-1. 在 `tools` 包下创建工具类
-2. 使用 `@Tool` 注解标记工具方法
-3. 在 `ToolRegistration` 中注册工具
+### 新增工具
 
-### 添加新 Agent
-1. 继承 `BaseAgent` 或实现 `Agent` 接口
-2. 实现 `execute` 方法定义执行逻辑
-3. 在应用中注入并使用
+1. 在 `tools` 中定义 Java 方法，使用 `@Tool` 描述用途、`@ToolParam` 描述参数。
+2. 在 [ToolRegistration](src/main/java/com/zxl/zxlaiagent/tools/ToolRegistration.java) 中将工具转为 `ToolCallback` 并注册。
+3. 在 Agent 请求中提供工具定义，观察模型返回的工具名与参数，以及实际执行结果。
 
-### 扩展 RAG 能力
-1. 在 `rag/loader` 下添加文档加载器
-2. 在 `rag/transformer` 下添加文档转换器
-3. 配置向量存储和检索器
+以上步骤对应主应用的本地工具。MCP 服务端还需把工具对象导出为 `ToolCallbackProvider`，客户端再通过 SSE 连接发现并合并工具。
 
-## 构建与部署
+仅增加角色提示词中的能力说明，不会自动注册工具。
 
-### Maven 打包
-```bash
-mvn clean package -DskipTests
+### 理解与扩展 Agent
+
+单 Agent 按以下顺序阅读：
+
+1. [BaseAgent](src/main/java/com/zxl/zxlaiagent/agent/BaseAgent.java)：状态、消息列表、步骤循环与 SSE。
+2. [ReActAgent](src/main/java/com/zxl/zxlaiagent/agent/ReActAgent.java)：每一步的 `think / act`。
+3. [ToolCallAgent](src/main/java/com/zxl/zxlaiagent/agent/ToolCallAgent.java)：工具请求、执行、上下文回填。
+4. [ZxlManus](src/main/java/com/zxl/zxlaiagent/agent/ZxlManus.java)：具体模型、提示词、工具与步数配置。
+
+多 Agent 扩展：继承 [AbstractBaseAgent](src/main/java/com/zxl/zxlaiagent/multiagent/agents/AbstractBaseAgent.java)，实现 `processTask(Task)`，在 [MultiAgentConfig](src/main/java/com/zxl/zxlaiagent/multiagent/config/MultiAgentConfig.java) 中注册，并明确该角色接受的输入和输出。扩展编排时，同时考虑任务依赖、上游结果传递、失败传播、超时取消和并发限制。
+
+### 构建
+
+主应用打包，Windows PowerShell：
+
+```powershell
+.\mvnw.cmd package -DskipTests
 ```
 
-### Docker 部署
-项目包含 Dockerfile，可使用以下命令构建镜像：
+前端类型检查与生产构建：
+
 ```bash
-docker build -t zxl-ai-agent .
-docker run -p 8123:8123 zxl-ai-agent
+cd zxl-Ai-agent-fronted
+npm run build
 ```
 
-## 当前效果
+## 当前边界与后续方向
 
-![demo](img_1.png)
+- **后端启动**：补齐手动构造的 Orchestrator 与消息总线初始化关系，使新克隆的后端也能完成角色注册。
+- **MCP 模块来源**：为现有子模块指针补齐真实仓库地址与获取说明，或将服务源码按明确的仓库结构管理。
+- **上下文传递**：任务依赖已经用于调度，上游结果自动注入下游输入仍待完善。
+- **可观察性**：Agent Hub 的进度条目前为模拟进度；事件覆盖与耗时统计需要进一步校准。
+- **会话恢复**：后端按 chatId 保存记录；恋爱页面重新挂载会生成新 ID，历史会话恢复 UI 尚未提供。
+- **长期记忆**：`HierarchicalMemory` 有分层存储与关键词召回结构，尚未接入业务调用链。
+- **运行可靠性**：继续完善计划校验、失败状态、超时后的任务取消、重试、幂等和并发配额。
+- **质量评估**：在执行耗时与异常统计之外，为代码、研究结果和工具输出增加明确验收标准。
 
-## 许可证
+建议学习顺序：先完成一次普通模型调用和一个只读工具，再掌握 Agent 循环，随后进入多 Agent 编排与失败处理，最后接入 RAG、MCP 和质量评估。
 
-本项目为个人学习研究项目。
+## 常见问题
+
+**前端没有回复或显示离线**：确认主应用运行在 8123，并能访问状态接口；检查终端中的模型调用异常。`Connection reset` 等错误需要先检查模型服务网络连通性，SSE 连接正常建立也不代表上游模型请求成功。
+
+**启动时 MCP 连接失败**：确认图片搜索 MCP 服务先启动，端口为 8127，使用 SSE 配置，并与主应用连接地址一致。
+
+**启动时找不到模型或搜索凭据**：检查 `application-local.yml` 是否位于 `src/main/resources`，以及环境变量是否设置在实际启动应用的终端或 IDE 中。
+
+**切换页面后无法继续原会话**：当前页面会生成新 chatId；后续需要为前端补充会话选择与恢复功能。
+
+**终端与文件工具的运行范围**：这些工具会真实执行命令和读写文件。项目目前用于学习与开发实验，运行时应限定工具与工作目录，并在部署前完善权限和凭据配置。
 

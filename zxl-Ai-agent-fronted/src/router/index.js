@@ -1,14 +1,27 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
-import LoveMaster from '../views/LoveMaster.vue'
-import SuperAgent from '../views/SuperAgent.vue'
-import MultiAgent from '../views/MultiAgent.vue'
 
 const routes = [
   { path: '/', component: Home },
-  { path: '/love', component: LoveMaster },
-  { path: '/agent', component: SuperAgent },
-  { path: '/multiagent', component: MultiAgent }
+  {
+    path: '/multi-agent',
+    name: 'MultiAgent',
+    component: () => import('../views/MultiAgent.vue')
+  },
+  {
+    path: '/love-master',
+    name: 'LoveMaster',
+    component: () => import('../views/LoveMaster.vue')
+  },
+  {
+    path: '/super-agent',
+    name: 'SuperAgent',
+    component: () => import('../views/SuperAgent.vue')
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/'
+  }
 ]
 
 const router = createRouter({
@@ -16,4 +29,4 @@ const router = createRouter({
   routes
 })
 
-export default router 
+export default router

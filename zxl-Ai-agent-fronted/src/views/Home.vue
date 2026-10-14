@@ -1,212 +1,285 @@
+<script setup lang="ts">
+import { t } from '../i18n'
+
+const features = [
+  {
+    titleKey: 'home.cardHubTitle',
+    descKey: 'home.cardHubDescription',
+    path: '/multi-agent',
+    metricKey: 'home.metricAgents',
+    tag: 'core',
+    tagKey: 'home.tagCore',
+  },
+  {
+    titleKey: 'home.cardChatTitle',
+    descKey: 'home.cardChatDescription',
+    path: '/chat-room',
+    metricKey: 'home.metricRealtime',
+    tag: 'communication',
+    tagKey: 'home.tagCommunication',
+  },
+  {
+    titleKey: 'home.cardLoveTitle',
+    descKey: 'home.cardLoveDescription',
+    path: '/love-master',
+    metricKey: 'home.metricSentiment',
+    tag: 'empathy',
+    tagKey: 'home.tagEmpathy',
+  },
+  {
+    titleKey: 'home.cardSuperTitle',
+    descKey: 'home.cardSuperDescription',
+    path: '/super-agent',
+    metricKey: 'home.metricAutonomous',
+    tag: 'advanced',
+    tagKey: 'home.tagAdvanced',
+  },
+]
+</script>
+
 <template>
   <div class="home">
-    <div class="content glass">
-      <h1 class="title float">AI 应用中心</h1>
-      <div class="buttons">
-        <router-link to="/love">
-          <button class="btn glow">
-            <span class="icon">💕</span>
-            AI 恋爱大师
-          </button>
-        </router-link>
-        <router-link to="/agent">
-          <button class="btn glow">
-            <span class="icon">🤖</span>
-            AI 超级智能体
-          </button>
-        </router-link>
-        <router-link to="/multiagent">
-          <button class="btn glow" style="background: linear-gradient(45deg, #00b4d8, #0077b6);">
-            <span class="icon">🧠</span>
-            多智能体系统
-          </button>
-        </router-link>
+    <section class="hero">
+      <div class="hero-text">
+        <span class="hero-badge">{{ t('home.badge') }}</span>
+        <h1 class="hero-title">
+          <span class="hero-title-main">{{ t('home.titleMain') }}</span>
+          <span class="hero-title-sub">{{ t('home.titleSub') }}</span>
+        </h1>
+        <p class="hero-desc">
+          {{ t('home.description') }}
+        </p>
+        <div class="hero-actions">
+          <router-link to="/multi-agent" class="btn-primary">
+            <span>{{ t('home.explore') }}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </router-link>
+          <span class="hero-version">v2.0 &middot; {{ t('home.modules') }}</span>
+        </div>
       </div>
-    </div>
-    <div class="decoration">
-      <div class="circle circle-1"></div>
-      <div class="circle circle-2"></div>
-      <div class="circle circle-3"></div>
-    </div>
+      <div class="hero-visual">
+        <div class="hero-grid">
+          <div v-for="i in 9" :key="i" class="hero-cell" :style="{ '--i': i }"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cards">
+      <router-link
+        v-for="(item, idx) in features"
+        :key="item.path"
+        :to="item.path"
+        class="card"
+        :style="{ '--idx': idx }"
+      >
+        <div class="card-header">
+          <span class="card-tag" :class="`card-tag--${item.tag}`">{{ t(item.tagKey) }}</span>
+          <span class="card-metric">{{ t(item.metricKey) }}</span>
+        </div>
+        <h2 class="card-title">{{ t(item.titleKey) }}</h2>
+        <p class="card-desc">{{ t(item.descKey) }}</p>
+        <span class="card-arrow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </span>
+      </router-link>
+    </section>
   </div>
 </template>
 
 <style scoped>
 .home {
-  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  padding-top: 16px;
+}
+
+/* Hero Section */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 48px;
+  align-items: center;
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.hero-title {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  margin-bottom: 16px;
+}
+
+.hero-title-main {
+  font-family: var(--font-display);
+  font-size: clamp(44px, 6vw, 68px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+}
+
+.hero-title-sub {
+  font-family: var(--font-sans);
+  font-size: clamp(32px, 4.5vw, 52px);
+  font-weight: 300;
+  color: var(--color-text-tertiary);
+  letter-spacing: -0.02em;
+}
+
+.hero-desc {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--color-text-secondary);
+  max-width: 440px;
+  margin-bottom: 28px;
+}
+
+.hero-actions {
   display: flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-  padding: var(--padding-desktop);
+  gap: 16px;
 }
 
-.content {
-  width: 100%;
-  max-width: var(--max-width-desktop);
-  padding: 40px;
-  text-align: center;
-  position: relative;
-  z-index: 1;
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: var(--radius-md);
+  background: var(--color-text);
+  color: var(--color-text-inverse);
+  font-size: 14px;
+  font-weight: 600;
+  transition: all var(--transition-fast);
 }
 
-.title {
-  font-size: clamp(2rem, 5vw, 3rem);
-  margin-bottom: 40px;
-  background: linear-gradient(45deg, #ff6b6b, #ff69b4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+.btn-primary:hover {
+  background: var(--color-primary);
+  transform: translateY(-1px);
 }
 
-.buttons {
+.hero-version {
+  font-size: 12.5px;
+  color: var(--color-text-tertiary);
+}
+
+.hero-visual {
   display: flex;
-  gap: clamp(10px, 3vw, 20px);
   justify-content: center;
-  flex-wrap: wrap;
-  padding: 0 clamp(10px, 3vw, 20px);
 }
 
-.btn {
-  padding: clamp(12px, 2vw, 15px) clamp(20px, 4vw, 30px);
-  font-size: clamp(1rem, 2vw, 1.2rem);
-  border: none;
-  border-radius: 25px;
-  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-  color: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.hero-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  width: 240px;
+  height: 240px;
+}
+
+.hero-cell {
+  border-radius: var(--radius-sm);
+  background: var(--color-border-light);
+  transition: all var(--transition-base);
+}
+
+.hero-cell:hover {
+  background: var(--color-primary-light);
+  transform: scale(1.05);
+}
+
+/* Cards Grid */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 28px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  transition: all var(--transition-base);
+}
+
+.card:hover {
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.card-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-width: 200px;
+  justify-content: space-between;
+  margin-bottom: 16px;
 }
 
-.btn:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+.card-tag {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.icon {
-  font-size: 1.4em;
+.card-tag--core { background: var(--color-primary-light); color: var(--color-primary); }
+.card-tag--communication { background: var(--color-info-light); color: var(--color-info); }
+.card-tag--empathy { background: var(--color-accent-light); color: var(--color-accent); }
+.card-tag--advanced { background: var(--color-warning-light); color: var(--color-warning); }
+
+.card-metric {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
 }
 
-/* 装饰性圆圈 */
-.decoration {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+.card-title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
 }
 
-.circle {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.1;
+.card-desc {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  flex: 1;
 }
 
-.circle-1 {
-  width: 300px;
-  height: 300px;
-  background: var(--primary-color);
-  top: -150px;
-  right: -150px;
+.card-arrow {
+  margin-top: 16px;
+  color: var(--color-text-tertiary);
+  transition: all var(--transition-fast);
 }
 
-.circle-2 {
-  width: 200px;
-  height: 200px;
-  background: var(--secondary-color);
-  bottom: -100px;
-  left: -100px;
+.card:hover .card-arrow {
+  color: var(--color-primary);
+  transform: translateX(4px);
 }
 
-.circle-3 {
-  width: 150px;
-  height: 150px;
-  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+@media (max-width: 800px) {
+  .hero { grid-template-columns: 1fr; gap: 32px; }
+  .hero-visual { display: none; }
+  .cards { grid-template-columns: 1fr; }
 }
-
-/* 平板适配 */
-@media (max-width: 1024px) {
-  .home {
-    padding: var(--padding-tablet);
-  }
-  
-  .content {
-    padding: 30px;
-  }
-  
-  .circle-1 {
-    width: 250px;
-    height: 250px;
-  }
-  
-  .circle-2 {
-    width: 180px;
-    height: 180px;
-  }
-}
-
-/* 手机适配 */
-@media (max-width: 768px) {
-  .home {
-    padding: var(--padding-mobile);
-  }
-  
-  .content {
-    padding: 20px;
-  }
-  
-  .buttons {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .btn {
-    width: 100%;
-    max-width: 300px;
-    justify-content: center;
-  }
-  
-  .circle-1 {
-    width: 200px;
-    height: 200px;
-  }
-  
-  .circle-2 {
-    width: 150px;
-    height: 150px;
-  }
-  
-  .circle-3 {
-    width: 120px;
-    height: 120px;
-  }
-}
-
-/* 横屏模式适配 */
-@media (orientation: landscape) and (max-height: 600px) {
-  .home {
-    padding: 20px;
-  }
-  
-  .content {
-    padding: 20px;
-  }
-  
-  .title {
-    margin-bottom: 20px;
-  }
-  
-  .buttons {
-    flex-direction: row;
-  }
-}
-</style> 
+</style>
