@@ -9,7 +9,7 @@ class ImageSplitterToolTest {
     @Test
     void splitAndMergeImage() {
         ImageSplitterTool imageSplitterTool = new ImageSplitterTool();
-        String s = imageSplitterTool.splitAndMergeImage("D:\\idea_java_project\\Agent\\zxl-Ai-agent\\tmp\\download\\img.png", "test.png");
+        var s = imageSplitterTool.splitAndMergeImage("D:\\idea_java_project\\Agent\\zxl-Ai-agent\\tmp\\download\\img.png", "test.png");
         System.out.println(s);
     }
 }

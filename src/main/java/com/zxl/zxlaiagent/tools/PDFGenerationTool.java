@@ -1,50 +1,40 @@
 package com.zxl.zxlaiagent.tools;
-
-
-import cn.hutool.core.io.FileUtil;
-import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
 import com.itextpdf.layout.element.Paragraph;
 import com.zxl.zxlaiagent.contstant.FileConstant;
+import com.zxl.zxlaiagent.tools.model.ToolData.FileArtifact;
+import com.zxl.zxlaiagent.tools.model.ToolResult;
+import com.zxl.zxlaiagent.tools.support.ToolInputs;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
-
 import java.io.IOException;
-
+import java.nio.file.Files;
+import java.nio.file.Path;
 public class PDFGenerationTool {
-
-    @Tool(description = "Generate a PDF file with given content" ,returnDirect= true) //工具生成pdf立即返回，无需经过Ai润色
-    public String generatePDF(
+    private final Path directory;
+    public PDFGenerationTool() { this(Path.of(FileConstant.FILE_SAVE_DIR, "pdf")); }
+    PDFGenerationTool(Path directory) { this.directory = directory; }
+    @Tool(description = "Generate a PDF file with given content", returnDirect = true)
+    public ToolResult<FileArtifact> generatePDF(
             @ToolParam(description = "Name of the file to save the generated PDF") String fileName,
             @ToolParam(description = "Content to be included in the PDF") String content) {
-        String fileDir = FileConstant.FILE_SAVE_DIR + "/pdf";
-        String filePath = fileDir + "/" + fileName;
+        if (ToolInputs.blank(content)) return ToolResult.fail("MISSING_CONTENT", "请提供 PDF 内容");
         try {
-            // 创建目录
-            FileUtil.mkdir(fileDir);
-            // 创建 PdfWriter 和 PdfDocument 对象
-            try (PdfWriter writer = new PdfWriter(filePath);
-                 PdfDocument pdf = new PdfDocument(writer);
-                 Document document = new Document(pdf)) {
-                // 自定义字体（需要人工下载字体文件到特定目录）
-//                String fontPath = Paths.get("src/main/resources/static/fonts/simsun.ttf")
-//                        .toAbsolutePath().toString();
-//                PdfFont font = PdfFontFactory.createFont(fontPath,
-//                        PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
-                // 使用内置中文字体
-                PdfFont font = PdfFontFactory.createFont("STSongStd-Light", "UniGB-UCS2-H");
-                document.setFont(font);
-                // 创建段落
-                Paragraph paragraph = new Paragraph(content);
-                // 添加段落并关闭文档
-                document.add(paragraph);
+            Path path = ToolInputs.outputPath(directory, fileName);
+            Files.createDirectories(path.getParent());
+            try (var writer = new PdfWriter(path.toString()); var pdf = new PdfDocument(writer);
+                 var document = new Document(pdf)) {
+                document.setFont(PdfFontFactory.createFont("STSongStd-Light", "UniGB-UCS2-H"));
+                document.add(new Paragraph(content));
             }
-            return "PDF generated successfully to: " + filePath;
-        } catch (IOException e) {
-            return "Error generating PDF: " + e.getMessage();
+            return ToolResult.ok("PDF 生成成功", new FileArtifact(path.toString(), Files.size(path)));
+        } catch (IllegalArgumentException e) {
+            return ToolResult.fail("INVALID_FILE_NAME", e.getMessage());
+        } catch (IOException | com.itextpdf.io.exceptions.IOException e) {
+            return ToolResult.fail("PDF_GENERATION_FAILED", "PDF 生成失败，请检查字体和输出目录");
         }
     }
 }

@@ -13,7 +13,7 @@ public class TerminalOperationToolTest {
     public void testExecuteTerminalCommand() {
         TerminalOperationTool tool = new TerminalOperationTool();
         String command = "dir";
-        String result = tool.executeTerminalCommand(command);
+        var result = tool.executeTerminalCommand(command);
         assertNotNull(result);
     }
 }
