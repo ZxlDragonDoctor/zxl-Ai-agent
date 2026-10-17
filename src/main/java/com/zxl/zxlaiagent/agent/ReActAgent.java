@@ -1,8 +1,11 @@
 package com.zxl.zxlaiagent.agent;
 
 import com.zxl.zxlaiagent.agent.model.AgentState;
+import com.zxl.zxlaiagent.agent.model.AgentEndReason;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import java.util.concurrent.CancellationException;
 
 /**
  * ReAct (Reasoning and Acting) 模式的代理抽象类  
@@ -33,17 +36,26 @@ public abstract class ReActAgent extends BaseAgent {
      */  
     @Override  
     public String step() {  
-        try {  
+        boolean thinking = true;
+        try {
             boolean shouldAct = think();  
             if (!shouldAct) {
-                this.setState(AgentState.FINISHED);
-                return "思考完成 - 无需行动";  
+                finishRun(AgentEndReason.ANSWER_READY);
+                for (int i = getMessageList().size() - 1; i >= 0; i--) {
+                    if (getMessageList().get(i) instanceof AssistantMessage message && message.getText() != null) {
+                        return message.getText();
+                    }
+                }
+                return "执行完成";
             }  
-            return act();  
-        } catch (Exception e) {  
-            // 记录异常日志  
-            e.printStackTrace();  
-            return "步骤执行失败: " + e.getMessage();  
+            thinking = false;
+            return act();
+        } catch (CancellationException e) {
+            throw e;
+        } catch (Exception e) {
+            failRun(thinking ? AgentEndReason.MODEL_ERROR : AgentEndReason.TOOL_ERROR);
+            if (e instanceof RuntimeException runtime) throw runtime;
+            throw new IllegalStateException("步骤执行失败", e);
         }  
     }  
 }

@@ -22,8 +22,10 @@ public class ZxlManus extends ToolCallAgent {
         String NEXT_STEP_PROMPT = """  
                 Based on user needs, proactively select the most appropriate tool or combination of tools.  
                 For complex tasks, you can break down the problem and use different tools step by step to solve it.  
-                After using each tool, clearly explain the execution results and suggest the next steps.  
-                If you want to stop the interaction at any point, use the `terminate` tool/function call.  
+                Observe actual tool results before deciding the next action.
+                When the user's request is fulfilled, give the final answer in the user's language without further tool calls.
+                If the user explicitly asks to terminate with a tool, use `doTerminate` only after observing other tool results.
+                Do not call `doTerminate` in the same batch as another tool.
                 """;  
         this.setNextStepPrompt(NEXT_STEP_PROMPT);  
         this.setMaxSteps(20);  

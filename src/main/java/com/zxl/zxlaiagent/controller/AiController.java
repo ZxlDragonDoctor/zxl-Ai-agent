@@ -2,9 +2,11 @@ package com.zxl.zxlaiagent.controller;
 
 import com.zxl.zxlaiagent.agent.ZxlManus;
 import com.zxl.zxlaiagent.app.LoveApp;
+import com.zxl.zxlaiagent.agent.stream.DashScopeAgentStreamer;
 import jakarta.annotation.Resource;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +29,9 @@ public class AiController {
 
     @Resource
     private ChatModel dashscopeChatModel;
+
+    @Resource
+    private DashScopeAgentStreamer agentStreamer;
 
     @GetMapping("/love_app/chat/sync")
     public String doChatWithLoveAppSync(String message, String chatId) {
@@ -68,16 +73,19 @@ public class AiController {
         return emitter;
     }
 
-
+    @Value("${agent.manus.max-steps:20}")
+    private int manusMaxSteps;
     /**
      * 流式调用 Manus 超级智能体
      *
      * @param message
      * @return
      */
-    @GetMapping("/manus/chat")
+    @GetMapping(value = "/manus/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter doChatWithManus(String message) {
         ZxlManus zxlManus = new ZxlManus(allTools, dashscopeChatModel);
+        zxlManus.setStreamClient(agentStreamer);
+        zxlManus.setMaxSteps(manusMaxSteps);
         return zxlManus.runStream(message);
     }
 
