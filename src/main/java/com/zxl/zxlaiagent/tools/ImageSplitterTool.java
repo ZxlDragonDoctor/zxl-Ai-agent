@@ -24,13 +24,14 @@ public class ImageSplitterTool {
             BufferedImage image = ImageIO.read(Path.of(inputImagePath).toFile());
             if (image == null) return ToolResult.fail("INVALID_IMAGE", "输入文件不是支持的图片格式");
             if (image.getHeight() < 3) return ToolResult.fail("IMAGE_TOO_SMALL", "图片高度至少为 3 像素");
-            int segmentHeight = (image.getHeight() + 2) / 3;
-            BufferedImage merged = new BufferedImage(image.getWidth() * 3, segmentHeight, BufferedImage.TYPE_INT_ARGB);
+            int segmentHeight = image.getHeight() / 3;
+            int outputHeight = image.getHeight() - 2 * segmentHeight;
+            BufferedImage merged = new BufferedImage(image.getWidth() * 3, outputHeight, BufferedImage.TYPE_INT_ARGB);
             var graphics = merged.createGraphics();
             try {
                 for (int i = 0; i < 3; i++) {
                     int start = i * segmentHeight;
-                    int height = Math.min(segmentHeight, image.getHeight() - start);
+                    int height = i == 2 ? image.getHeight() - start : segmentHeight;
                     if (height > 0) graphics.drawImage(image.getSubimage(0, start, image.getWidth(), height),
                             i * image.getWidth(), 0, null);
                 }
