@@ -1,20 +1,19 @@
 package com.zxl.zxlaiagent.tools;
 
-import com.zxl.zxlaiagent.tools.*;
-import io.modelcontextprotocol.client.McpClient;
+import com.zxl.zxlaiagent.tools.support.StructuredMcpToolCallback;
 import io.modelcontextprotocol.client.McpSyncClient;
 import jakarta.annotation.Resource;
-import org.springframework.ai.mcp.SyncMcpToolCallback;
-import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
-import org.springframework.ai.model.function.FunctionCallback;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.ToolCallbacks;
-import org.springframework.ai.tool.method.MethodToolCallback;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.List;
 
 /**
@@ -26,8 +25,8 @@ public class ToolRegistration {
     @Value("${search-api.api-key}")
     private String searchApiKey;
 
-    @Resource
-    private List<McpSyncClient> mcpSyncClients;
+    @Autowired(required = false)
+    private List<McpSyncClient> mcpSyncClients = Collections.emptyList();
 
 
     @Bean
@@ -41,10 +40,13 @@ public class ToolRegistration {
         PDFGenerationTool pdfGenerationTool = new PDFGenerationTool();
         ImageSplitterTool imageSplitterTool = new ImageSplitterTool();
         TerminateTool terminateTool = new TerminateTool();
+        CurrentTimeTool currentTimeTool = new CurrentTimeTool();
 
         // 获取MCP客户端提供的工具回调
-        SyncMcpToolCallbackProvider syncMcpToolCallbackProvider = new SyncMcpToolCallbackProvider(mcpSyncClients);
-        ToolCallback[] toolCallbacksFromMcp = syncMcpToolCallbackProvider.getToolCallbacks();
+        ToolCallback[] toolCallbacksFromMcp = mcpSyncClients.stream()
+                .flatMap(client -> client.listTools().tools().stream()
+                        .map(tool -> (ToolCallback) new StructuredMcpToolCallback(client, tool)))
+                .toArray(ToolCallback[]::new);
 
         // 合并所有工具回调
         return mergeToolCallbacks(
@@ -56,7 +58,8 @@ public class ToolRegistration {
                         terminalOperationTool,
                         pdfGenerationTool,
                         imageSplitterTool,
-                        terminateTool
+                        terminateTool,
+                        currentTimeTool
                 ),
                 toolCallbacksFromMcp
         );
@@ -66,9 +69,15 @@ public class ToolRegistration {
      * 合并两个 ToolCallback 数组
      */
     private ToolCallback[] mergeToolCallbacks(ToolCallback[] array1, ToolCallback[] array2) {
-        ToolCallback[] mergedArray = new ToolCallback[array1.length + array2.length];
-        System.arraycopy(array1, 0, mergedArray, 0, array1.length);
-        System.arraycopy(array2, 0, mergedArray, array1.length, array2.length);
-        return mergedArray;
+        Map<String, ToolCallback> callbacks = new LinkedHashMap<>();
+        for (ToolCallback[] group : List.of(array1, array2)) {
+            for (ToolCallback callback : group) {
+                String name = callback.getToolDefinition().name();
+                if (callbacks.putIfAbsent(name, callback) != null) {
+                    throw new IllegalStateException("工具名重复: " + name);
+                }
+            }
+        }
+        return callbacks.values().toArray(ToolCallback[]::new);
     }
 }
