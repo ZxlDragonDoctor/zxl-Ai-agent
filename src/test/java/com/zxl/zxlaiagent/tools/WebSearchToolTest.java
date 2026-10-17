@@ -17,7 +17,7 @@ public class WebSearchToolTest {
     public void testSearchWeb() {
         WebSearchTool tool = new WebSearchTool(searchApiKey);
         String query = "程序员鱼皮编程导航 codefather.cn";
-        String result = tool.searchWeb(query);
+        var result = tool.searchWeb(query);
         assertNotNull(result);
     }
 }

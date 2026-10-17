@@ -13,7 +13,7 @@ public class WebScrapingToolTest {
     public void testScrapeWebPage() {
         WebScrapingTool tool = new WebScrapingTool();
         String url = "https://www.codefather.cn";
-        String result = tool.scrapeWebPage(url);
+        var result = tool.scrapeWebPage(url);
         assertNotNull(result);
     }
 }
