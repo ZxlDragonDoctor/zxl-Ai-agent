@@ -1,18 +1,20 @@
 <template>
   <div class="chat-room">
-    <div class="chat-history" ref="historyRef">
+    <div class="chat-history" ref="historyRef" @scroll="trackScroll">
       <div v-for="(msg, idx) in messages" :key="idx" :class="['msg', msg.role]">
         <div class="msg-avatar">
           <span v-if="msg.role === 'ai'">✦</span>
           <span v-else>●</span>
         </div>
-        <div class="msg-bubble" :class="msg.role">
+        <div class="msg-bubble" :class="[msg.role, { 'has-flow': msg.flow }]">
           <template v-if="msg.role === 'user'">
             {{ msg.content }}
           </template>
           <template v-else>
-            <span :class="{ 'typing-text': msg.isTyping }">{{ msg.displayContent }}</span>
-            <span v-if="msg.isTyping" class="cursor"></span>
+            <slot name="assistant-message" :message="msg">
+              <span :class="{ 'typing-text': msg.isTyping }">{{ msg.displayContent }}</span>
+              <span v-if="msg.isTyping" class="cursor"></span>
+            </slot>
           </template>
         </div>
       </div>
@@ -25,7 +27,7 @@
         :placeholder="t('chat.inputPlaceholder')"
         class="chat-input"
       />
-      <button @click="send" class="btn-send" :aria-label="t('chat.send')" :title="t('chat.send')">
+      <button @click="send" class="btn-send" :disabled="disabled" :aria-label="t('chat.send')" :title="t('chat.send')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>
@@ -33,32 +35,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { t } from '../i18n'
 
 const props = defineProps<{
   modelValue: string
   messages: any[]
   onSend: (msg: string) => void
+  disabled?: boolean
 }>()
 
 const emit = defineEmits(['update:modelValue'])
 const historyRef = ref<HTMLElement | null>(null)
+const stickToBottom = ref(true)
+
+function trackScroll() {
+  const element = historyRef.value
+  if (element) stickToBottom.value = element.scrollHeight - element.scrollTop - element.clientHeight < 96
+}
 
 function send() {
-  if (props.modelValue?.trim()) {
+  if (!props.disabled && props.modelValue?.trim()) {
+    stickToBottom.value = true
     props.onSend(props.modelValue)
     emit('update:modelValue', '')
   }
 }
 
-watch(() => props.messages.length, () => {
-  setTimeout(() => {
-    if (historyRef.value) {
-      historyRef.value.scrollTop = historyRef.value.scrollHeight
-    }
-  }, 50)
-})
+watch(() => props.messages, async () => {
+  await nextTick()
+  if (stickToBottom.value && historyRef.value) historyRef.value.scrollTop = historyRef.value.scrollHeight
+}, { deep: true, flush: 'post' })
 </script>
 
 <style scoped>
@@ -124,6 +131,14 @@ watch(() => props.messages.length, () => {
   color: var(--color-text);
   border: 1px solid var(--color-border-light);
 }
+
+.msg-bubble.has-flow {
+  width: min(680px, calc(100vw - 128px));
+  padding: 14px 18px;
+}
+
+.msg.ai:has(.has-flow) { max-width: 94%; }
+.btn-send:disabled { opacity: 0.45; cursor: wait; }
 
 .chat-bar {
   display: flex;
