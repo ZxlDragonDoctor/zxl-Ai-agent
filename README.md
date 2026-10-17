@@ -278,6 +278,16 @@ cd zxl-Ai-agent-fronted
 npm run build
 ```
 
+## 单 Agent 执行与工程课程
+
+超级智能体已支持真实思考与回答流、工具执行卡片、步数预算和明确的结束原因。所有本地工具使用 `success / code / message / data` 契约，MCP 适配保留协议错误；参数等业务失败可回填模型继续解释，未处理执行异常按失败终止。
+
+- [课程地图](docs/learning/README.md) 与 [28 课企业工程路线](docs/learning/enterprise-agent-roadmap.md)。
+- [第三课实现与验收](docs/learning/03-acceptance.md)：48 个专项用例、前端构建与真实模型页面记录。
+- [第四课：会话、历史存储与上下文恢复](docs/learning/04-conversations-and-memory.md)：下一阶段 6 项 Java 实践任务。
+
+![真实工具结果与结束原因](docs/images/lesson3-acceptance.jpg)
+
 ## 当前边界与后续方向
 
 - **后端启动**：补齐手动构造的 Orchestrator 与消息总线初始化关系，使新克隆的后端也能完成角色注册。
