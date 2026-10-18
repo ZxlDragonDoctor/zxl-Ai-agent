@@ -8,8 +8,6 @@ const currentYear = ref(new Date().getFullYear())
 const navItems = [
   { path: '/multi-agent', labelKey: 'nav.agentHub' },
   { path: '/chat-room', labelKey: 'nav.chatRoom' },
-  { path: '/love-master', labelKey: 'nav.loveMaster' },
-  { path: '/super-agent', labelKey: 'nav.superAgent' },
 ]
 
 onMounted(() => {

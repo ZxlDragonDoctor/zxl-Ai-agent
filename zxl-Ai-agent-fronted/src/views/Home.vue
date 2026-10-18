@@ -18,22 +18,6 @@ const features = [
     tag: 'communication',
     tagKey: 'home.tagCommunication',
   },
-  {
-    titleKey: 'home.cardLoveTitle',
-    descKey: 'home.cardLoveDescription',
-    path: '/love-master',
-    metricKey: 'home.metricSentiment',
-    tag: 'empathy',
-    tagKey: 'home.tagEmpathy',
-  },
-  {
-    titleKey: 'home.cardSuperTitle',
-    descKey: 'home.cardSuperDescription',
-    path: '/super-agent',
-    metricKey: 'home.metricAutonomous',
-    tag: 'advanced',
-    tagKey: 'home.tagAdvanced',
-  },
 ]
 </script>
 
