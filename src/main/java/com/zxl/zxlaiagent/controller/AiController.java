@@ -1,17 +1,16 @@
 package com.zxl.zxlaiagent.controller;
 
-import com.zxl.zxlaiagent.agent.ZxlManus;
 import com.zxl.zxlaiagent.app.LoveApp;
-import com.zxl.zxlaiagent.agent.stream.DashScopeAgentStreamer;
+import com.zxl.zxlaiagent.conversation.service.ManusConversationService;
 import jakarta.annotation.Resource;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.tool.ToolCallback;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 
@@ -25,13 +24,7 @@ public class AiController {
     private LoveApp loveApp;
 
     @Resource
-    private ToolCallback[] allTools;
-
-    @Resource
-    private ChatModel dashscopeChatModel;
-
-    @Resource
-    private DashScopeAgentStreamer agentStreamer;
+    private ManusConversationService manusConversations;
 
     @GetMapping("/love_app/chat/sync")
     public String doChatWithLoveAppSync(String message, String chatId) {
@@ -73,8 +66,6 @@ public class AiController {
         return emitter;
     }
 
-    @Value("${agent.manus.max-steps:20}")
-    private int manusMaxSteps;
     /**
      * 流式调用 Manus 超级智能体
      *
@@ -82,11 +73,16 @@ public class AiController {
      * @return
      */
     @GetMapping(value = "/manus/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter doChatWithManus(String message) {
-        ZxlManus zxlManus = new ZxlManus(allTools, dashscopeChatModel);
-        zxlManus.setStreamClient(agentStreamer);
-        zxlManus.setMaxSteps(manusMaxSteps);
-        return zxlManus.runStream(message);
+    public SseEmitter doChatWithManus(@RequestParam String message,
+                                    @RequestParam(required = false) String conversationId) {
+        return manusConversations.chat(message, conversationId);
+    }
+
+    public record ManusChatRequest(String message, String conversationId) {}
+
+    @PostMapping(value = "/manus/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter postChatWithManus(@RequestBody ManusChatRequest request) {
+        return manusConversations.chat(request.message(), request.conversationId());
     }
 
 }
