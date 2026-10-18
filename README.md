@@ -12,11 +12,11 @@
 
 以下为实际本地联调页面截图，后端运行环境包含尚未提交的初始化修复。图片存放在仓库内，点击可查看原图；仅克隆当前提交可以运行前端界面，在线 Agent 状态还依赖后端修复。
 
-| 首页 | Agent 协作中心 · 中文 |
+| 统一对话 · 历史恢复 | Agent 协作中心 · 中文 |
 | --- | --- |
-| [![中文首页：平台介绍与功能入口](docs/images/home-zh.jpg)](docs/images/home-zh.jpg) | [![中文 Agent 协作中心：任务编排、五个智能体、事件与系统指标](docs/images/agent-hub-zh.jpg)](docs/images/agent-hub-zh.jpg) |
-| **恋爱大师 · 输入界面** | **Agent Hub · English** |
-| [![恋爱大师输入界面：会话标识与消息输入框](docs/images/love-master-zh.jpg)](docs/images/love-master-zh.jpg) | [![英文 Agent Hub：任务编排、智能体状态与性能面板](docs/images/agent-hub-en.jpg)](docs/images/agent-hub-en.jpg) |
+| [![统一对话空间：会话列表、工具记录与刷新后的昵称恢复](docs/images/lesson4-memory-refresh.jpg)](docs/images/lesson4-memory-refresh.jpg) | [![中文 Agent 协作中心：任务编排、五个智能体、事件与系统指标](docs/images/agent-hub-zh.jpg)](docs/images/agent-hub-zh.jpg) |
+| **恋爱助手 · Agent 类型** | **Agent Hub · English** |
+| [![在统一对话页面选择恋爱助手类型并交流](docs/images/lesson4-agent-types.jpg)](docs/images/lesson4-agent-types.jpg) | [![英文 Agent Hub：任务编排、智能体状态与性能面板](docs/images/agent-hub-en.jpg)](docs/images/agent-hub-en.jpg) |
 
 顶部 `EN / 中文` 按钮切换界面语言，选择保存在浏览器中。用户消息、模型回复和后端事件代码保留原文。
 
@@ -24,15 +24,16 @@
 
 | 模块 | 已有实现 | 当前使用边界 |
 | --- | --- | --- |
-| 恋爱大师 `LoveApp` | 角色提示词、同步聊天、SSE 流式响应、文件会话记忆 | 前端默认调用普通流式聊天；RAG 与工具调用有独立后端方法 |
-| 超级智能体 `ZxlManus` | 模型选择工具、执行工具、结果回填、逐步执行与终止 | 每次请求创建一个 Agent，最多执行 20 步；SSE 返回步骤结果 |
+| 统一 Agent 对话 | 新建、搜索、切换、恢复、删除会话；可选择 Agent 类型；JSON 持久化 | `/chat-room`；通用工具助手与恋爱助手共用页面，每个会话固定自己的类型 |
+| 恋爱助手 | `LoveAssistantProvider` 提供角色型示例，使用统一历史与真实流式输出 | 新类型没有文件 / 命令工具；旧 `LoveApp` 接口、Kryo 记忆与 RAG 方法保留，旧数据未自动迁移 |
+| 通用工具助手 `ZxlManus` | 模型选择工具、结果回填、预算、明确结束原因、实际执行卡片 | 每次创建新的 Agent，默认 20 步；恢复最近 8 轮完整上下文，完整历史另存 |
 | 多 Agent 编排 | 规划、任务依赖、就绪任务并行执行、角色分派、结果汇总 | 当前以分工生成文本为主，可靠性机制仍在完善 |
 | 工具集 | 文件读写、网页搜索与抓取、资源下载、终端操作、PDF 生成、图片分割、终止 | 执行能力由注册的 `ToolCallback` 提供；外部服务需要有效配置 |
 | RAG | Markdown 加载、关键词元数据、Embedding、内存向量库、查询重写、本地与云端检索方法 | 默认聊天页面尚未接入 RAG 方法 |
 | MCP | MCP 客户端工具合并、独立图片搜索服务 | 图片搜索依赖 Pexels 服务与凭据 |
 | 图片生成 | 文本生成图片、主题/环境/尺寸/风格参数接口 | 后端接口已提供，前端尚无专门页面 |
 | 观察与基准 | Agent 状态、事件接口、执行报告、成功率与耗时分位数 | 前端每 5 秒刷新；基准成功率衡量执行是否报错，尚不评价答案质量 |
-| 前端 | 首页、Agent 协作中心、恋爱大师、超级智能体、聊天组件、中英文切换 | `/chat-room` 独立页面尚未实现，当前导航会重定向到首页 |
+| 前端 | 首页、Agent 协作中心、统一对话空间、聊天组件、中英文切换 | `/super-agent` 与 `/love-master` 重定向到统一对话空间，新增类型不需要新增页面 |
 
 多 Agent 实现定义了 **5 个角色**，它们可以使用同一个模型，通过不同提示词与任务输入分工。截图中的角色注册来自完成本地初始化修复后的运行环境：
 
@@ -52,7 +53,10 @@ CodeAgent 和 ResearchAgent 目前主要调用模型生成文本。能力描述�
 flowchart TD
     UI[Vue 前端] --> API[Spring Boot HTTP / SSE 接口]
     API --> Chat[LoveApp 对话助手]
-    API --> Single[ZxlManus 单 Agent 循环]
+    API --> Sessions[统一会话 / Agent 类型注册表]
+    Sessions --> Store[JSON 历史 / 完整 Run 窗口]
+    Sessions --> Single[新的 ZxlManus 单 Agent 循环]
+    Sessions --> Role[新的恋爱助手角色实例]
     API --> Multi[Orchestrator 多 Agent 编排]
     Chat --> Memory[文件会话记忆]
     Chat -. 独立 RAG 方法 .-> RAG[文档检索与向量库]
@@ -63,6 +67,7 @@ flowchart TD
     Multi --> Bus[消息总线与事件观察]
     Chat --> Model[DashScope 模型服务]
     Single --> Model
+    Role --> Model
     Workers --> Model
     Planner --> Model
     Supervisor --> Model
@@ -82,7 +87,7 @@ flowchart TD
 | 图片搜索 MCP 服务 | Java 21、Spring Boot 3.5.3 |
 | 前端 | Vue 3.5、Vue Router 4、TypeScript 5.8、Vite 7 |
 | 文档与工具 | Markdown Reader、Jsoup、Hutool、iText |
-| 会话持久化 / API 文档 | Kryo / Springdoc、Knife4j |
+| 会话持久化 / API 文档 | JSON 文件、旧 LoveApp 的 Kryo / Springdoc、Knife4j |
 
 本项目采用 Spring AI 的 M6 版本。学习或扩展时，应对照当前代码与依赖版本，官方最新文档中的部分 API 写法可能不同。
 
@@ -191,8 +196,8 @@ API 文档：[Knife4j](http://localhost:8123/api/doc.html) · [Swagger UI](http:
 
 聊天、工具执行与多 Agent 编排示例需要在上述后端联调前提满足后体验。
 
-- **恋爱大师**：发送普通消息，再追问上一轮内容，观察同一会话的上下文。
-- **超级智能体**：先在 `tmp/file` 放入演示文件，再请求读取并概括内容，观察真实工具执行结果。
+- **对话空间**：选择通用工具助手，告知一个演示昵称并查询上海时间；刷新或重启后继续追问昵称。新建另一会话观察上下文隔离。
+- **恋爱助手类型**：在同一页面左侧选择该类型并新建会话，观察角色提示词与连续交流；无需单独的恋爱页面。
 - **Agent 协作中心**：提交“为 Java 登录接口提供需求分析、实现示例和审查建议”，观察任务分工与最终输出。
 - **中英文切换**：点击顶部按钮，再刷新页面，确认语言选择仍被保留。
 
@@ -206,7 +211,11 @@ API 文档：[Knife4j](http://localhost:8123/api/doc.html) · [Swagger UI](http:
 | --- | --- | --- |
 | GET | `/api/ai/love_app/chat/sync` | 同步聊天；参数 `message`、`chatId` |
 | GET | `/api/ai/love_app/chat/sse` | 恋爱助手流式聊天；参数 `message`、`chatId` |
-| GET | `/api/ai/manus/chat` | 单 Agent 步骤流；参数 `message` |
+| GET | `/api/agent-types` | 已注册 Agent 类型的目录与中英文说明 |
+| POST / GET | `/api/conversations` | 创建（title、agentType）/ 列出会话 |
+| GET / DELETE | `/api/conversations/{id}` | 恢复 / 删除会话，执行中拒绝删除 |
+| POST | `/api/ai/agent/chat` | JSON：message、conversationId；SSE 携带 conversationId、runId |
+| GET / POST | `/api/ai/manus/chat` | 兼容旧入口；未传 conversationId 时新建默认工具会话 |
 | POST | `/api/ai/multiagent/orchestrate` | 编排目标；JSON 请求体 `{"goal":"目标描述"}` |
 | GET | `/api/ai/multiagent/orchestrate/stream` | 编排 SSE；参数 `goal` |
 | GET | `/api/ai/multiagent/agents` | 注册 Agent 列表 |
@@ -228,6 +237,7 @@ zxl-Ai-agent/
 │   ├── advisor/        # 日志、记忆与检索相关增强
 │   ├── chatmemory/     # 文件会话记忆
 │   ├── controller/     # 聊天、编排与图片生成 HTTP 接口
+│   ├── conversation/   # 类型注册、会话模型、仓储、窗口、管理与执行服务
 │   ├── multiagent/     # 多 Agent 角色、计划、消息总线、观察与基准
 │   ├── rag/            # 文档加载、转换、检索与向量库配置
 │   └── tools/          # 本地工具与 ToolCallback 注册
@@ -238,7 +248,9 @@ zxl-Ai-agent/
 └── docs/images/                 # README 页面预览
 ```
 
-运行后，会话文件保存在 `chat-memory`，工具输出默认保存在 `tmp`。这两个目录已被 Git 忽略。
+统一会话保存在 `runtime-data/conversations`；旧 LoveApp 记忆保存在 `chat-memory`，工具输出默认保存在 `tmp`。这些目录已被 Git 忽略。可用 `agent.conversation.storage-dir` 指定会话目录、`agent.conversation.context-runs` 调整窗口（默认 8，范围 1–50）。
+
+新增 Agent 类型：实现 `ConversationAgentProvider` 并注册为 Spring Bean，提供目录说明和创建新 Agent 的方法，前端会读取类型目录。详见[第四课实现记录](docs/learning/04-implementation.md)。
 
 ## 开发指南
 
@@ -284,7 +296,7 @@ npm run build
 
 - [课程地图](docs/learning/README.md) 与 [28 课企业工程路线](docs/learning/enterprise-agent-roadmap.md)。
 - [第三课实现与验收](docs/learning/03-acceptance.md)：48 个专项用例、前端构建与真实模型页面记录。
-- [第四课：会话、历史存储与上下文恢复](docs/learning/04-conversations-and-memory.md)：下一阶段 6 项 Java 实践任务。
+- [第四课：会话、历史存储与上下文恢复](docs/learning/04-conversations-and-memory.md)：6 项工程任务已实现；[实现记录与页面证据](docs/learning/04-implementation.md) 区分构建、实测与未覆盖范围。
 
 ![真实工具结果与结束原因](docs/images/lesson3-acceptance.jpg)
 
@@ -294,7 +306,7 @@ npm run build
 - **MCP 模块来源**：为现有子模块指针补齐真实仓库地址与获取说明，或将服务源码按明确的仓库结构管理。
 - **上下文传递**：任务依赖已经用于调度，上游结果自动注入下游输入仍待完善。
 - **可观察性**：Agent Hub 的进度条目前为模拟进度；事件覆盖与耗时统计需要进一步校准。
-- **会话恢复**：后端按 chatId 保存记录；恋爱页面重新挂载会生成新 ID，历史会话恢复 UI 尚未提供。
+- **会话存储边界**：统一对话已提供 JSON 历史恢复，当前为单进程、单用户演示；多实例、数据库、身份授权与大历史分页仍需扩展。
 - **长期记忆**：`HierarchicalMemory` 有分层存储与关键词召回结构，尚未接入业务调用链。
 - **运行可靠性**：继续完善计划校验、失败状态、超时后的任务取消、重试、幂等和并发配额。
 - **质量评估**：在执行耗时与异常统计之外，为代码、研究结果和工具输出增加明确验收标准。
@@ -309,7 +321,7 @@ npm run build
 
 **启动时找不到模型或搜索凭据**：检查 `application-local.yml` 是否位于 `src/main/resources`，以及环境变量是否设置在实际启动应用的终端或 IDE 中。
 
-**切换页面后无法继续原会话**：当前页面会生成新 chatId；后续需要为前端补充会话选择与恢复功能。
+**刷新后找不到原会话**：从对话空间左侧选择历史；确认仍连接同一个后端和存储目录。旧 LoveApp 的 Kryo 数据不会自动出现在新 JSON 会话列表中。
 
 **终端与文件工具的运行范围**：这些工具会真实执行命令和读写文件。项目目前用于学习与开发实验，运行时应限定工具与工作目录，并在部署前完善权限和凭据配置。
 

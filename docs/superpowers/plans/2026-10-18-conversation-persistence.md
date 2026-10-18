@@ -19,12 +19,12 @@
 
 ## 实施批次与提交
 
-- [ ] 1. 会话模型与仓储：新增 `conversation/model/*.java`、`repository/*.java`、异常类型；忽略 `/runtime-data/`，构建后提交。
-- [ ] 2. 管理接口与执行权：新增 `ConversationService`、`ConversationRunGuard`、`ConversationController`、限定范围的异常处理器；明确 400/404/409/500，构建后提交。
-- [ ] 3. Agent 生命周期：修改 `BaseAgent`、`ToolCallAgent` 与事件类型；完成监听独立于页面事件，保存失败明确标记，构建后提交。
-- [ ] 4. 上下文恢复与执行服务：新增消息转换、窗口策略、`ManusConversationService`；修改 `AiController` 委托执行，构建后提交。
-- [ ] 5. 前端会话体验：新增 API、类型、侧栏与恢复逻辑；将现有事件归并提取成可复用函数，补齐中英文和错误提示，生产构建后提交。
-- [ ] 6. 更新第四课、实现记录、课程地图和 README；记录构建结果与尚未验证的边界，按实际结果发布截图。
+- [x] 1. 会话模型与仓储：新增 `conversation/model/*.java`、`repository/*.java`、异常类型；忽略 `/runtime-data/`，构建后提交。
+- [x] 2. 管理接口与执行权：新增 `ConversationService`、`ConversationRunGuard`、`ConversationController`、限定范围的异常处理器；明确 400/404/409/500，构建后提交。
+- [x] 3. Agent 生命周期：修改 `BaseAgent`、`ToolCallAgent` 与事件类型；完成监听独立于页面事件，保存失败明确标记，构建后提交。
+- [x] 4. 上下文恢复与执行服务：新增消息转换、窗口策略、`AgentConversationService`；修改 `AiController` 委托执行，构建后提交。
+- [x] 5. 前端会话体验：新增 API、类型、侧栏与恢复逻辑；将现有事件归并提取成可复用函数，补齐中英文和错误提示，生产构建后提交。
+- [x] 6. 更新第四课、实现记录、课程地图和 README；记录构建结果与尚未验证的边界，按实际结果发布截图。
 - [ ] 7. 检查本次文件、细分提交、推送并核对远程 master。
 
 ## 构建与完成依据
