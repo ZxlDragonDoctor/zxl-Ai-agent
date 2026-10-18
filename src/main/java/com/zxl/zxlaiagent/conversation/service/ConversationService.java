@@ -41,7 +41,7 @@ public class ConversationService {
         for (ConversationSummary summary : repository.list()) {
             try {
                 Conversation conversation = get(summary.id());
-                summaries.add(conversation.summary(guard.isBusy(conversation.id())));
+                summaries.add(conversation.summary(snapshotBusy(conversation)));
             } catch (ConversationException e) {
                 if (e.getStatus() != HttpStatus.NOT_FOUND) throw e;
             }
@@ -70,7 +70,13 @@ public class ConversationService {
     }
 
     public ConversationDetail detail(UUID id) {
-        return ConversationDetail.of(get(id), guard.isBusy(id));
+        Conversation conversation = get(id);
+        return ConversationDetail.of(conversation, snapshotBusy(conversation));
+    }
+
+    private boolean snapshotBusy(Conversation conversation) {
+        // 快照读出 running 后工作线程可能刚好保存、释放；保持可轮询状态直到下一次读取收敛。
+        return guard.isBusy(conversation.id()) || conversation.runs().stream().anyMatch(run -> "running".equals(run.status()));
     }
 
     public void delete(UUID id) {
