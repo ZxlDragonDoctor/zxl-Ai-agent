@@ -47,6 +47,29 @@ mvn -q -Dtest=BaseAgentBudgetTest,AgentOutcomeTest,UnifiedToolContractTest,McpRe
 2. M6 工具异常处理器设置 alwaysThrow(true)，防止注解方法抛出的异常被转换成普通文本并继续正常结束。
 3. 长结果仅裁剪展示数据，再重新序列化，保证 success/code/message/data 仍可解析；模型上下文保留完整结果。
 
+## 2026-10-18 晚间复测
+
+应用户要求重新执行上述 5 个检查类：48 个用例全部通过，失败 0、错误 0、跳过 0。报告更新时间为 23:41，前端类型检查与生产构建也通过。
+
+在运行中的前端页面通过 qwen-plus 再次验证，记录如下。耗时为本次页面实际显示值，不代表性能基准或服务保证。
+
+| 场景 | 本次观测 | 结论 |
+| --- | --- | --- |
+| 首次查询上海时间 | 19.3 秒后连接模型服务失败；后端根因链为 SocketException: Connection reset，页面显示“模型调用失败”，未显示工具成功记录 | 错误展示符合预期；本次模型连接确实失败 |
+| 手动重试同一问题 | 7.8 秒完成两步执行，getCurrentTime 耗时 12 毫秒，返回 2026-10-18T23:43:08.5281069+08:00 | 正常调用与回答通过 |
+| 时区原样传 Mars/Olympus | 10.6 秒完成；卡片显示“调用失败”和 INVALID_ZONE，下一步模型说明无效时区，整体显示“回答已生成” | 业务失败与回答完成得到区分 |
+| 仅调用 doTerminate | 2.8 秒完成；真实返回 terminated=true，结束原因显示“已按请求终止” | 主动终止通过 |
+
+连接错误之后仅通过页面手动重试恢复成功，未修改网络配置或应用代码；尚不能从单次连接重置确定网络链路的最终原因，也未将恢复归因于某项代码修复。真实模型链路仍有外部网络依赖。
+
+![上海时间的真实结构化返回](../images/lesson3-time-query.jpg)
+
+![复测无效时区的错误卡片](../images/lesson3-tool-error-recheck.jpg)
+
+![复测主动终止的结果](../images/lesson3-termination-recheck.jpg)
+
+![首次模型连接失败的页面反馈](../images/lesson3-model-error.jpg)
+
 ## 覆盖边界
 
 - 本地 HTTP 服务验证了搜索、抓取和下载的实际 I/O；未把外部 SearchAPI 的账户、额度及可用性算成已经验收。
