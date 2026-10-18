@@ -41,3 +41,4 @@ chat-memory/
 *.kryo
 .DS_Store
 *.log
+/runtime-data/
