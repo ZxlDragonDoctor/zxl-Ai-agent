@@ -12,7 +12,19 @@ public record AgentExecutionEvent(
         String status,
         Long durationMs,
         long timestamp,
-        AgentEndReason endReason) {
+        AgentEndReason endReason,
+        String conversationId,
+        String runId) {
+
+    public AgentExecutionEvent(String type, int step, String callId, String toolName, String arguments,
+                               String content, String status, Long durationMs, long timestamp, AgentEndReason endReason) {
+        this(type, step, callId, toolName, arguments, content, status, durationMs, timestamp, endReason, null, null);
+    }
+
+    public AgentExecutionEvent withIdentity(String conversationId, String runId) {
+        return new AgentExecutionEvent(type, step, callId, toolName, arguments, content, status, durationMs,
+                timestamp, endReason, conversationId, runId);
+    }
 
     public static AgentExecutionEvent of(String type, int step, String content, String status) {
         return new AgentExecutionEvent(type, step, null, null, null, content, status, null,

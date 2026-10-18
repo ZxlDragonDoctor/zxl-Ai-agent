@@ -3,6 +3,7 @@ package com.zxl.zxlaiagent.agent;
 import com.zxl.zxlaiagent.agent.model.AgentState;
 import com.zxl.zxlaiagent.agent.model.AgentExecutionEvent;
 import com.zxl.zxlaiagent.agent.model.AgentEndReason;
+import com.zxl.zxlaiagent.agent.model.AgentRunSnapshot;
 import lombok.Data;
 import lombok.AccessLevel;
 import lombok.Setter;
@@ -55,9 +56,18 @@ public abstract class BaseAgent {
     private List<Message> messageList = new ArrayList<>();
 
     private transient Consumer<AgentExecutionEvent> executionListener;
+    private transient Consumer<AgentExecutionEvent> eventObserver;
+    private transient Consumer<AgentRunSnapshot> completionListener;
+    private String conversationId;
+    private String runId;
+    @Setter(AccessLevel.NONE)
+    private String failureMessage;
     private final AtomicBoolean streamClosed = new AtomicBoolean(false);
+    private final AtomicBoolean completionNotified = new AtomicBoolean(false);
 
     protected void emitExecutionEvent(AgentExecutionEvent event) {
+        event = event.withIdentity(conversationId, runId);
+        if (eventObserver != null) eventObserver.accept(event);
         if (executionListener == null) return;
         if (streamClosed.get()) throw new CancellationException("输出连接已关闭");
         executionListener.accept(event);
@@ -89,12 +99,16 @@ public abstract class BaseAgent {
             }
 
             completeRun();
+            notifyCompletion();
+            if (endReason == AgentEndReason.PERSISTENCE_ERROR) return "执行错误: " + failureMessage;
             if (endReason == AgentEndReason.STEP_LIMIT) {
                 results.add("Terminated: Reached max steps (" + maxSteps + ")");  
             }  
             return String.join("\n", results);  
         } catch (Exception e) {  
             failRun(AgentEndReason.EXECUTION_ERROR);
+            failureMessage = e.getMessage();
+            notifyCompletion();
             log.error("Error executing agent", e);  
             return "执行错误" + e.getMessage();  
         } finally {  
@@ -119,19 +133,10 @@ public abstract class BaseAgent {
                 throw new CancellationException("输出连接已关闭");
             }
         };
-        emitter.onTimeout(() -> {
-            streamClosed.set(true);
-            failRun(AgentEndReason.OUTPUT_INTERRUPTED);
-            cleanup();
-        });
-        emitter.onError(error -> {
-            streamClosed.set(true);
-            failRun(AgentEndReason.OUTPUT_INTERRUPTED);
-        });
-        emitter.onCompletion(() -> {
-            streamClosed.set(true);
-            cleanup();
-        });
+        // 输出关闭只发出信号。完成保存、资源清理与释放执行权均由工作线程负责。
+        emitter.onTimeout(() -> streamClosed.set(true));
+        emitter.onError(error -> streamClosed.set(true));
+        emitter.onCompletion(() -> streamClosed.set(true));
         CompletableFuture.runAsync(() -> {
             try {
                 startRun(userPrompt);
@@ -142,33 +147,56 @@ public abstract class BaseAgent {
                     String result = step();
                     emitExecutionEvent(AgentExecutionEvent.of("STEP_COMPLETED", currentStep, null, "completed"));
                     // Keep the original text events for existing SSE clients.
-                    emitter.send("Step " + currentStep + ": " + result);
+                    try { emitter.send("Step " + currentStep + ": " + result); }
+                    catch (IOException e) { throw new CancellationException("输出连接已关闭"); }
                 }
-                if (streamClosed.get()) return;
-                completeRun();
-                emitExecutionEvent(AgentExecutionEvent.terminal(currentStep,
-                        endReason == AgentEndReason.STEP_LIMIT ? "达到最大执行步数，执行已停止" : null, endReason));
-                emitter.complete();
+                if (streamClosed.get()) failRun(AgentEndReason.OUTPUT_INTERRUPTED);
+                else completeRun();
             } catch (CancellationException e) {
                 streamClosed.set(true);
                 failRun(AgentEndReason.OUTPUT_INTERRUPTED);
+                failureMessage = "输出接收已停止，请核对工具实际执行结果";
             } catch (Exception e) {
                 failRun(AgentEndReason.EXECUTION_ERROR);
+                failureMessage = e.getMessage();
                 log.error("执行智能体失败", e);
+            } finally {
+                // 保存成功以后才发送终态，防止页面先宣布成功、实际历史却未落盘。
+                notifyCompletion();
                 if (!streamClosed.get()) {
                     try {
-                        emitExecutionEvent(AgentExecutionEvent.terminal(currentStep, e.getMessage(), endReason));
-                        emitter.send("执行错误: " + e.getMessage());
+                        String detail = endReason == AgentEndReason.STEP_LIMIT
+                                ? "达到最大执行步数，执行已停止" : failureMessage;
+                        emitExecutionEvent(AgentExecutionEvent.terminal(currentStep, detail, endReason));
                         emitter.complete();
                     } catch (Exception sendFailure) {
                         streamClosed.set(true);
                     }
                 }
-            } finally {
                 cleanup();
             }
         });
         return emitter;
+    }
+
+    private void notifyCompletion() {
+        if (!completionNotified.compareAndSet(false, true)) return;
+        if (endReason == null) failRun(AgentEndReason.EXECUTION_ERROR);
+        if (completionListener == null) return;
+        try {
+            completionListener.accept(new AgentRunSnapshot(messageList, endReason, failureMessage));
+        } catch (RuntimeException e) {
+            endReason = AgentEndReason.PERSISTENCE_ERROR;
+            state = AgentState.ERROR;
+            failureMessage = "会话保存失败，本次结果未确认持久化；请检查服务端存储后刷新";
+            log.error("Agent completion persistence failed", e);
+        }
+    }
+
+    /** 仅新建且未运行的 Agent 可以载入历史，不能重置已结束实例继续执行。 */
+    public synchronized void restoreMessages(List<Message> history) {
+        if (state != AgentState.IDLE) throw new IllegalStateException("只能向新 Agent 恢复历史");
+        messageList = new ArrayList<>(history);
     }
 
 

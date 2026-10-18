@@ -15,6 +15,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -76,11 +77,11 @@ public class ToolCallAgent extends ReActAgent {
      */
     @Override
     public boolean think() {
+        // 本轮执行提示仅用于 Prompt，不伪装成用户消息写入可恢复历史。
+        List<Message> messageList = new ArrayList<>(getMessageList());
         if (getNextStepPrompt() != null && !getNextStepPrompt().isEmpty()) {
-            UserMessage userMessage = new UserMessage(getNextStepPrompt());
-            getMessageList().add(userMessage);
+            messageList.add(new SystemMessage(getNextStepPrompt()));
         }
-        List<Message> messageList = getMessageList();
         Prompt prompt = new Prompt(messageList, chatOptions);
         try {
             // 获取带工具选项的响应
@@ -175,6 +176,7 @@ public class ToolCallAgent extends ReActAgent {
                 var value = ToolResults.read(response.responseData());
                 return value.path("message").asText() + "\n" + value.path("data").toPrettyString();
             }).collect(Collectors.joining("\n\n"));
+            getMessageList().add(new AssistantMessage(direct));
             emitExecutionEvent(AgentExecutionEvent.of("ANSWER_DELTA", getCurrentStep(), direct, "running"));
             finishRun(AgentEndReason.TOOL_RETURNED);
         }
