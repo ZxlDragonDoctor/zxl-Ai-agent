@@ -2,6 +2,10 @@
 
 业务目标：用户刷新页面或重启服务后仍能继续原会话；新建会话后上下文隔离。前端由助手负责，主要学习与实现 Java 后端。
 
+2026-10-19 工程实现已落地：[实现记录、代码地图与页面证据](04-implementation.md)。本轮完成前后端构建与核心页面观察，未新增或运行自动测试；故障与并发场景的覆盖边界在记录中单列。
+
+用户补充的结构要求：对话页面统一，恋爱助手作为一种 Agent 类型提供测试示例。`ConversationAgentProvider` 注册类型，`Conversation.agentType` 在创建时固定；新增类型复用相同的会话、存储与页面。
+
 建议一次完成下面 6 项关联任务，预留 2–3 小时，集中检查后再接页面。第三课解决了一次执行怎样结束，本课解决多次执行怎样属于同一个会话。
 
 ## 1. 先理解四种不同的数据
@@ -19,12 +23,14 @@
 
 ## 2. 从当前代码定位问题
 
+下面保留实施前的问题背景；AiController、BaseAgent 与 ToolCallAgent 已通过会话服务、独立完成监听和 Prompt 临时指令调整。旧 LoveApp 的 Kryo 实现保留作为对照。
+
 - [AiController](../../src/main/java/com/zxl/zxlaiagent/controller/AiController.java)：超级智能体接口只有 message，每次 new ZxlManus。
 - [BaseAgent](../../src/main/java/com/zxl/zxlaiagent/agent/BaseAgent.java)：messageList 保存本次上下文，startRun 会追加当前用户消息。
 - [ToolCallAgent](../../src/main/java/com/zxl/zxlaiagent/agent/ToolCallAgent.java)：助手工具调用与工具响应通过 conversationHistory 回填。
 - [FileChatBasedMemory](../../src/main/java/com/zxl/zxlaiagent/chatmemory/FileChatBasedMemory.java)：恋爱助手已有 Kryo 文件记忆；静态 Kryo 的并发访问、失败吞掉和记录恢复边界需要识别。
-- [LoveMaster](../../zxl-Ai-agent-fronted/src/views/LoveMaster.vue)：onMounted 生成新的 chatId，已有后端记忆也可能因会话 ID 改变而无法找到。
-- [SuperAgent](../../zxl-Ai-agent-fronted/src/views/SuperAgent.vue)：目前页面没有历史会话选择与恢复入口。
+- 旧 LoveMaster 页面曾在 onMounted 生成新的 chatId；该独立页面已移除，旧路径重定向到统一页面。
+- [AgentChat](../../zxl-Ai-agent-fronted/src/views/AgentChat.vue)：现在统一提供 Agent 类型选择、会话列表和恢复。
 
 本课先给超级智能体建立明确的会话仓储和服务边界。已有恋爱助手作为对照，逐步统一；先完成一个入口的完整链路。
 
@@ -36,11 +42,11 @@
 
 | 对象 | 必需字段 |
 | --- | --- |
-| Conversation | id、title、createdAt、updatedAt、version、messages、runs |
-| ConversationSummary | id、title、updatedAt、messageCount |
+| Conversation | id、agentType、title、createdAt、updatedAt、version、messages、runs |
+| ConversationSummary | id、agentType、title、updatedAt、messageCount、busy |
 | MessageRecord | messageId、runId、role、content、toolCalls、toolCallId、toolName、createdAt |
 | ToolCallRecord | id、name、arguments |
-| RunRecord | runId、startedAt、finishedAt、endReason、status |
+| RunRecord | runId、startedAt、finishedAt、endReason、status；实现补充 answer、error、events 用于页面恢复 |
 
 `role` 本课限定为 user、assistant、tool。普通助手回答没有 toolCalls；助手调用工具时保存调用列表，每条 tool 消息保存对应的 toolCallId。时间使用 Instant，ID 由服务端生成 UUID。
 
@@ -76,27 +82,28 @@ public interface ConversationRepository {
 
 | HTTP 接口 | 用途 | 预期 |
 | --- | --- | --- |
-| `POST /api/conversations` | 创建会话，接收 title | 返回服务端生成的 ID |
+| `GET /api/agent-types` | 获取可用 Agent 类型 | 返回注册表中的中英文目录 |
+| `POST /api/conversations` | 创建会话，接收 title、agentType | 返回服务端生成的 ID 与固定类型 |
 | `GET /api/conversations` | 列出会话摘要 | 按更新时间倒序 |
 | `GET /api/conversations/{id}` | 恢复会话详情 | 不存在时 404 |
 | `DELETE /api/conversations/{id}` | 删除明确指定的演示会话 | 同时清除对应历史 |
 
-修改现有 `/api/ai/manus/chat`，增加 conversationId 参数。兼容旧调用时，可以由服务端新建会话，但必须把实际 ID 告知前端；不能前端显示一个 ID、后端实际另存一个。
+统一请求使用 `POST /api/ai/agent/chat`，接收 message、conversationId；兼容保留 `/api/ai/manus/chat`。旧调用未传 ID 时由服务端新建默认工具会话，并把实际 ID 告知前端，不能前端显示一个 ID、后端实际另存一个。
 
 建议用最初的命名 SSE 事件携带 conversationId 与 runId，前端持久保存当前会话 ID。前端相关类型和请求由助手衔接。
 
 ## 6. 任务四：恢复模型上下文并保存新结果
 
-新增 `ManusConversationService`，让请求按以下顺序执行：
+新增 `AgentConversationService`，让请求按以下顺序执行：
 
 ```text
 查找会话
 → 获得该会话的执行权
-→ 创建新的 runId 和 ZxlManus
+→ 创建新的 runId，由类型 Provider 创建新的 Agent
 → 将已保存记录转换成 Spring AI 消息
 → 设置预算、工具和流式适配器
 → runStream 追加本次用户消息并执行
-→ 终态时保存本次完整消息与结束原因
+→ 终态时保存本次消息与结束原因，再向页面发送终态
 → 释放该会话执行权
 ```
 
@@ -161,4 +168,4 @@ Java 实现完成后统一反馈，前端由助手接入会话列表、新建、
 
 按职责细分 Git 提交：会话模型与仓储、管理接口、Agent 上下文恢复、并发与窗口、前端衔接、验收文档。每批提交说明改动与验证结果；完成后统一推送。
 
-下一步：先连续实现任务一至三，接口与仓储形成一个可运行单元，再实现任务四至五；不用每创建一个类就停下来确认。
+工程已完成后，建议沿[实现记录中的代码地图](04-implementation.md)读一次调用链，再独立新增一种简单角色类型，复用现有会话与页面。第五课继续进入 Plan / Task 校验与依赖数据流。

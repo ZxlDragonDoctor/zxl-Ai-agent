@@ -51,7 +51,7 @@
 | [ToolCallAgent](../../src/main/java/com/zxl/zxlaiagent/agent/ToolCallAgent.java) | 区分模型错误、工具异常、终止工具，回填结果 |
 | [AgentExecutionEvent](../../src/main/java/com/zxl/zxlaiagent/agent/model/AgentExecutionEvent.java) | SSE 事件字段与工厂方法 |
 | [CurrentTimeTool](../../src/main/java/com/zxl/zxlaiagent/tools/CurrentTimeTool.java) | 将工具返回值改为结构化结果 |
-| [SuperAgent](../../zxl-Ai-agent-fronted/src/views/SuperAgent.vue)、[AgentExecutionFlow](../../zxl-Ai-agent-fronted/src/components/AgentExecutionFlow.vue) | 保存并展示事件、参数、结果和终态 |
+| [AgentChat](../../zxl-Ai-agent-fronted/src/views/AgentChat.vue)、[AgentExecutionFlow](../../zxl-Ai-agent-fronted/src/components/AgentExecutionFlow.vue) | 第四课统一了页面；仍保存并展示事件、参数、结果和终态 |
 
 ## 3. 任务一：补齐执行预算的边界
 
