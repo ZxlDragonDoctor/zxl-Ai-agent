@@ -6,6 +6,8 @@
 
 ## 数据与执行边界
 
+2026-10-19 用户补充：恋爱助手属于 Agent 类型，不再单独维护一个页面。统一对话入口，通过 Spring Provider 注册表提供通用工具助手与恋爱助手；会话固定 agentType，旧前端入口重定向。旧 LoveApp 接口与 Kryo 数据保持兼容，不宣称已迁移到新会话。
+
 - `conversation/model`：显式 JSON DTO，消息、工具调用和 Run 分开记录，不序列化 Spring AI 抽象消息。
 - `conversation/repository`：每会话一个 UUID 文件，临时文件原子替换，版本比较防止旧快照覆盖；损坏、缺失与 I/O 错误分开返回。
 - `conversation/service`：管理服务、按会话的执行权、完整消息组窗口、Spring AI 转换和 Manus 执行服务。

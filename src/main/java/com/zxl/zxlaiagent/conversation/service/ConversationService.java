@@ -4,6 +4,7 @@ import com.zxl.zxlaiagent.agent.model.AgentEndReason;
 import com.zxl.zxlaiagent.conversation.ConversationException;
 import com.zxl.zxlaiagent.conversation.model.*;
 import com.zxl.zxlaiagent.conversation.repository.ConversationRepository;
+import com.zxl.zxlaiagent.conversation.agent.ConversationAgentRegistry;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import java.util.ArrayList;
@@ -15,16 +16,24 @@ import java.util.UUID;
 public class ConversationService {
     private final ConversationRepository repository;
     private final ConversationRunGuard guard;
+    private final ConversationAgentRegistry agents;
 
-    public ConversationService(ConversationRepository repository, ConversationRunGuard guard) {
+    public ConversationService(ConversationRepository repository, ConversationRunGuard guard, ConversationAgentRegistry agents) {
         this.repository = repository;
         this.guard = guard;
+        this.agents = agents;
     }
 
     public Conversation create(String title) {
+        return create(title, "manus");
+    }
+
+    public Conversation create(String title, String agentType) {
+        String type = agentType == null ? "manus" : agentType;
+        agents.require(type);
         String normalized = title == null || title.isBlank() ? "新会话" : title.strip();
         if (normalized.length() > 100) throw badRequest("会话标题不能超过 100 个字符");
-        return repository.create(normalized);
+        return repository.create(normalized, type);
     }
 
     public List<ConversationSummary> list() {

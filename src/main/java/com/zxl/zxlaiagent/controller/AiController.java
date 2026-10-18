@@ -1,7 +1,7 @@
 package com.zxl.zxlaiagent.controller;
 
 import com.zxl.zxlaiagent.app.LoveApp;
-import com.zxl.zxlaiagent.conversation.service.ManusConversationService;
+import com.zxl.zxlaiagent.conversation.service.AgentConversationService;
 import jakarta.annotation.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
@@ -24,7 +24,7 @@ public class AiController {
     private LoveApp loveApp;
 
     @Resource
-    private ManusConversationService manusConversations;
+    private AgentConversationService agentConversations;
 
     @GetMapping("/love_app/chat/sync")
     public String doChatWithLoveAppSync(String message, String chatId) {
@@ -72,17 +72,17 @@ public class AiController {
      * @param message
      * @return
      */
-    @GetMapping(value = "/manus/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @GetMapping(value = {"/manus/chat", "/agent/chat"}, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter doChatWithManus(@RequestParam String message,
                                     @RequestParam(required = false) String conversationId) {
-        return manusConversations.chat(message, conversationId);
+        return agentConversations.chat(message, conversationId);
     }
 
     public record ManusChatRequest(String message, String conversationId) {}
 
-    @PostMapping(value = "/manus/chat", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PostMapping(value = {"/manus/chat", "/agent/chat"}, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter postChatWithManus(@RequestBody ManusChatRequest request) {
-        return manusConversations.chat(request.message(), request.conversationId());
+        return agentConversations.chat(request.message(), request.conversationId());
     }
 
 }

@@ -13,12 +13,12 @@ public class ConversationController {
     private final ConversationService service;
     public ConversationController(ConversationService service) { this.service = service; }
 
-    public record CreateRequest(String title) {}
+    public record CreateRequest(String title, String agentType) {}
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ConversationDetail create(@RequestBody(required = false) CreateRequest body) {
-        var conversation = service.create(body == null ? null : body.title());
+        var conversation = service.create(body == null ? null : body.title(), body == null ? null : body.agentType());
         return service.detail(conversation.id());
     }
 

@@ -3,6 +3,7 @@ package com.zxl.zxlaiagent.conversation.service;
 import com.zxl.zxlaiagent.agent.model.*;
 import com.zxl.zxlaiagent.conversation.model.*;
 import com.zxl.zxlaiagent.conversation.repository.ConversationRepository;
+import com.zxl.zxlaiagent.conversation.agent.ConversationAgentRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -12,23 +13,23 @@ import java.util.*;
 /** 会话协调器负责仓储和执行权；Agent 仍只负责一次执行。 */
 @Slf4j
 @Service
-public class ManusConversationService {
+public class AgentConversationService {
     private final ConversationService conversations;
     private final ConversationRepository repository;
     private final ConversationRunGuard guard;
     private final ConversationContextWindow window;
     private final ConversationMessageMapper mapper;
-    private final ManusAgentFactory factory;
+    private final ConversationAgentRegistry agents;
 
-    public ManusConversationService(ConversationService conversations, ConversationRepository repository,
+    public AgentConversationService(ConversationService conversations, ConversationRepository repository,
             ConversationRunGuard guard, ConversationContextWindow window,
-            ConversationMessageMapper mapper, ManusAgentFactory factory) {
+            ConversationMessageMapper mapper, ConversationAgentRegistry agents) {
         this.conversations = conversations;
         this.repository = repository;
         this.guard = guard;
         this.window = window;
         this.mapper = mapper;
-        this.factory = factory;
+        this.agents = agents;
     }
 
     public SseEmitter chat(String message, String conversationId) {
@@ -44,7 +45,7 @@ public class ManusConversationService {
         try {
             Conversation previous = conversations.require(id);
             var history = window.restore(previous);
-            var agent = factory.create();
+            var agent = agents.require(previous.agentType()).create();
             agent.restoreMessages(history);
             agent.setConversationId(id.toString());
             agent.setRunId(runId.toString());

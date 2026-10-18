@@ -29,10 +29,10 @@ public class FileConversationRepository implements ConversationRepository {
     }
 
     @Override
-    public Conversation create(String title) {
+    public Conversation create(String title, String agentType) {
         UUID id = UUID.randomUUID();
         Instant now = Instant.now();
-        Conversation conversation = new Conversation(id, title, now, now, 0, List.of(), List.of());
+        Conversation conversation = new Conversation(id, title, now, now, 0, List.of(), List.of(), agentType);
         synchronized (lock(id)) { write(conversation); }
         return conversation;
     }
@@ -85,7 +85,7 @@ public class FileConversationRepository implements ConversationRepository {
                 throw new ConversationException("CONVERSATION_CONFLICT", "会话已更新，请重新读取后再操作", HttpStatus.CONFLICT);
             }
             write(new Conversation(conversation.id(), conversation.title(), conversation.createdAt(),
-                    conversation.updatedAt(), conversation.version() + 1, conversation.messages(), conversation.runs()));
+                    conversation.updatedAt(), conversation.version() + 1, conversation.messages(), conversation.runs(), conversation.agentType()));
         }
     }
 
