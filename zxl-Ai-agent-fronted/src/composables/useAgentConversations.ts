@@ -40,6 +40,15 @@ export function useAgentConversations() {
   function showError(cause: unknown) {
     error.value = errorText(cause instanceof ConversationApiError ? cause.code : 'REQUEST_FAILED')
   }
+  function forgetMissing() {
+    ++generation
+    loading.value = false
+    selectedId.value = null
+    messages.value = []
+    busy.value = false
+    remember(null)
+    void refreshList().catch(showError)
+  }
   function agentName(id: string) {
     const agent = agents.value.find(item => item.id === id)
     return agent ? (locale.value === 'en' ? agent.nameEn : agent.name) : id
@@ -63,7 +72,12 @@ export function useAgentConversations() {
     try {
       const detail = await getConversation(id)
       if (token === generation && !disposed) { applyDetail(detail); input.value = '' }
-    } catch (cause) { if (token === generation && !disposed) showError(cause) }
+    } catch (cause) {
+      if (token === generation && !disposed) {
+        showError(cause)
+        if (cause instanceof ConversationApiError && cause.code === 'CONVERSATION_NOT_FOUND' && selectedId.value === id) forgetMissing()
+      }
+    }
     finally { if (token === generation && !disposed) loading.value = false }
   }
   async function newConversation() {
@@ -77,25 +91,27 @@ export function useAgentConversations() {
       applyDetail(detail)
       input.value = ''
       await refreshList()
-    } catch (cause) { if (!disposed) showError(cause) }
-    finally { if (!disposed) loading.value = false }
+      return detail
+    } catch (cause) { if (!disposed && token === generation) showError(cause) }
+    finally { if (!disposed && token === generation) loading.value = false }
   }
   async function removeConversation(id: string) {
     if (working.value) return
+    const token = ++generation
     loading.value = true
     error.value = ''
     try {
       await deleteConversation(id)
-      await refreshList()
+      if (disposed || token !== generation) return
       if (selectedId.value === id) {
-        ++generation
         selectedId.value = null
         messages.value = []
         busy.value = false
         remember(null)
       }
-    } catch (cause) { if (!disposed) showError(cause) }
-    finally { if (!disposed) loading.value = false }
+      await refreshList()
+    } catch (cause) { if (!disposed && token === generation) showError(cause) }
+    finally { if (!disposed && token === generation) loading.value = false }
   }
   async function pollCurrent() {
     if (polling || running.value || loading.value || !busy.value || !selectedId.value) return
@@ -108,7 +124,12 @@ export function useAgentConversations() {
         applyDetail(detail)
         if (!detail.busy) await refreshList()
       }
-    } catch (cause) { if (!disposed && token === generation) showError(cause) }
+    } catch (cause) {
+      if (!disposed && token === generation) {
+        showError(cause)
+        if (cause instanceof ConversationApiError && cause.code === 'CONVERSATION_NOT_FOUND') forgetMissing()
+      }
+    }
     finally { polling = false }
   }
   watch(busy, value => {
@@ -117,12 +138,15 @@ export function useAgentConversations() {
   })
 
   async function sendMessage(message: string) {
-    if (!message.trim() || working.value || busy.value) return
-    if (!selectedId.value) {
-      await newConversation()
-      if (!selectedId.value) { input.value = message; return }
+    if (disposed || !message.trim() || working.value || busy.value) return
+    let id = selectedId.value
+    if (!id) {
+      const expectedGeneration = generation + 1
+      const created = await newConversation()
+      if (disposed || generation !== expectedGeneration) return
+      if (!created || selectedId.value !== created.id) { input.value = message; return }
+      id = created.id
     }
-    const id = selectedId.value!
     error.value = ''
     messages.value.push({ role: 'user', content: message })
     messages.value.push({ role: 'ai', content: '', isTyping: true,
@@ -148,13 +172,19 @@ export function useAgentConversations() {
     }
     connection = chatWithAgentSse(message, () => {}, reason => {
       if (activeReply !== reply || disposed) return
-      const message = reason === 'invalid_event' ? t('flow.invalidEvent')
+      const detail = reason === 'invalid_event' ? t('flow.invalidEvent')
         : reason === 'connection_interrupted' ? t('flow.connectionError') : errorText(reason)
-      error.value = message
-      finishFlow(reply, 'error', message)
+      error.value = detail
+      finishFlow(reply, 'error', detail)
       closeReply()
-      busy.value = true
-      void pollCurrent()
+      const uncertain = reason === 'CONVERSATION_BUSY' || reason === 'connection_interrupted' || reason === 'invalid_event'
+      busy.value = uncertain
+      if (uncertain) void pollCurrent()
+      else {
+        input.value = message
+        if (!reply.runId) messages.value.splice(-2, 2)
+        if (reason === 'CONVERSATION_NOT_FOUND') forgetMissing()
+      }
     }, onEvent, id)
   }
 
@@ -194,7 +224,7 @@ export function useAgentConversations() {
         const detail = await getConversation(id)
         if (!disposed && token === generation) applyDetail(detail)
       }
-    } catch (cause) { if (!disposed) showError(cause) }
+    } catch (cause) { if (!disposed && token === generation) showError(cause) }
     finally { if (!disposed && token === generation) loading.value = false }
   }
   watch(() => route.query.agentType, type => {
