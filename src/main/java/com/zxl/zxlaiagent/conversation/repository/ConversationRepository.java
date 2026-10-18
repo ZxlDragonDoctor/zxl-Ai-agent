@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ConversationRepository {
+    default Conversation create(String title) { return create(title, "manus"); }
     Conversation create(String title, String agentType);
     Optional<Conversation> find(UUID id);
     List<ConversationSummary> list();
