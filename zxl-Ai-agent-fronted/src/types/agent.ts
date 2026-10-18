@@ -1,6 +1,6 @@
 export type RunStatus = 'running' | 'completed' | 'error' | 'interrupted' | 'limit' | 'terminated'
 export type AgentEndReason = 'ANSWER_READY' | 'STEP_LIMIT' | 'TERMINATED_BY_TOOL' | 'TOOL_RETURNED'
-  | 'MODEL_ERROR' | 'TOOL_ERROR' | 'EXECUTION_ERROR' | 'OUTPUT_INTERRUPTED'
+  | 'MODEL_ERROR' | 'TOOL_ERROR' | 'EXECUTION_ERROR' | 'OUTPUT_INTERRUPTED' | 'PERSISTENCE_ERROR'
 
 export interface ToolResult {
   success: boolean
@@ -22,6 +22,8 @@ export interface AgentStreamEvent {
   durationMs?: number | null
   timestamp: number
   endReason?: AgentEndReason | null
+  conversationId?: string | null
+  runId?: string | null
 }
 
 export interface ToolInvocation {
@@ -48,6 +50,7 @@ export interface AgentFlow {
   finishedAt?: number
   error?: string
   endReason?: AgentEndReason
+  restored?: boolean
 }
 
 export interface AgentChatMessage {
@@ -56,4 +59,6 @@ export interface AgentChatMessage {
   displayContent?: string
   isTyping?: boolean
   flow?: AgentFlow
+  runId?: string
+  answerStep?: number
 }

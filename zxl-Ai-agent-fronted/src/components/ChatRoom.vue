@@ -1,6 +1,7 @@
 <template>
   <div class="chat-room">
     <div class="chat-history" ref="historyRef" @scroll="trackScroll">
+      <slot v-if="!messages.length" name="empty"></slot>
       <div v-for="(msg, idx) in messages" :key="idx" :class="['msg', msg.role]">
         <div class="msg-avatar">
           <span v-if="msg.role === 'ai'">✦</span>

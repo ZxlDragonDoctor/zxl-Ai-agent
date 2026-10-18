@@ -8,5 +8,8 @@ export function chatWithManusSse(
   message: string,
   onMessage: (data: string) => void,
   onError?: (reason: string) => void,
-  onEvent?: (event: AgentStreamEvent) => void
-): EventSource
+  onEvent?: (event: AgentStreamEvent) => void,
+  conversationId?: string
+): { close(): void }
+
+export { chatWithManusSse as chatWithAgentSse }

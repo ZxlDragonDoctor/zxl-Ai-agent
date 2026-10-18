@@ -10,13 +10,16 @@ const routes = [
   },
   {
     path: '/love-master',
-    name: 'LoveMaster',
-    component: () => import('../views/LoveMaster.vue')
+    redirect: { path: '/chat-room', query: { agentType: 'love-assistant' } }
   },
   {
     path: '/super-agent',
-    name: 'SuperAgent',
-    component: () => import('../views/SuperAgent.vue')
+    redirect: '/chat-room'
+  },
+  {
+    path: '/chat-room',
+    name: 'AgentChat',
+    component: () => import('../views/AgentChat.vue')
   },
   {
     path: '/:pathMatch(.*)*',

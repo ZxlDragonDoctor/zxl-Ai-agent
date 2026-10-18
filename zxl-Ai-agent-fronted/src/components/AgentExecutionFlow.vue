@@ -12,6 +12,7 @@
     </summary>
 
     <div class="flow-body">
+      <p v-if="flow.restored" class="flow-waiting">{{ t('flow.restoredNote') }}</p>
       <p v-if="!flow.steps.length" class="flow-waiting">{{ t('flow.connecting') }}</p>
       <section v-for="step in flow.steps" :key="step.number" class="execution-step">
         <div class="step-heading">
