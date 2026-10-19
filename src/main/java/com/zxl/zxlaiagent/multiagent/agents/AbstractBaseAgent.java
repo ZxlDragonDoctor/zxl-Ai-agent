@@ -65,30 +65,41 @@ public abstract class AbstractBaseAgent implements AgentInterface {
     public CompletableFuture<String> executeTask(Task task) {
         if (!compareAndSetState(AgentState.IDLE, AgentState.BUSY)) {
             return CompletableFuture.failedFuture(
-                    new IllegalStateException("Agent " + agentId + " is " + state.get()));
+                    new WorkflowException("AGENT_BUSY", "agents." + agentId, "Agent 当前不可领取任务：" + state.get()));
         }
         messageBus.publishEvent(AgentEvent.of(agentId, EventType.TASK_STARTED,
                 Map.of("taskId", task.getId(), "description", task.getDescription())));
         task.setStatus(TaskStatus.IN_PROGRESS);
         task.setStartedAt(System.currentTimeMillis());
-        return processTask(task).handle((result, error) -> {
+        CompletableFuture<String> work;
+        try { work = processTask(task); }
+        catch (Exception e) { work = CompletableFuture.failedFuture(e); }
+        return work.handle((result, error) -> {
             if (error != null) {
-                task.setStatus(TaskStatus.FAILED);
+                WorkflowError failure = WorkflowError.from(error);
+                task.setErrorCode(failure.code());
+                task.setErrorPath(failure.path());
                 String errorMessage = error.getMessage() != null
                         ? error.getMessage()
                         : error.getClass().getSimpleName();
                 task.setError(errorMessage);
+                task.setCompletedAt(System.currentTimeMillis());
+                task.setStatus(TaskStatus.FAILED);
                 messageBus.publishEvent(AgentEvent.of(agentId, EventType.TASK_FAILED,
                         Map.of("taskId", task.getId(), "error", errorMessage)));
                 compareAndSetState(AgentState.BUSY, AgentState.IDLE);
                 throw new RuntimeException(error);
             }
-            task.setStatus(TaskStatus.COMPLETED);
+            if (result == null || result.isBlank()) {
+                compareAndSetState(AgentState.BUSY, AgentState.IDLE);
+                throw new WorkflowException("TASK_OUTPUT_MISSING", "tasks." + task.getId(), "Agent 未返回有效内容");
+            }
             task.setResult(result);
             task.setCompletedAt(System.currentTimeMillis());
+            task.setStatus(TaskStatus.COMPLETED);
             messageBus.publishEvent(AgentEvent.of(agentId, EventType.TASK_COMPLETED,
                     Map.of("taskId", task.getId(), "result", result)));
-            state.set(AgentState.IDLE);
+            compareAndSetState(AgentState.BUSY, AgentState.IDLE);
             return result;
         });
     }
@@ -130,6 +141,15 @@ public abstract class AbstractBaseAgent implements AgentInterface {
         state.set(AgentState.SHUTDOWN);
         messageBus.unregisterAgent(agentId);
         log.info("Agent {} shutdown", agentId);
+    }
+
+    public void attachMessageBus(AgentMessageBus bus) {
+        this.messageBus = java.util.Objects.requireNonNull(bus);
+    }
+
+    protected String callLlm(Task task, String systemPrompt, String userMessage) {
+        task.setModelCalls(task.getModelCalls() + 1);
+        return callLlm(systemPrompt, userMessage);
     }
 
     protected String callLlm(String systemPrompt, String userMessage) {

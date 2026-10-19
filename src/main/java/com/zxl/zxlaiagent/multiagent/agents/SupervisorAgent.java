@@ -1,6 +1,7 @@
 package com.zxl.zxlaiagent.multiagent.agents;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zxl.zxlaiagent.multiagent.execution.TaskPromptRenderer;
 import com.zxl.zxlaiagent.multiagent.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
@@ -19,13 +20,17 @@ public class SupervisorAgent extends AbstractBaseAgent {
             4. Approve task completion or request rework
             5. Synthesize results from multiple agents into coherent output
             
-            Be thorough and critical in your reviews.
+            Use actual upstream outputs. Answer concisely in the user language. Do not claim tickets were created or actions were executed. Explicitly identify required human confirmation.
             """;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final TaskPromptRenderer renderer;
 
     public SupervisorAgent(ChatModel chatModel) {
+        this(chatModel, new TaskPromptRenderer(new ObjectMapper()));
+    }
+    public SupervisorAgent(ChatModel chatModel, TaskPromptRenderer renderer) {
         super("supervisor-1", "supervisor", chatModel);
+        this.renderer = renderer;
         this.capability = AgentCapability.builder()
                 .agentType("supervisor")
                 .description("Quality control, oversight, and result synthesis agent")
@@ -50,8 +55,10 @@ public class SupervisorAgent extends AbstractBaseAgent {
                 if (resultsObj instanceof String s) allResults = s;
             }
 
-            String reviewContext = buildReviewContext(plan, allResults);
-            String review = callLlm(SUPERVISOR_SYSTEM_PROMPT,
+            String reviewContext = task.getInput() != null && task.getInput().containsKey("executionContext")
+                    ? renderer.render(task)
+                    : "Current task: " + task.getDescription() + "\n" + buildReviewContext(plan, allResults);
+            String review = callLlm(task, SUPERVISOR_SYSTEM_PROMPT,
                     "Review the following work and provide a final synthesized result:\n\n" + reviewContext);
 
             log.info("SupervisorAgent completed review for task: {}", task.getId());
