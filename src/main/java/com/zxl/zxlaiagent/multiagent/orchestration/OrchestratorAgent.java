@@ -3,17 +3,13 @@ package com.zxl.zxlaiagent.multiagent.orchestration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zxl.zxlaiagent.multiagent.bus.AgentMessageBus;
 import com.zxl.zxlaiagent.multiagent.model.*;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-@Component
 @Slf4j
 public class OrchestratorAgent implements AgentInterface {
 
@@ -32,8 +28,6 @@ public class OrchestratorAgent implements AgentInterface {
     private final AgentCapability capability;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ChatModel chatModel;
-
-    @Resource
     private AgentMessageBus messageBus;
 
     private final Map<String, Plan> activePlans = new ConcurrentHashMap<>();
@@ -58,8 +52,8 @@ public class OrchestratorAgent implements AgentInterface {
                 .build();
     }
 
-    @PostConstruct
-    public void init() {
+    public void init(AgentMessageBus bus) {
+        this.messageBus = bus;
         messageBus.registerAgent(this);
         messageBus.addEventListener(EventType.AGENT_REGISTERED, event -> {
             AgentInterface agent = messageBus.getAgent(event.getAgentId());
@@ -114,9 +108,12 @@ public class OrchestratorAgent implements AgentInterface {
             return finalResult;
         } catch (Exception e) {
             plan.setStatus(PlanStatus.FAILED);
+            String errorMessage = e.getMessage() != null
+                    ? e.getMessage()
+                    : e.getClass().getSimpleName();
             messageBus.publishEvent(AgentEvent.of(agentId, EventType.PLAN_FAILED,
-                    Map.of("planId", plan.getId(), "error", e.getMessage())));
-            throw new RuntimeException("Plan execution failed: " + e.getMessage());
+                    Map.of("planId", plan.getId(), "error", errorMessage)));
+            throw new RuntimeException("Plan execution failed: " + errorMessage, e);
         } finally {
             activePlans.remove(plan.getId());
         }
@@ -144,6 +141,10 @@ public class OrchestratorAgent implements AgentInterface {
     }
 
     private void executePlan(Plan plan) {
+        if (plan.getTasks() == null || plan.getTasks().isEmpty()) {
+            throw new IllegalStateException("Plan contains no executable tasks");
+        }
+
         List<Task> completed = new ArrayList<>();
         int maxIterations = plan.getTasks().size() * 2;
         int iterations = 0;
@@ -153,6 +154,7 @@ public class OrchestratorAgent implements AgentInterface {
             List<Task> readyTasks = plan.getReadyTasks();
             if (readyTasks.isEmpty() && !plan.isComplete()) {
                 log.warn("No ready tasks but plan incomplete, checking for blocked tasks");
+                markPendingTasksBlocked(plan, "No executable task remains");
                 break;
             }
             List<CompletableFuture<Void>> futures = new ArrayList<>();
@@ -160,6 +162,41 @@ public class OrchestratorAgent implements AgentInterface {
                 futures.add(executeSingleTask(plan, task));
             }
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        }
+
+        if (!plan.isComplete() && iterations >= maxIterations) {
+            markPendingTasksBlocked(plan, "Plan exceeded the execution iteration limit");
+        }
+
+        List<Task> unfinishedTasks = plan.getTasks().stream()
+                .filter(task -> task.getStatus() != TaskStatus.COMPLETED)
+                .toList();
+        if (!unfinishedTasks.isEmpty()) {
+            String details = unfinishedTasks.stream()
+                    .map(task -> task.getDescription() + " [" + task.getStatus() + "]: " + task.getError())
+                    .collect(Collectors.joining("; "));
+            throw new IllegalStateException("Plan did not complete: " + details);
+        }
+    }
+
+    private void markPendingTasksBlocked(Plan plan, String fallbackReason) {
+        List<Task> tasks = plan.getTasks();
+        for (Task task : tasks) {
+            if (task.getStatus() != TaskStatus.PENDING) {
+                continue;
+            }
+            List<String> dependencies = task.getDependencies() == null
+                    ? List.of()
+                    : task.getDependencies();
+            List<String> unresolved = dependencies.stream()
+                    .filter(dependencyId -> tasks.stream().noneMatch(candidate ->
+                            candidate.getId().equals(dependencyId)
+                                    && candidate.getStatus() == TaskStatus.COMPLETED))
+                    .toList();
+            task.setStatus(TaskStatus.BLOCKED);
+            task.setError(unresolved.isEmpty()
+                    ? fallbackReason
+                    : "Blocked by unresolved dependencies: " + String.join(", ", unresolved));
         }
     }
 
@@ -183,8 +220,11 @@ public class OrchestratorAgent implements AgentInterface {
                 }
             } catch (Exception e) {
                 task.setStatus(TaskStatus.FAILED);
-                task.setError(e.getMessage());
-                log.error("Task '{}' failed: {}", task.getDescription(), e.getMessage());
+                String errorMessage = e.getMessage() != null
+                        ? e.getMessage()
+                        : e.getClass().getSimpleName();
+                task.setError(errorMessage);
+                log.error("Task '{}' failed: {}", task.getDescription(), errorMessage);
             }
         }, taskExecutor);
     }

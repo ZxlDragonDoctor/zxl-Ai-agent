@@ -4,12 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zxl.zxlaiagent.multiagent.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.stereotype.Component;
-
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-@Component
 @Slf4j
 public class SupervisorAgent extends AbstractBaseAgent {
 

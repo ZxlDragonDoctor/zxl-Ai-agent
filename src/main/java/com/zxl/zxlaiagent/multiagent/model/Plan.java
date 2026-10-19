@@ -36,7 +36,9 @@ public class Plan {
     }
 
     public boolean isComplete() {
-        return tasks.stream().allMatch(t -> t.getStatus() == TaskStatus.COMPLETED);
+        return tasks != null
+                && !tasks.isEmpty()
+                && tasks.stream().allMatch(task -> task.getStatus() == TaskStatus.COMPLETED);
     }
 
     public List<Task> getReadyTasks() {

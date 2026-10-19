@@ -4,12 +4,11 @@ import com.zxl.zxlaiagent.multiagent.model.AgentCapability;
 import com.zxl.zxlaiagent.multiagent.model.Task;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.stereotype.Component;
+
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-@Component
 @Slf4j
 public class ResearchAgent extends AbstractBaseAgent {
 

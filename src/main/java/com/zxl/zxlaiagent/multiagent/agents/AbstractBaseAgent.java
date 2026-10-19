@@ -74,10 +74,13 @@ public abstract class AbstractBaseAgent implements AgentInterface {
         return processTask(task).handle((result, error) -> {
             if (error != null) {
                 task.setStatus(TaskStatus.FAILED);
-                task.setError(error.getMessage());
+                String errorMessage = error.getMessage() != null
+                        ? error.getMessage()
+                        : error.getClass().getSimpleName();
+                task.setError(errorMessage);
                 messageBus.publishEvent(AgentEvent.of(agentId, EventType.TASK_FAILED,
-                        Map.of("taskId", task.getId(), "error", error.getMessage())));
-                state.set(AgentState.ERROR);
+                        Map.of("taskId", task.getId(), "error", errorMessage)));
+                compareAndSetState(AgentState.BUSY, AgentState.IDLE);
                 throw new RuntimeException(error);
             }
             task.setStatus(TaskStatus.COMPLETED);
