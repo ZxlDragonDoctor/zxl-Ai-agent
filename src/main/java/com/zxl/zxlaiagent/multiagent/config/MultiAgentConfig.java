@@ -4,6 +4,9 @@ import com.zxl.zxlaiagent.multiagent.agents.*;
 import com.zxl.zxlaiagent.multiagent.bus.AgentMessageBus;
 import com.zxl.zxlaiagent.multiagent.orchestration.OrchestratorAgent;
 import jakarta.annotation.PostConstruct;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zxl.zxlaiagent.multiagent.planning.*;
+import com.zxl.zxlaiagent.multiagent.execution.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.context.annotation.Bean;
@@ -20,45 +23,18 @@ public class MultiAgentConfig {
     private final SupervisorAgent supervisorAgent;
     private final AgentMessageBus messageBus;
 
-    public MultiAgentConfig(ChatModel chatModel, AgentMessageBus messageBus) {
+    public MultiAgentConfig(ChatModel chatModel, AgentMessageBus messageBus, ObjectMapper mapper,
+                            PlanParser parser, PlanValidator validator, TaskInputBuilder inputs, TaskPromptRenderer renderer) {
         this.messageBus = messageBus;
-        this.orchestratorAgent = new OrchestratorAgent(chatModel);
-        this.plannerAgent = new PlannerAgent(chatModel);
-        this.codeAgent = new CodeAgent(chatModel);
-        this.researchAgent = new ResearchAgent(chatModel);
-        this.supervisorAgent = new SupervisorAgent(chatModel);
-        injectMessageBus();
-    }
-
-    private void injectMessageBus() {
-        setField(plannerAgent, "messageBus", messageBus);
-        setField(codeAgent, "messageBus", messageBus);
-        setField(researchAgent, "messageBus", messageBus);
-        setField(supervisorAgent, "messageBus", messageBus);
-    }
-
-    private void setField(Object target, String fieldName, Object value) {
-        try {
-            java.lang.reflect.Field field = findField(target.getClass(), fieldName);
-            if (field != null) {
-                field.setAccessible(true);
-                field.set(target, value);
-            }
-        } catch (Exception e) {
-            log.warn("Could not set field {} on {}: {}", fieldName, target.getClass().getSimpleName(), e.getMessage());
-        }
-    }
-
-    private java.lang.reflect.Field findField(Class<?> clazz, String fieldName) {
-        Class<?> current = clazz;
-        while (current != null && current != Object.class) {
-            try {
-                return current.getDeclaredField(fieldName);
-            } catch (NoSuchFieldException e) {
-                current = current.getSuperclass();
-            }
-        }
-        return null;
+        this.orchestratorAgent = new OrchestratorAgent(chatModel, mapper, validator, inputs);
+        this.plannerAgent = new PlannerAgent(chatModel, parser, mapper);
+        this.codeAgent = new CodeAgent(chatModel, renderer);
+        this.researchAgent = new ResearchAgent(chatModel, renderer);
+        this.supervisorAgent = new SupervisorAgent(chatModel, renderer);
+        plannerAgent.attachMessageBus(messageBus);
+        codeAgent.attachMessageBus(messageBus);
+        researchAgent.attachMessageBus(messageBus);
+        supervisorAgent.attachMessageBus(messageBus);
     }
 
     @Bean
