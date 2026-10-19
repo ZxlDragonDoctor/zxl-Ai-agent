@@ -115,6 +115,8 @@ Agent Hub 提交目标
 
 第四课：[会话、历史存储与上下文恢复](04-conversations-and-memory.md)，领域模型、JSON 仓储、管理接口、上下文窗口与执行权已实现；前端统一 Agent 类型、会话列表和恢复。[实现记录](04-implementation.md) 包含当前构建与实测边界。
 
+第五课：[Plan、Task 与依赖数据流](05-plans-tasks-and-dataflow.md)，6 项关联任务：计划契约、严格解析、DAG 校验、明确失败、依赖结果注入、工作 Agent 消费。任务包已发布，尚未实现和验收；建议分两批连续完成后集中检查。
+
 ## 参考资料
 
 - [Spring AI 工具调用文档](https://docs.spring.io/spring-ai/reference/api/tools.html)：模型提出工具请求，应用执行工具并回填结果。当前官方页面为较新的版本，概念可参考，代码以仓库版本为准。

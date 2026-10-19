@@ -297,6 +297,7 @@ npm run build
 - [课程地图](docs/learning/README.md) 与 [28 课企业工程路线](docs/learning/enterprise-agent-roadmap.md)。
 - [第三课实现与验收](docs/learning/03-acceptance.md)：48 个专项用例、前端构建与真实模型页面记录。
 - [第四课：会话、历史存储与上下文恢复](docs/learning/04-conversations-and-memory.md)：6 项工程任务已实现；[实现记录与页面证据](docs/learning/04-implementation.md) 区分构建、实测与未覆盖范围。
+- [第五课：Plan、Task 与依赖数据流](docs/learning/05-plans-tasks-and-dataflow.md)：计划契约、严格解析、DAG 校验与真实依赖结果传递；6 项任务已发布，尚未实现验收。
 
 ![真实工具结果与结束原因](docs/images/lesson3-acceptance.jpg)
 
