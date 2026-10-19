@@ -1,41 +1,64 @@
-import { chatWithLoveAppSse, chatWithManusSse } from '../api/chat'
+import { API_BASE as BASE_URL } from './base'
 
-const BASE_URL = process.env.NODE_ENV === 'production'
-  ? '/api'
-  : 'http://localhost:8123/api'
-
-export function orchestrateGoal(goal) {
+export function orchestrateGoal(goal, context = {}) {
   return fetch(`${BASE_URL}/ai/multiagent/orchestrate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ goal })
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ goal, context })
   }).then(res => res.json())
 }
 
-export function orchestrateGoalStream(goal, onEvent, onError) {
-  const url = `${BASE_URL}/ai/multiagent/orchestrate/stream?goal=${encodeURIComponent(goal)}`
-  const eventSource = new EventSource(url)
-
-  eventSource.addEventListener('planning', (event) => {
-    onEvent({ type: 'planning', data: event.data })
-  })
-
-  eventSource.addEventListener('complete', (event) => {
-    onEvent({ type: 'complete', data: event.data })
-    eventSource.close()
-  })
-
-  eventSource.addEventListener('error', (event) => {
-    onEvent({ type: 'error', data: event.data })
-    eventSource.close()
-  })
-
-  eventSource.onerror = (error) => {
-    if (onError) onError(error)
-    eventSource.close()
+export function orchestrateGoalStream(goal, context, onEvent, onError) {
+  const controller = new AbortController()
+  let finished = false
+  const connection = { close() { finished = true; controller.abort() } }
+  const fail = () => {
+    if (finished) return
+    connection.close()
+    onError('connection_interrupted')
   }
-
-  return eventSource
+  function dispatch(frame) {
+    let type = 'message'
+    const lines = []
+    for (const line of frame.split(/\r?\n/)) {
+      if (line.startsWith('event:')) type = line.slice(6).trim()
+      if (line.startsWith('data:')) lines.push(line.slice(5).replace(/^ /, ''))
+    }
+    if (!lines.length) return
+    const raw = lines.join('\n')
+    const data = type === 'report' || type === 'error' ? JSON.parse(raw) : raw
+    onEvent({ type, data })
+    if (type === 'complete' || type === 'error') connection.close()
+  }
+  void (async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/ai/multiagent/orchestrate/stream`, {
+        method: 'POST', signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+        body: JSON.stringify({ goal, context })
+      })
+      if (!response.ok || !response.body || !response.headers.get('content-type')?.includes('text/event-stream')) {
+        fail(); return
+      }
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      try {
+        while (!finished) {
+          const { value, done } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          let boundary
+          while (!finished && (boundary = /\r?\n\r?\n/.exec(buffer))) {
+            const frame = buffer.slice(0, boundary.index)
+            buffer = buffer.slice(boundary.index + boundary[0].length)
+            dispatch(frame)
+          }
+        }
+      } finally { reader.releaseLock() }
+      if (!finished) fail()
+    } catch { if (!controller.signal.aborted) fail() }
+  })()
+  return connection
 }
 
 export function getSystemStatus() {

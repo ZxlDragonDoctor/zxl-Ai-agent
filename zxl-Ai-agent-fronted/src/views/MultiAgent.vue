@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import WorkflowReportPanel from '../components/WorkflowReportPanel.vue'
+import type { WorkflowReport } from '../types/workflow'
 import {
-  orchestrateGoal,
+  orchestrateGoalStream,
   getSystemStatus,
   listAgents,
   getRecentEvents,
@@ -12,7 +14,14 @@ import { locale, t } from '../i18n'
 const goalInput = ref('')
 const isRunning = ref(false)
 const orchestrationResult = ref('')
-const progressPercent = ref(0)
+const materialInput = ref('')
+const workflowReport = ref<WorkflowReport | null>(null)
+const streamError = ref('')
+let workflowConnection: { close(): void } | undefined
+const progressPercent = computed(() => {
+  const tasks = workflowReport.value?.tasks || []
+  return tasks.length ? tasks.filter(task => task.status === 'COMPLETED').length / tasks.length * 100 : 0
+})
 type AgentInfo = { id: string; type: string; state: string }
 type AgentEvent = { timestamp: number | string; type: string; agentId: string }
 type BenchmarkResult = {
@@ -69,28 +78,34 @@ function formatTime(timestamp: number | string): string {
   return new Date(timestamp).toLocaleTimeString(locale.value === 'zh-CN' ? 'zh-CN' : 'en-US')
 }
 
-async function submitGoal() {
+function fillExample() {
+  goalInput.value = t('workflow.exampleGoal')
+  materialInput.value = t('workflow.exampleMaterial')
+}
+
+function submitGoal() {
   if (!goalInput.value.trim() || isRunning.value) return
   isRunning.value = true
   orchestrationResult.value = ''
-  progressPercent.value = 0
-
-  const progressTimer = setInterval(() => {
-    if (progressPercent.value < 90) progressPercent.value += Math.random() * 10
-  }, 500)
-
-  try {
-    const result = await orchestrateGoal(goalInput.value)
-    clearInterval(progressTimer)
-    progressPercent.value = 100
-    orchestrationResult.value = result.result || result.error || ''
-    setTimeout(() => { progressPercent.value = 0 }, 1000)
-  } catch (e: any) {
-    orchestrationResult.value = `Error: ${e.message}`
-  } finally {
+  streamError.value = ''
+  workflowReport.value = null
+  workflowConnection = orchestrateGoalStream(goalInput.value, { material: materialInput.value }, event => {
+    if (event.type === 'report') {
+      if (workflowReport.value && event.data.sequence <= workflowReport.value.sequence) return
+      workflowReport.value = event.data
+    } else if (event.type === 'complete') {
+      orchestrationResult.value = event.data
+      isRunning.value = false
+      void refreshStatus()
+    } else if (event.type === 'error') {
+      streamError.value = `${event.data.code} · ${event.data.path} · ${event.data.message}`
+      isRunning.value = false
+      void refreshStatus()
+    }
+  }, () => {
+    streamError.value = t('workflow.disconnected')
     isRunning.value = false
-    goalInput.value = ''
-  }
+  })
 }
 
 async function refreshStatus() {
@@ -127,6 +142,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (statusInterval) clearInterval(statusInterval)
+  workflowConnection?.close()
 })
 </script>
 
@@ -158,6 +174,9 @@ onUnmounted(() => {
         <div class="input-row">
           <input
             v-model="goalInput"
+            :aria-label="t('task.title')"
+            :disabled="isRunning"
+            maxlength="12000"
             @keyup.enter="submitGoal"
             :placeholder="t('task.placeholder')"
             class="input-field"
@@ -166,9 +185,17 @@ onUnmounted(() => {
             {{ isRunning ? t('action.running') : t('action.execute') }}
           </button>
         </div>
-        <div v-if="isRunning" class="progress-track">
+        <button class="btn-ghost example-button" @click="fillExample" :disabled="isRunning">{{ t('workflow.example') }}</button>
+        <label for="workflow-material" class="material-label">{{ t('workflow.material') }}</label>
+        <textarea id="workflow-material" v-model="materialInput" :disabled="isRunning" maxlength="24000"
+          class="input-field material-input" :placeholder="t('workflow.materialHint')" rows="3" />
+        <p v-if="isRunning" class="material-label" role="status">{{ t('workflow.liveNotice') }}</p>
+        <div v-if="workflowReport?.tasks.length" class="progress-track" role="progressbar"
+          :aria-label="t('workflow.progress')" :aria-valuenow="Math.round(progressPercent)" aria-valuemin="0" aria-valuemax="100">
           <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
         </div>
+        <WorkflowReportPanel v-if="workflowReport" :report="workflowReport" />
+        <p v-if="streamError" class="workflow-error" role="alert">{{ streamError }}</p>
         <div v-if="orchestrationResult" class="result-card">
           <div class="result-head">
             <span>{{ t('result.title') }}</span>
@@ -280,6 +307,12 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+.material-label { font-size: 12px; color: var(--color-text-secondary); margin: 0; }
+.material-input { resize: vertical; min-height: 78px; font-family: inherit; }
+.example-button { align-self: flex-start; padding: 0; }
+.workflow-error { padding: 14px; border: 1px solid var(--color-error); border-radius: 8px; color: var(--color-error); overflow-wrap: anywhere; font-size: 13px; }
+.input-field:disabled { opacity: .65; }
+.btn-ghost:disabled { opacity: .5; cursor: not-allowed; }
 .agent-dashboard {
   display: flex;
   flex-direction: column;
