@@ -3,6 +3,7 @@ package com.zxl.zxlaiagent.controller;
 import com.zxl.zxlaiagent.multiagent.bus.AgentMessageBus;
 import com.zxl.zxlaiagent.multiagent.harness.AgentHarness;
 import com.zxl.zxlaiagent.multiagent.model.AgentInterface;
+import com.zxl.zxlaiagent.multiagent.model.WorkflowError;
 import com.zxl.zxlaiagent.multiagent.model.AgentMessage;
 import com.zxl.zxlaiagent.multiagent.model.MessageType;
 import com.zxl.zxlaiagent.multiagent.observer.AgentObserver;
@@ -39,37 +40,52 @@ public class MultiAgentController {
         return t;
     });
 
+    public record OrchestrationRequest(String goal, Map<String, Object> context) {}
+
     @PostMapping("/orchestrate")
-    public Map<String, Object> orchestrate(@RequestBody Map<String, String> request) {
-        String goal = request.get("goal");
-        log.info("Orchestration request: {}", goal);
+    public Map<String, Object> orchestrate(@RequestBody OrchestrationRequest request) {
         CompletableFuture<String> future = CompletableFuture.supplyAsync(() ->
-                orchestratorAgent.orchestrate(goal, Map.of()), executor);
+                orchestratorAgent.orchestrate(request.goal(), request.context()), executor);
         try {
-            String result = future.get(300, java.util.concurrent.TimeUnit.SECONDS);
-            return Map.of("success", true, "result", result);
+            return Map.of("success", true, "result", future.get(300, java.util.concurrent.TimeUnit.SECONDS));
         } catch (Exception e) {
-            log.error("Orchestration failed", e);
-            return Map.of("success", false, "error", e.getMessage());
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+            WorkflowError error = e instanceof java.util.concurrent.TimeoutException
+                    ? new WorkflowError("REQUEST_TIMEOUT", "request", "请求等待超时，后台执行可能仍在进行") : WorkflowError.from(e);
+            return Map.of("success", false, "code", error.code(), "path", error.path(), "error", error.message());
         }
     }
 
     @GetMapping(value = "/orchestrate/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter orchestrateStream(@RequestParam String goal) {
+        return stream(new OrchestrationRequest(goal, Map.of()));
+    }
+
+    @PostMapping(value = "/orchestrate/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter orchestrateStream(@RequestBody OrchestrationRequest request) {
+        return stream(request);
+    }
+
+    private SseEmitter stream(OrchestrationRequest request) {
         SseEmitter emitter = new SseEmitter(300000L);
+        var connected = new java.util.concurrent.atomic.AtomicBoolean(true);
+        emitter.onCompletion(() -> connected.set(false));
+        emitter.onTimeout(() -> connected.set(false));
+        emitter.onError(error -> connected.set(false));
+        java.util.function.BiConsumer<String, Object> send = (name, data) -> {
+            if (!connected.get()) return;
+            try { emitter.send(SseEmitter.event().name(name).data(data)); }
+            catch (Exception e) { connected.set(false); }
+        };
         executor.execute(() -> {
             try {
-                emitter.send(SseEmitter.event().name("planning").data("Starting orchestration for: " + goal));
-                String result = orchestratorAgent.orchestrate(goal, Map.of());
-                emitter.send(SseEmitter.event().name("complete").data(result));
-                emitter.complete();
+                String result = orchestratorAgent.orchestrate(request.goal(), request.context(),
+                        report -> send.accept("report", report));
+                send.accept("complete", result);
             } catch (Exception e) {
-                try {
-                    emitter.send(SseEmitter.event().name("error").data(e.getMessage()));
-                    emitter.complete();
-                } catch (Exception ex) {
-                    emitter.completeWithError(ex);
-                }
+                send.accept("error", WorkflowError.from(e));
+            } finally {
+                emitter.complete();
             }
         });
         return emitter;
