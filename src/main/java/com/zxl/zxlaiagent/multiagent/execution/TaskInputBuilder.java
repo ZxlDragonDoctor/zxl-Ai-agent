@@ -20,7 +20,7 @@ public class TaskInputBuilder {
         } catch (WorkflowException e) { throw e; }
         catch (Exception e) { throw new WorkflowException("INVALID_CONTEXT", "context", "业务输入必须可以序列化为 JSON", e); }
     }
-    private static Map<String, Object> freezeMap(Map<?, ?> map) {
+    static Map<String, Object> freezeMap(Map<?, ?> map) {
         Map<String, Object> copy = new LinkedHashMap<>();
         map.forEach((key, value) -> copy.put(key.toString(), freeze(value)));
         return Collections.unmodifiableMap(copy);

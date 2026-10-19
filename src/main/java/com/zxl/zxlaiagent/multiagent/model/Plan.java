@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,12 +36,14 @@ public class Plan {
         tasks.add(task);
     }
 
+    @JsonIgnore
     public boolean isComplete() {
         return tasks != null
                 && !tasks.isEmpty()
                 && tasks.stream().allMatch(task -> task.getStatus() == TaskStatus.COMPLETED);
     }
 
+    @JsonIgnore
     public List<Task> getReadyTasks() {
         return tasks.stream()
                 .filter(t -> t.getStatus() == TaskStatus.PENDING)

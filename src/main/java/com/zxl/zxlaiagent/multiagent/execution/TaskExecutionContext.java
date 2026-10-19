@@ -6,7 +6,7 @@ import java.util.*;
 public record TaskExecutionContext(String originalGoal, Map<String, Object> userInput,
                                    List<DependencyResult> dependencyResults) {
     public TaskExecutionContext {
-        userInput = Collections.unmodifiableMap(new LinkedHashMap<>(userInput));
+        userInput = TaskInputBuilder.freezeMap(userInput);
         dependencyResults = List.copyOf(dependencyResults);
     }
     public record DependencyResult(String taskId, String description, String agentId, String output) {}

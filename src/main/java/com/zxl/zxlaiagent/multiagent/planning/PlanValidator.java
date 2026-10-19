@@ -31,7 +31,8 @@ public class PlanValidator {
             require(task.getDescription() != null && !task.getDescription().isBlank() && task.getDescription().length() <= MAX_DESCRIPTION,
                     "INVALID_PLAN_FIELD", path + ".description", "任务描述不能为空且不能超过 2000 字符");
             require(task.getStatus() == TaskStatus.PENDING && task.getResult() == null && task.getError() == null
-                            && task.getAssignedAgentId() == null && task.getStartedAt() == 0 && task.getCompletedAt() == 0,
+                            && task.getAssignedAgentId() == null && task.getStartedAt() == 0 && task.getCompletedAt() == 0
+                            && task.getErrorCode() == null && task.getErrorPath() == null && task.getModelCalls() == 0,
                     "INVALID_PLAN_FIELD", path, "入口任务不能携带执行状态或伪造结果");
             require(task.getInput() != null && task.getInput().size() == 1 && task.getInput().get("capability") instanceof String,
                     "INVALID_PLAN_FIELD", path + ".input", "计划输入只能声明 capability");

@@ -66,12 +66,14 @@ public class OrchestratorAgent implements AgentInterface {
             AgentInterface planner = requireAvailable("planner");
             run.planningTask.setAssignedAgentId(planner.getAgentId());
             String json = await(planner.executeTask(run.planningTask), 60, "planning");
-            try { run.plan = mapper.readValue(json, Plan.class); }
+            Plan candidate;
+            try { candidate = mapper.readValue(json, Plan.class); }
             catch (Exception e) { throw new WorkflowException("INVALID_PLAN_JSON", "planning", "规划角色返回的运行时计划无法读取", e); }
             Set<String> types = agentDirectory.values().stream().map(AgentInterface::getAgentType).collect(Collectors.toSet());
-            validator.validate(run.plan, types);
+            validator.validate(candidate, types);
             // 原始业务目标由应用持有，不接受 Agent 篡改。
-            if (!goal.equals(run.plan.getGoal())) throw new WorkflowException("INVALID_PLAN_FIELD", "goal", "规划后的目标与原始目标不一致");
+            if (!goal.equals(candidate.getGoal())) throw new WorkflowException("INVALID_PLAN_FIELD", "goal", "规划后的目标与原始目标不一致");
+            run.plan = candidate;
             activePlans.put(run.plan.getId(), run.plan);
             run.plan.setStatus(PlanStatus.IN_PROGRESS);
             run.emit("running", null, null);
@@ -82,6 +84,7 @@ public class OrchestratorAgent implements AgentInterface {
             run.emit("completed", result, null);
             return result;
         } catch (Exception e) {
+            log.warn("Workflow {} failed", run.id, e);
             WorkflowError failure = WorkflowError.from(e);
             if (run.plan != null) {
                 run.plan.setStatus(PlanStatus.FAILED);
