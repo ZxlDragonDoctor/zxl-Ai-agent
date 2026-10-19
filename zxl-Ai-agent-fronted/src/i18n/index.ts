@@ -6,6 +6,7 @@ const STORAGE_KEY = 'zxl_agent_locale'
 
 const messages: Record<Locale, Record<string, string>> = {
   'zh-CN': {
+    'workflow.synthesizing': '任务已完成，正在汇总结果',
     "workflow.title": "依赖数据流",
     "workflow.planning": "正在生成并校验计划",
     "workflow.running": "正在按依赖执行",
@@ -194,6 +195,7 @@ const messages: Record<Locale, Record<string, string>> = {
     'flow.invalidEvent': '执行事件格式异常，请重试。',
   },
   en: {
+    'workflow.synthesizing': 'Tasks completed, synthesizing results',
     "workflow.title": "DEPENDENCY DATAFLOW",
     "workflow.planning": "Planning and validating",
     "workflow.running": "Executing dependencies",

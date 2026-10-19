@@ -78,7 +78,7 @@ public class OrchestratorAgent implements AgentInterface {
             run.plan.setStatus(PlanStatus.IN_PROGRESS);
             run.emit("running", null, null);
             executePlan(run, userInput);
-            String result = synthesize(run);
+            String result = synthesize(run, userInput);
             run.plan.setStatus(PlanStatus.COMPLETED);
             publish(EventType.PLAN_COMPLETED, Map.of("executionId", run.id, "planId", run.plan.getId(), "result", result));
             run.emit("completed", result, null);
@@ -155,7 +155,7 @@ public class OrchestratorAgent implements AgentInterface {
             }
         }, executor);
     }
-    private String synthesize(WorkflowRun run) {
+    private String synthesize(WorkflowRun run, Map<String, Object> userInput) {
         Plan plan = run.plan;
         if (!plan.isComplete()) throw new WorkflowException("PLAN_INCOMPLETE", "tasks", "未完成的计划不能汇总为成功");
         if (plan.getTasks().size() == 1) return plan.getTasks().get(0).getResult();
@@ -165,12 +165,17 @@ public class OrchestratorAgent implements AgentInterface {
         String allResults = plan.getTasks().stream().map(task -> "=== " + task.getDescription() + " ===\n" + task.getResult()).collect(Collectors.joining("\n\n"));
         if (allResults.length() > 100000) throw new WorkflowException("DEPENDENCY_OUTPUT_TOO_LARGE", "synthesis", "汇总内容超过上下文预算");
         // 兼容旧整体汇总入口，额外模型调用单独计数，失败不被原始文本掩盖。
-        Task synthesis = Task.create("根据全部成功结果回答原始目标：" + plan.getGoal());
+        Task synthesis = Task.create("根据全部成功结果回答原始目标：" + plan.getGoal(),
+                plan.getTasks().stream().map(Task::getId).toList());
         run.synthesisTask = synthesis;
-        synthesis.setInput(Map.of("plan", plan, "allResults", allResults));
+        synthesis.setInput(Map.of("plan", plan, "allResults", allResults,
+                "capability", "supervisor", "executionContext", inputs.build(plan, synthesis, userInput)));
         AgentInterface worker = requireAvailable("supervisor");
         synthesis.setAssignedAgentId(worker.getAgentId());
-        return await(worker.executeTask(synthesis), 60, "synthesis");
+        run.emit("synthesizing", null, null);
+        CompletableFuture<String> work = worker.executeTask(synthesis);
+        run.emit("synthesizing", null, null);
+        return await(work, 60, "synthesis");
     }
     private String await(CompletableFuture<String> future, int seconds, String path) {
         try { return future.get(seconds, TimeUnit.SECONDS); }

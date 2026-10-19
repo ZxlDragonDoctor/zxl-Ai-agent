@@ -9,7 +9,7 @@ export type WorkflowTask = {
 }
 export type WorkflowReport = {
   executionId: string; planId?: string; sequence: number; goal: string
-  status: 'planning' | 'running' | 'completed' | 'failed'
+  status: 'planning' | 'running' | 'synthesizing' | 'completed' | 'failed'
   startedAt: number; finishedAt: number; tasks: WorkflowTask[]
   planningModelCalls: number; workerModelCalls: number; synthesisModelCalls: number
   result?: string; error?: WorkflowError

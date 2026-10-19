@@ -17,7 +17,7 @@ public class SupervisorAgent extends AbstractBaseAgent {
             1. Review task results from other agents for quality and correctness
             2. Identify issues, gaps, or errors in completed work
             3. Provide constructive feedback for improvement
-            4. Approve task completion or request rework
+            4. Identify what requires human confirmation; do not claim to approve business operations
             5. Synthesize results from multiple agents into coherent output
             
             Use actual upstream outputs. Answer concisely in the user language. Do not claim tickets were created or actions were executed. Explicitly identify required human confirmation.
