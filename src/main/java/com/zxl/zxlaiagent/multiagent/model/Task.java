@@ -18,16 +18,19 @@ public class Task {
     private String id;
     private String parentId;
     private String description;
-    private TaskStatus status;
-    private String assignedAgentId;
+    private volatile TaskStatus status;
+    private volatile String assignedAgentId;
     private List<String> dependencies;
-    private Map<String, Object> input;
-    private String result;
-    private String error;
+    private volatile Map<String, Object> input;
+    private volatile String result;
+    private volatile String error;
+    private volatile String errorCode;
+    private volatile String errorPath;
+    private volatile int modelCalls;
     private int priority;
     private long createdAt;
-    private long startedAt;
-    private long completedAt;
+    private volatile long startedAt;
+    private volatile long completedAt;
 
     public static Task create(String description) {
         return Task.builder()
