@@ -96,7 +96,8 @@ class MultiAgentOrchestrationTest {
         assertEquals(1, ready.size());
         assertEquals("task 1", ready.get(0).getDescription());
 
-        t1.setStatus(TaskStatus.COMPLETED);
+        TaskLifecycle.start(t1, "fixture");
+        TaskLifecycle.complete(t1, "fixture output");
         ready = plan.getReadyTasks();
         assertEquals(1, ready.size());
         assertEquals("task 2", ready.get(0).getDescription());
@@ -108,7 +109,8 @@ class MultiAgentOrchestrationTest {
         Task t1 = Task.create("task 1");
         plan.addTask(t1);
         assertFalse(plan.isComplete());
-        t1.setStatus(TaskStatus.COMPLETED);
+        TaskLifecycle.start(t1, "fixture");
+        TaskLifecycle.complete(t1, "fixture output");
         assertTrue(plan.isComplete());
     }
 

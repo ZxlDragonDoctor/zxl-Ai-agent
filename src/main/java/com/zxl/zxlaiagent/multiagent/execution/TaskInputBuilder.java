@@ -37,13 +37,14 @@ public class TaskInputBuilder {
         int characters = 0;
         for (String id : recipient.getDependencies()) {
             Task source = tasks.get(id);
-            if (source == null || source.getStatus() != TaskStatus.COMPLETED)
+            TaskSnapshot state = source == null ? null : source.snapshot();
+            if (state == null || state.status() != TaskStatus.COMPLETED)
                 throw new WorkflowException("DEPENDENCY_NOT_COMPLETED", "tasks." + recipient.getId() + ".dependencies", "依赖任务尚未成功完成：" + id);
-            if (source.getResult() == null || source.getResult().isBlank() || source.getAssignedAgentId() == null)
+            if (state.result() == null || state.result().isBlank() || state.assignedAgentId() == null)
                 throw new WorkflowException("DEPENDENCY_OUTPUT_MISSING", "tasks." + recipient.getId() + ".dependencies", "依赖任务缺少真实输出或执行者：" + id);
-            characters += source.getResult().length();
+            characters += state.result().length();
             if (characters > 100000) throw new WorkflowException("DEPENDENCY_OUTPUT_TOO_LARGE", "tasks." + recipient.getId(), "依赖输出超过上下文预算，请先设计摘要节点");
-            results.add(new TaskExecutionContext.DependencyResult(id, source.getDescription(), source.getAssignedAgentId(), source.getResult()));
+            results.add(new TaskExecutionContext.DependencyResult(id, source.getDescription(), state.assignedAgentId(), state.result()));
         }
         return new TaskExecutionContext(plan.getGoal(), userInput, results);
     }

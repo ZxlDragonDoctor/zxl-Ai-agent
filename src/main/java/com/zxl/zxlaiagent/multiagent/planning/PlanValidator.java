@@ -30,10 +30,8 @@ public class PlanValidator {
             require(byId.putIfAbsent(task.getId(), task) == null, "DUPLICATE_TASK_ID", path + ".id", "任务 ID 不能重复");
             require(task.getDescription() != null && !task.getDescription().isBlank() && task.getDescription().length() <= MAX_DESCRIPTION,
                     "INVALID_PLAN_FIELD", path + ".description", "任务描述不能为空且不能超过 2000 字符");
-            require(task.getStatus() == TaskStatus.PENDING && task.getResult() == null && task.getError() == null
-                            && task.getAssignedAgentId() == null && task.getStartedAt() == 0 && task.getCompletedAt() == 0
-                            && task.getErrorCode() == null && task.getErrorPath() == null && task.getModelCalls() == 0,
-                    "INVALID_PLAN_FIELD", path, "入口任务不能携带执行状态或伪造结果");
+            require(TaskSnapshot.pending().equals(task.snapshot()), "INVALID_PLAN_FIELD", path + ".execution",
+                    "入口任务不能携带执行状态、调用统计或伪造结果");
             require(task.getInput() != null && task.getInput().size() == 1 && task.getInput().get("capability") instanceof String,
                     "INVALID_PLAN_FIELD", path + ".input", "计划输入只能声明 capability");
             String capability = PlanCapabilities.normalize((String) task.getInput().get("capability"), path + ".capability");

@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 import java.util.function.Consumer;
 
-/** 单次请求的报告器。回调串行发送，不把可变 Task 暴露给订阅者。 */
 @Slf4j
 public final class WorkflowRun {
     public final String id = UUID.randomUUID().toString();
@@ -15,34 +14,59 @@ public final class WorkflowRun {
     private final Consumer<Report> consumer;
     private final long startedAt = System.currentTimeMillis();
     private long sequence;
+    private WorkflowOutcome outcome;
     public WorkflowRun(String goal, Consumer<Report> consumer) {
         planningTask = Task.create(goal);
-        this.consumer = consumer;
+        this.consumer = Objects.requireNonNull(consumer);
     }
-    public synchronized void emit(String status, String result, WorkflowError error) {
-        List<TaskView> tasks = plan == null ? List.of() : plan.getTasks().stream().map(TaskView::from).toList();
-        boolean terminal = status.equals("completed") || status.equals("failed");
-        Report report = new Report(id, plan == null ? null : plan.getId(), ++sequence, planningTask.getDescription(),
-                status, startedAt, terminal ? System.currentTimeMillis() : 0, tasks,
-                planningTask.getModelCalls(), tasks.stream().mapToInt(TaskView::modelCalls).sum(),
-                synthesisTask == null ? 0 : synthesisTask.getModelCalls(), result, error);
+    public synchronized void emit(String stage, String unusedResult, WorkflowError unusedError) {
+        if (outcome != null) return;
+        if (!Set.of("planning", "running", "synthesizing").contains(stage))
+            throw new IllegalArgumentException("Use finishSuccess/finishFailure for terminal outcomes");
+        send(report(stage, null));
+    }
+    public synchronized WorkflowOutcome finishSuccess(String result) {
+        if (outcome != null) return outcome;
+        List<TaskExecutionView> tasks = taskViews();
+        TaskExecutionView synthesis = synthesisTask == null ? null : TaskExecutionView.from(synthesisTask, "supervisor");
+        if (plan == null || planningTask.getStatus() != TaskStatus.COMPLETED || tasks.isEmpty() || tasks.stream().anyMatch(task -> task.status() != TaskStatus.COMPLETED
+                || task.result() == null || task.result().isBlank()) || result == null || result.isBlank()
+                || (synthesis != null && synthesis.status() != TaskStatus.COMPLETED))
+            return finishFailure(new WorkflowError("PLAN_INCOMPLETE", "workflow", "必需任务或汇总未成功，不能判定计划完成"));
+        return finish("completed", result, null, tasks, synthesis);
+    }
+    public synchronized WorkflowOutcome finishFailure(WorkflowError error) {
+        if (outcome != null) return outcome;
+        return finish("failed", null, Objects.requireNonNull(error), taskViews(),
+                synthesisTask == null ? null : TaskExecutionView.from(synthesisTask, "supervisor"));
+    }
+    private WorkflowOutcome finish(String status, String result, WorkflowError error, List<TaskExecutionView> tasks, TaskExecutionView synthesis) {
+        TaskExecutionView planning = TaskExecutionView.from(planningTask, "planner");
+        outcome = new WorkflowOutcome(id, plan == null ? null : plan.getId(), planningTask.getDescription(), status,
+                startedAt, System.currentTimeMillis(), tasks, planning, synthesis, planning.modelCalls(),
+                tasks.stream().mapToInt(TaskExecutionView::modelCalls).sum(), synthesis == null ? 0 : synthesis.modelCalls(), result, error);
+        if (plan != null) plan.setStatus(outcome.successful() ? PlanStatus.COMPLETED : PlanStatus.FAILED);
+        send(report(status, outcome));
+        return outcome;
+    }
+    private List<TaskExecutionView> taskViews() {
+        return plan == null ? List.of() : plan.getTasks().stream().map(task -> TaskExecutionView.from(task, "unknown")).toList();
+    }
+    private Report report(String status, WorkflowOutcome terminal) {
+        List<TaskExecutionView> tasks = terminal == null ? taskViews() : terminal.tasks();
+        TaskExecutionView planning = terminal == null ? TaskExecutionView.from(planningTask, "planner") : terminal.planningTask();
+        TaskExecutionView synthesis = terminal == null ? (synthesisTask == null ? null : TaskExecutionView.from(synthesisTask, "supervisor")) : terminal.synthesisTask();
+        return new Report(id, plan == null ? null : plan.getId(), ++sequence, planningTask.getDescription(), status, startedAt,
+                terminal == null ? 0 : terminal.finishedAt(), tasks, planning.modelCalls(), tasks.stream().mapToInt(TaskExecutionView::modelCalls).sum(),
+                synthesis == null ? 0 : synthesis.modelCalls(), terminal == null ? null : terminal.result(),
+                terminal == null ? null : terminal.error(), planning, synthesis, terminal);
+    }
+    private void send(Report report) {
         try { consumer.accept(report); }
         catch (Exception e) { log.debug("Report subscriber disconnected: {}", id); }
     }
     public record Report(String executionId, String planId, long sequence, String goal, String status,
-                         long startedAt, long finishedAt, List<TaskView> tasks, int planningModelCalls,
-                         int workerModelCalls, int synthesisModelCalls, String result, WorkflowError error) {}
-    public record TaskView(String id, String description, String capability, TaskStatus status,
-                           String assignedAgentId, List<String> dependencies, TaskExecutionContext executionContext,
-                           String result, String error, String errorCode, String errorPath, int modelCalls,
-                           long startedAt, long completedAt) {
-        static TaskView from(Task task) {
-            Map<String, Object> input = task.getInput();
-            return new TaskView(task.getId(), task.getDescription(), (String) input.get("capability"),
-                    task.getStatus(), task.getAssignedAgentId(), List.copyOf(task.getDependencies()),
-                    input.get("executionContext") instanceof TaskExecutionContext context ? context : null,
-                    task.getResult(), task.getError(), task.getErrorCode(), task.getErrorPath(),
-                    task.getModelCalls(), task.getStartedAt(), task.getCompletedAt());
-        }
-    }
+                         long startedAt, long finishedAt, List<TaskExecutionView> tasks, int planningModelCalls,
+                         int workerModelCalls, int synthesisModelCalls, String result, WorkflowError error,
+                         TaskExecutionView planningTask, TaskExecutionView synthesisTask, WorkflowOutcome outcome) {}
 }

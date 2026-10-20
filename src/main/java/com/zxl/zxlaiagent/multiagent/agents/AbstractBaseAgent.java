@@ -53,7 +53,7 @@ public abstract class AbstractBaseAgent implements AgentInterface {
                 default -> null;
             };
             if (eventType != null) {
-                messageBus.publishEvent(AgentEvent.of(agentId, eventType));
+                publishSafely(AgentEvent.of(agentId, eventType));
             }
         }
         return changed;
@@ -63,45 +63,53 @@ public abstract class AbstractBaseAgent implements AgentInterface {
 
     @Override
     public CompletableFuture<String> executeTask(Task task) {
-        if (!compareAndSetState(AgentState.IDLE, AgentState.BUSY)) {
-            return CompletableFuture.failedFuture(
-                    new WorkflowException("AGENT_BUSY", "agents." + agentId, "Agent 当前不可领取任务：" + state.get()));
-        }
-        messageBus.publishEvent(AgentEvent.of(agentId, EventType.TASK_STARTED,
-                Map.of("taskId", task.getId(), "description", task.getDescription())));
-        task.setStatus(TaskStatus.IN_PROGRESS);
-        task.setStartedAt(System.currentTimeMillis());
-        CompletableFuture<String> work;
-        try { work = processTask(task); }
-        catch (Exception e) { work = CompletableFuture.failedFuture(e); }
-        return work.handle((result, error) -> {
-            if (error != null) {
-                WorkflowError failure = WorkflowError.from(error);
-                task.setErrorCode(failure.code());
-                task.setErrorPath(failure.path());
-                String errorMessage = error.getMessage() != null
-                        ? error.getMessage()
-                        : error.getClass().getSimpleName();
-                task.setError(errorMessage);
-                task.setCompletedAt(System.currentTimeMillis());
-                task.setStatus(TaskStatus.FAILED);
-                messageBus.publishEvent(AgentEvent.of(agentId, EventType.TASK_FAILED,
-                        Map.of("taskId", task.getId(), "error", errorMessage)));
+        if (!compareAndSetState(AgentState.IDLE, AgentState.BUSY))
+            return CompletableFuture.failedFuture(new WorkflowException("AGENT_BUSY", "agents." + agentId, "Agent 当前不可领取任务：" + state.get()));
+        try {
+            if (!TaskLifecycle.start(task, agentId).applied()) {
                 compareAndSetState(AgentState.BUSY, AgentState.IDLE);
-                throw new RuntimeException(error);
+                return CompletableFuture.failedFuture(new WorkflowException("TASK_ALREADY_STARTED", "tasks." + task.getId(), "任务已领取或已结束"));
             }
-            if (result == null || result.isBlank()) {
-                compareAndSetState(AgentState.BUSY, AgentState.IDLE);
-                throw new WorkflowException("TASK_OUTPUT_MISSING", "tasks." + task.getId(), "Agent 未返回有效内容");
-            }
-            task.setResult(result);
-            task.setCompletedAt(System.currentTimeMillis());
-            task.setStatus(TaskStatus.COMPLETED);
-            messageBus.publishEvent(AgentEvent.of(agentId, EventType.TASK_COMPLETED,
-                    Map.of("taskId", task.getId(), "result", result)));
+        } catch (Throwable error) {
             compareAndSetState(AgentState.BUSY, AgentState.IDLE);
-            return result;
-        });
+            return CompletableFuture.failedFuture(error);
+        }
+        CompletableFuture<String> result = new CompletableFuture<>();
+        var once = new java.util.concurrent.atomic.AtomicBoolean();
+        java.util.function.BiConsumer<String, Throwable> finish = (output, error) -> {
+            if (!once.compareAndSet(false, true)) return;
+            TaskSnapshot snapshot;
+            try {
+                TaskLifecycle.Transition transition = error == null ? TaskLifecycle.complete(task, output)
+                        : TaskLifecycle.fail(task, WorkflowError.from(error));
+                snapshot = transition.snapshot();
+                if (transition.applied()) publishSafely(AgentEvent.of(agentId,
+                        snapshot.status() == TaskStatus.COMPLETED ? EventType.TASK_COMPLETED : EventType.TASK_FAILED,
+                        Map.of("taskId", task.getId(), "execution", snapshot)));
+                else log.debug("Ignored late completion for task {} in {}", task.getId(), snapshot.status());
+            } catch (Throwable finishError) {
+                TaskLifecycle.fail(task, WorkflowError.from(finishError));
+                snapshot = task.snapshot();
+            } finally {
+                compareAndSetState(AgentState.BUSY, AgentState.IDLE);
+            }
+            if (snapshot.status() == TaskStatus.COMPLETED) result.complete(snapshot.result());
+            else result.completeExceptionally(new WorkflowException(snapshot.failure() == null
+                    ? new WorkflowError("INVALID_TASK_STATE", "tasks." + task.getId(), "任务无法完成") : snapshot.failure()));
+        };
+        try {
+            publishSafely(AgentEvent.of(agentId, EventType.TASK_STARTED, Map.of("taskId", task.getId(), "description", task.getDescription())));
+            CompletableFuture<String> work = processTask(task);
+            if (work == null) finish.accept(null, new WorkflowException("NULL_TASK_FUTURE", "tasks." + task.getId(), "Agent 返回了 null Future"));
+            else work.whenComplete(finish);
+        } catch (Throwable error) { finish.accept(null, error); }
+        // Cancelling the returned waiting future does not detach ownership cleanup from the underlying work.
+        return result;
+    }
+
+    protected void publishSafely(AgentEvent event) {
+        try { if (messageBus != null) messageBus.publishEvent(event); }
+        catch (Exception e) { log.warn("Agent event delivery failed for {}: {}", agentId, event.getType()); }
     }
 
     @Override
@@ -148,7 +156,8 @@ public abstract class AbstractBaseAgent implements AgentInterface {
     }
 
     protected String callLlm(Task task, String systemPrompt, String userMessage) {
-        task.setModelCalls(task.getModelCalls() + 1);
+        if (!TaskLifecycle.recordModelCall(task))
+            throw new WorkflowException("TASK_ALREADY_TERMINAL", "tasks." + task.getId(), "任务已经结束，不能继续调用模型");
         return callLlm(systemPrompt, userMessage);
     }
 

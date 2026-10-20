@@ -1,51 +1,51 @@
 package com.zxl.zxlaiagent.multiagent.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.*;
+import lombok.*;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
 public class Task {
     private String id;
     private String parentId;
     private String description;
-    private volatile TaskStatus status;
-    private volatile String assignedAgentId;
-    private List<String> dependencies;
+    private List<String> dependencies = new ArrayList<>();
     private volatile Map<String, Object> input;
-    private volatile String result;
-    private volatile String error;
-    private volatile String errorCode;
-    private volatile String errorPath;
-    private volatile int modelCalls;
     private int priority;
     private long createdAt;
-    private volatile long startedAt;
-    private volatile long completedAt;
+    @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE) @JsonIgnore
+    private final AtomicReference<TaskSnapshot> execution = new AtomicReference<>(TaskSnapshot.pending());
+
+    @JsonProperty("execution") public TaskSnapshot snapshot() { return execution.get(); }
+    /** Only Jackson can restore a wire snapshot. PlanValidator still rejects every non-pristine entry. */
+    @JsonSetter("execution") private void restoreExecution(TaskSnapshot snapshot) {
+        execution.set(Objects.requireNonNull(snapshot, "execution"));
+    }
+    boolean compareExecution(TaskSnapshot expected, TaskSnapshot next) { return execution.compareAndSet(expected, next); }
+    @JsonIgnore public TaskStatus getStatus() { return snapshot().status(); }
+    @JsonIgnore public String getResult() { return snapshot().result(); }
+    @JsonIgnore public String getAssignedAgentId() { return snapshot().assignedAgentId(); }
+    @JsonIgnore public int getModelCalls() { return snapshot().modelCalls(); }
+    @JsonIgnore public long getStartedAt() { return snapshot().startedAt(); }
+    @JsonIgnore public long getCompletedAt() { return snapshot().completedAt(); }
+    @JsonIgnore public String getError() { return snapshot().failure() == null ? null : snapshot().failure().message(); }
+    @JsonIgnore public String getErrorCode() { return snapshot().failure() == null ? null : snapshot().failure().code(); }
+    @JsonIgnore public String getErrorPath() { return snapshot().failure() == null ? null : snapshot().failure().path(); }
 
     public static Task create(String description) {
-        return Task.builder()
-                .id(UUID.randomUUID().toString())
-                .description(description)
-                .status(TaskStatus.PENDING)
-                .dependencies(new java.util.ArrayList<>())
-                .createdAt(System.currentTimeMillis())
-                .priority(5)
-                .build();
+        Task task = new Task();
+        task.id = UUID.randomUUID().toString();
+        task.description = description;
+        task.createdAt = System.currentTimeMillis();
+        task.priority = 5;
+        return task;
     }
-
     public static Task create(String description, List<String> dependencies) {
         Task task = create(description);
-        task.setDependencies(dependencies != null ? dependencies : new java.util.ArrayList<>());
+        task.dependencies = dependencies == null ? new ArrayList<>() : new ArrayList<>(dependencies);
         return task;
     }
 }
