@@ -103,8 +103,9 @@ class WorkflowOutcomeTest {
             assertThrows(UnsupportedOperationException.class, () -> context.userInput().put("policy", "changed"));
             return CompletableFuture.completedFuture("draft");
         });
-        WorkflowOutcome outcome = orchestrator.run("goal", Map.of("policy", "P2"), reports::add);
+        WorkflowOutcome outcome = orchestrator.run("goal", Map.of("policy", "P2", "capability", 123, "executionContext", Map.of("fake", "business input")), reports::add);
         assertTrue(outcome.successful());
+        assertEquals("planner", outcome.planningTask().capability());
         assertEquals("draft", outcome.result());
         assertEquals(3, outcome.tasks().size());
         assertNull(outcome.synthesisTask());

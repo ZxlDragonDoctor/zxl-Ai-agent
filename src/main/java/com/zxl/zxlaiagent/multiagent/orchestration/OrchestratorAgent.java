@@ -157,6 +157,8 @@ public class OrchestratorAgent implements AgentInterface {
             return snapshot.result();
         } catch (Exception e) {
             WorkflowError error = WorkflowError.from(e).forTask(task.getId());
+            if (task.getStatus() == TaskStatus.PENDING && error.code().equals("AGENT_BUSY"))
+                error = new WorkflowError(error.code(), error.path(), error.message(), error.sourceTaskId(), error.blockedByTaskIds(), "RESOURCE_UNAVAILABLE");
             TaskLifecycle.Transition failed = TaskLifecycle.fail(task, error);
             if (failed.applied()) publishTask(EventType.TASK_FAILED, task);
             else if (task.getStatus() == TaskStatus.PENDING) {

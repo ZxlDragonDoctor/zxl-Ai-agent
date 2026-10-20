@@ -11,7 +11,9 @@ public record TaskExecutionView(String id, String description, String capability
         TaskSnapshot state = task.snapshot();
         Map<String, Object> input = task.getInput() == null ? Map.of() : task.getInput();
         WorkflowError failure = state.failure();
-        return new TaskExecutionView(task.getId(), task.getDescription(), (String) input.getOrDefault("capability", defaultCapability),
+        String capability = !"unknown".equals(defaultCapability) ? defaultCapability
+                : input.get("capability") instanceof String value ? value : "unknown";
+        return new TaskExecutionView(task.getId(), task.getDescription(), capability,
                 state.status(), state.assignedAgentId(), task.getDependencies() == null ? List.of() : List.copyOf(task.getDependencies()),
                 input.get("executionContext") instanceof TaskExecutionContext context ? context : null,
                 state.result(), failure == null ? null : failure.message(), failure == null ? null : failure.code(),
