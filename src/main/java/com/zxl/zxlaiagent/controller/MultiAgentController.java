@@ -4,6 +4,7 @@ import com.zxl.zxlaiagent.multiagent.bus.AgentMessageBus;
 import com.zxl.zxlaiagent.multiagent.harness.AgentHarness;
 import com.zxl.zxlaiagent.multiagent.model.AgentInterface;
 import com.zxl.zxlaiagent.multiagent.model.WorkflowError;
+import com.zxl.zxlaiagent.multiagent.execution.WorkflowOutcome;
 import com.zxl.zxlaiagent.multiagent.model.AgentMessage;
 import com.zxl.zxlaiagent.multiagent.model.MessageType;
 import com.zxl.zxlaiagent.multiagent.observer.AgentObserver;
@@ -44,15 +45,18 @@ public class MultiAgentController {
 
     @PostMapping("/orchestrate")
     public Map<String, Object> orchestrate(@RequestBody OrchestrationRequest request) {
-        CompletableFuture<String> future = CompletableFuture.supplyAsync(() ->
-                orchestratorAgent.orchestrate(request.goal(), request.context()), executor);
+        CompletableFuture<WorkflowOutcome> future = CompletableFuture.supplyAsync(() ->
+                orchestratorAgent.run(request.goal(), request.context(), report -> {}), executor);
         try {
-            return Map.of("success", true, "result", future.get(300, java.util.concurrent.TimeUnit.SECONDS));
+            WorkflowOutcome outcome = future.get(300, java.util.concurrent.TimeUnit.SECONDS);
+            if (outcome.successful()) return Map.of("success", true, "result", outcome.result(), "outcome", outcome);
+            WorkflowError error = outcome.error();
+            return Map.of("success", false, "code", error.code(), "path", error.path(), "error", error.message(), "outcome", outcome);
         } catch (Exception e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             WorkflowError error = e instanceof java.util.concurrent.TimeoutException
                     ? new WorkflowError("REQUEST_TIMEOUT", "request", "请求等待超时，后台执行可能仍在进行") : WorkflowError.from(e);
-            return Map.of("success", false, "code", error.code(), "path", error.path(), "error", error.message());
+            return Map.of("success", false, "code", error.code(), "path", error.path(), "error", error.message(), "executionStatus", "unknown");
         }
     }
 
@@ -79,9 +83,10 @@ public class MultiAgentController {
         };
         executor.execute(() -> {
             try {
-                String result = orchestratorAgent.orchestrate(request.goal(), request.context(),
+                WorkflowOutcome outcome = orchestratorAgent.run(request.goal(), request.context(),
                         report -> send.accept("report", report));
-                send.accept("complete", result);
+                if (outcome.successful()) send.accept("complete", outcome.result());
+                else send.accept("error", outcome.error());
             } catch (Exception e) {
                 send.accept("error", WorkflowError.from(e));
             } finally {
