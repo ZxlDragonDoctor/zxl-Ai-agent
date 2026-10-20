@@ -25,6 +25,7 @@ public class AgentObserver {
     private final List<AgentEvent> eventLog = new CopyOnWriteArrayList<>();
     private final Map<String, List<Long>> responseTimes = new ConcurrentHashMap<>();
     private final Map<String, Long> taskCounts = new ConcurrentHashMap<>();
+    private final Map<String, Long> completedCounts = new ConcurrentHashMap<>();
     private final Map<String, Long> errorCounts = new ConcurrentHashMap<>();
 
     @Value
@@ -59,12 +60,7 @@ public class AgentObserver {
         messageBus.addEventListener(EventType.AGENT_REGISTERED, this::onAgentRegistered);
         messageBus.addEventListener(EventType.AGENT_ERROR, this::onAgentError);
 
-        messageBus.addEventListener(EventType.MESSAGE_SENT, event -> {
-            eventLog.add(event);
-            if (eventLog.size() > 10000) {
-                eventLog.remove(0);
-            }
-        });
+        for (EventType type : EventType.values()) messageBus.addEventListener(type, this::recordEvent);
 
         log.info("AgentObserver initialized");
     }
@@ -73,7 +69,7 @@ public class AgentObserver {
         agentMetrics.put(agentId, new AgentMetrics(
                 agentId, agentType,
                 taskCounts.getOrDefault(agentId, 0L),
-                taskCounts.getOrDefault(agentId, 0L) - errorCounts.getOrDefault(agentId, 0L),
+                completedCounts.getOrDefault(agentId, 0L),
                 errorCounts.getOrDefault(agentId, 0L),
                 0,
                 System.currentTimeMillis(),
@@ -113,8 +109,13 @@ public class AgentObserver {
     }
 
     public List<AgentEvent> getRecentEvents(int limit) {
-        int size = eventLog.size();
-        return eventLog.subList(Math.max(0, size - limit), size);
+        List<AgentEvent> snapshot = List.copyOf(eventLog);
+        return snapshot.subList(Math.max(0, snapshot.size() - Math.max(0, limit)), snapshot.size());
+    }
+
+    private synchronized void recordEvent(AgentEvent event) {
+        eventLog.add(event);
+        if (eventLog.size() > 10000) eventLog.remove(0);
     }
 
     private void onTaskStarted(AgentEvent event) {
@@ -124,8 +125,9 @@ public class AgentObserver {
 
     private void onTaskCompleted(AgentEvent event) {
         String agentId = event.getAgentId();
-        if (event.getData() != null) {
-            recordResponseTime(agentId, System.currentTimeMillis());
+        completedCounts.merge(agentId, 1L, Long::sum);
+        if (event.getData() != null && event.getData().get("execution") instanceof TaskSnapshot snapshot) {
+            recordResponseTime(agentId, Math.max(0, snapshot.completedAt() - snapshot.startedAt()));
         }
     }
 
@@ -158,7 +160,7 @@ public class AgentObserver {
             agentMetrics.put(agentId, new AgentMetrics(
                     old.getAgentId(), old.getAgentType(),
                     taskCounts.getOrDefault(agentId, 0L),
-                    taskCounts.getOrDefault(agentId, 0L) - errorCounts.getOrDefault(agentId, 0L),
+                    completedCounts.getOrDefault(agentId, 0L),
                     errorCounts.getOrDefault(agentId, 0L),
                     avgTime,
                     old.getLastActiveTime(),
