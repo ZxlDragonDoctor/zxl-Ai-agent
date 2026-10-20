@@ -93,6 +93,12 @@ function submitGoal() {
     if (event.type === 'report') {
       if (workflowReport.value && event.data.sequence <= workflowReport.value.sequence) return
       workflowReport.value = event.data
+      if (event.data.status === 'completed' || event.data.status === 'failed') {
+        isRunning.value = false
+        orchestrationResult.value = event.data.result || ''
+        workflowConnection?.close()
+        void refreshStatus()
+      }
     } else if (event.type === 'complete') {
       orchestrationResult.value = event.data
       isRunning.value = false
@@ -103,6 +109,7 @@ function submitGoal() {
       void refreshStatus()
     }
   }, () => {
+    if (workflowReport.value?.status === 'completed' || workflowReport.value?.status === 'failed') return
     streamError.value = t('workflow.disconnected')
     isRunning.value = false
   })
@@ -195,7 +202,7 @@ onUnmounted(() => {
           <div class="progress-fill" :style="{ width: progressPercent + '%' }"></div>
         </div>
         <WorkflowReportPanel v-if="workflowReport" :report="workflowReport" />
-        <p v-if="streamError" class="workflow-error" role="alert">{{ streamError }}</p>
+        <p v-if="streamError && !workflowReport?.error" class="workflow-error" role="alert">{{ streamError }}</p>
         <div v-if="orchestrationResult" class="result-card">
           <div class="result-head">
             <span>{{ t('result.title') }}</span>
