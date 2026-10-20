@@ -4,17 +4,17 @@
 
 学习主线：**模型调用 → 上下文与记忆 → 工具调用 → Agent 执行循环 → 多 Agent 编排 → 可靠性与评估**。
 
-当前为开发阶段：前端可以独立运行；完整后端联调还需要补齐编排初始化修复与 MCP 模块获取方式，详见[当前边界与后续方向](#当前边界与后续方向)。
+当前为开发阶段：编排初始化修正已提交，前端可以独立运行；后端联调需要有效模型配置，MCP 模块获取方式仍待补齐，详见[当前边界与后续方向](#当前边界与后续方向)。
 
 [页面预览](#页面预览) · [功能](#功能与实现范围) · [架构](#架构) · [快速开始](#快速开始) · [API](#主要-api) · [开发指南](#开发指南)
 
 ## 页面预览
 
-以下为实际本地联调页面截图，后端运行环境包含尚未提交的初始化修复。图片存放在仓库内，点击可查看原图；仅克隆当前提交可以运行前端界面，在线 Agent 状态还依赖后端修复。
+以下为实际本地联调页面截图，初始化修正已随第五课提交。图片存放在仓库内，点击可查看原图；后端使用本机现有配置与工作区运行，模型和 MCP 环境仍需按下文准备。
 
 | 统一对话 · 历史恢复 | Agent 协作中心 · 中文 |
 | --- | --- |
-| [![统一对话空间：会话列表、工具记录与刷新后的昵称恢复](docs/images/lesson4-memory-refresh.jpg)](docs/images/lesson4-memory-refresh.jpg) | [![中文 Agent 协作中心：任务编排、五个智能体、事件与系统指标](docs/images/agent-hub-zh.jpg)](docs/images/agent-hub-zh.jpg) |
+| [![统一对话空间：会话列表、工具记录与刷新后的昵称恢复](docs/images/lesson4-memory-refresh.jpg)](docs/images/lesson4-memory-refresh.jpg) | [![第五课真实任务数据流：三任务工单草稿、调用次数与完成状态](docs/images/lesson5-workflow.png)](docs/images/lesson5-workflow.png) |
 | **恋爱助手 · Agent 类型** | **Agent Hub · English** |
 | [![在统一对话页面选择恋爱助手类型并交流](docs/images/lesson4-agent-types.jpg)](docs/images/lesson4-agent-types.jpg) | [![英文 Agent Hub：任务编排、智能体状态与性能面板](docs/images/agent-hub-en.jpg)](docs/images/agent-hub-en.jpg) |
 
@@ -27,7 +27,7 @@
 | 统一 Agent 对话 | 新建、搜索、切换、恢复、删除会话；可选择 Agent 类型；JSON 持久化 | `/chat-room`；通用工具助手与恋爱助手共用页面，每个会话固定自己的类型 |
 | 恋爱助手 | `LoveAssistantProvider` 提供角色型示例，使用统一历史与真实流式输出 | 新类型没有文件 / 命令工具；旧 `LoveApp` 接口、Kryo 记忆与 RAG 方法保留，旧数据未自动迁移 |
 | 通用工具助手 `ZxlManus` | 模型选择工具、结果回填、预算、明确结束原因、实际执行卡片 | 每次创建新的 Agent，默认 20 步；恢复最近 8 轮完整上下文，完整历史另存 |
-| 多 Agent 编排 | 规划、任务依赖、就绪任务并行执行、角色分派、结果汇总 | 当前以分工生成文本为主，可靠性机制仍在完善 |
+| 多 Agent 编排 | 严格计划契约、DAG 校验、能力匹配、直接依赖结果快照、真实流式报告 | 三角色工单草稿演示；分析给定材料，尚无联网检索或工单写入工具；终态保护、取消与持久化继续完善 |
 | 工具集 | 文件读写、网页搜索与抓取、资源下载、终端操作、PDF 生成、图片分割、终止 | 执行能力由注册的 `ToolCallback` 提供；外部服务需要有效配置 |
 | RAG | Markdown 加载、关键词元数据、Embedding、内存向量库、查询重写、本地与云端检索方法 | 默认聊天页面尚未接入 RAG 方法 |
 | MCP | MCP 客户端工具合并、独立图片搜索服务 | 图片搜索依赖 Pexels 服务与凭据 |
@@ -35,7 +35,7 @@
 | 观察与基准 | Agent 状态、事件接口、执行报告、成功率与耗时分位数 | 前端每 5 秒刷新；基准成功率衡量执行是否报错，尚不评价答案质量 |
 | 前端 | 首页、Agent 协作中心、统一对话空间、聊天组件、中英文切换 | `/super-agent` 与 `/love-master` 重定向到统一对话空间，新增类型不需要新增页面 |
 
-多 Agent 实现定义了 **5 个角色**，它们可以使用同一个模型，通过不同提示词与任务输入分工。截图中的角色注册来自完成本地初始化修复后的运行环境：
+多 Agent 实现定义了 **5 个角色**，它们可以使用同一个模型，通过不同提示词与任务输入分工。初始化修正已提交，当前配置显式注入消息总线并注册角色：
 
 | 角色 | 职责 | 实现 |
 | --- | --- | --- |
@@ -119,7 +119,7 @@ npm run dev
 
 前端开发环境请求 `http://localhost:8123/api`。生产构建使用 `/api`，部署时需要由同域后端或反向代理提供该路径。
 
-以下后端步骤适用于已完成编排初始化修复，并已准备兼容 MCP 服务的开发环境。
+以下后端步骤需要模型配置与兼容的 MCP 服务；不使用 MCP 时需要按本机运行方式配置客户端。
 
 ### 3. 配置本地凭据
 
@@ -178,7 +178,7 @@ sh ./mvnw -f zxl-image-search-mcp/pom.xml spring-boot:run
 
 ### 5. 启动主应用
 
-**初始化限制**：当前已提交的 `MultiAgentConfig` 在手动构造的 Orchestrator 上使用尚未初始化的消息总线，注册角色时会触发空引用错误。应先完成该初始化修复，再运行以下命令。页面截图所用的本地环境已应用修复，当前仓库提交尚未包含它。
+**初始化说明**：`MultiAgentConfig` 已修正初始化次序，并显式注入工作 Agent 的消息总线与计划 / 输入组件。启动仍会加载知识文档与向量库，需要模型服务可达；本轮页面运行使用现有本地配置。
 
 在已设置模型环境变量的终端，从仓库根目录执行：
 
@@ -216,7 +216,8 @@ API 文档：[Knife4j](http://localhost:8123/api/doc.html) · [Swagger UI](http:
 | GET / DELETE | `/api/conversations/{id}` | 恢复 / 删除会话，执行中拒绝删除 |
 | POST | `/api/ai/agent/chat` | JSON：message、conversationId；SSE 携带 conversationId、runId |
 | GET / POST | `/api/ai/manus/chat` | 兼容旧入口；未传 conversationId 时新建默认工具会话 |
-| POST | `/api/ai/multiagent/orchestrate` | 编排目标；JSON 请求体 `{"goal":"目标描述"}` |
+| POST | `/api/ai/multiagent/orchestrate` | 编排目标；JSON 请求体 `{"goal":"目标描述","context":{"material":"业务材料"}}` |
+| POST | `/api/ai/multiagent/orchestrate/stream` | 相同请求体；SSE 推送真实 report、complete、结构化 error |
 | GET | `/api/ai/multiagent/orchestrate/stream` | 编排 SSE；参数 `goal` |
 | GET | `/api/ai/multiagent/agents` | 注册 Agent 列表 |
 | GET | `/api/ai/multiagent/status` | 系统与观察指标 |
@@ -297,19 +298,20 @@ npm run build
 - [课程地图](docs/learning/README.md) 与 [28 课企业工程路线](docs/learning/enterprise-agent-roadmap.md)。
 - [第三课实现与验收](docs/learning/03-acceptance.md)：48 个专项用例、前端构建与真实模型页面记录。
 - [第四课：会话、历史存储与上下文恢复](docs/learning/04-conversations-and-memory.md)：6 项工程任务已实现；[实现记录与页面证据](docs/learning/04-implementation.md) 区分构建、实测与未覆盖范围。
-- [第五课：Plan、Task 与依赖数据流](docs/learning/05-plans-tasks-and-dataflow.md)：计划契约、严格解析、DAG 校验与真实依赖结果传递；6 项任务已发布，尚未实现验收。
+- [第五课：Plan、Task 与依赖数据流](docs/learning/05-plans-tasks-and-dataflow.md)：六项任务已实现；[实现记录与页面证据](docs/learning/05-implementation.md) 包含真实三任务工单演示及未覆盖范围。
+- [第六课：生命周期与失败传播](docs/learning/06-lifecycle-and-failure-propagation.md)：已发布六项任务，学习原子状态、终态保护、失败因果、统一结果和集中验收。
 
 ![真实工具结果与结束原因](docs/images/lesson3-acceptance.jpg)
 
 ## 当前边界与后续方向
 
-- **后端启动**：补齐手动构造的 Orchestrator 与消息总线初始化关系，使新克隆的后端也能完成角色注册。
+- **后端启动**：编排初始化已修正；模型、Embedding、MCP 的环境准备与可复现部署仍需完善。
 - **MCP 模块来源**：为现有子模块指针补齐真实仓库地址与获取说明，或将服务源码按明确的仓库结构管理。
-- **上下文传递**：任务依赖已经用于调度，上游结果自动注入下游输入仍待完善。
-- **可观察性**：Agent Hub 的进度条目前为模拟进度；事件覆盖与耗时统计需要进一步校准。
+- **上下文传递**：直接依赖实际结果已注入只读快照；后续补充结构化业务产物校验、上下文预算与权威知识。
+- **可观察性**：Agent Hub 已用真实报告替换随机进度；完整事件保存、断线恢复和全局耗时指标仍需完善。
 - **会话存储边界**：统一对话已提供 JSON 历史恢复，当前为单进程、单用户演示；多实例、数据库、身份授权与大历史分页仍需扩展。
 - **长期记忆**：`HierarchicalMemory` 有分层存储与关键词召回结构，尚未接入业务调用链。
-- **运行可靠性**：继续完善计划校验、失败状态、超时后的任务取消、重试、幂等和并发配额。
+- **运行可靠性**：计划入口与 DAG 校验已接通；继续完善原子状态、超时晚到保护、取消、重试、幂等和并发配额。
 - **质量评估**：在执行耗时与异常统计之外，为代码、研究结果和工具输出增加明确验收标准。
 
 建议学习顺序：先完成一次普通模型调用和一个只读工具，再掌握 Agent 循环，随后进入多 Agent 编排与失败处理，最后接入 RAG、MCP 和质量评估。
