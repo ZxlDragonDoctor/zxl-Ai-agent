@@ -1,6 +1,6 @@
 # 第六课：生命周期与失败传播
 
-日期：2026-10-20。前置：[第五课实现记录](05-implementation.md)。本文件是下一课任务包，**第六课尚未实施或验收**。
+日期：2026-10-20。前置：[第五课实现记录](05-implementation.md)。六项任务已实现，[实现与验收记录](06-implementation.md) 包含 24 个新增专项用例、24 个相关回归用例、真实模型运行和可控故障页面证据。下文保留原任务要求，便于学习和独立复盘。
 
 本课目标：将分散在 Agent、编排器和回调中的状态写入收拢到统一边界，让失败原因、任务终态、计划结果和页面报告保持一致。连续完成下面六项关联任务，预留 4–6 小时；前端由助手配合，学习重点放在 Java。
 
@@ -26,7 +26,7 @@
 
 ## 2. 当前代码应该从哪里读起
 
-按顺序看以下入口，每个入口只回答表中的一个问题：
+下表保留实施前的问题定位；现已用 TaskSnapshot / TaskLifecycle 和统一结果边界修正。按顺序阅读改动，每个入口只回答一个问题：
 
 | 入口 | 观察重点 |
 | --- | --- |
@@ -37,7 +37,7 @@
 | [WorkflowRun](../../src/main/java/com/zxl/zxlaiagent/multiagent/execution/WorkflowRun.java) | 报告已经有递增序号，但任务各字段仍可能读到不同时间的值 |
 | [MultiAgentController](../../src/main/java/com/zxl/zxlaiagent/controller/MultiAgentController.java) | 如何把业务失败交给 HTTP / SSE；网络异常不能改写业务结果 |
 
-例如：编排器等待超时，将任务写为 FAILED；稍后原 Future 返回，BaseAgent 仍可能把同一个任务写为 COMPLETED。`volatile` 只能保证单字段可见，不能让这些相关字段原子变化，也不能阻止终态倒退。
+实施前的例子：编排器等待超时，将任务写为 FAILED；稍后原 Future 返回，BaseAgent 仍可能把同一个任务写为 COMPLETED。`volatile` 只能保证单字段可见，不能让这些相关字段原子变化，也不能阻止终态倒退。
 
 第五课额外捕获了 processTask 同步抛错，并用 BUSY → IDLE 的条件更新避免覆盖 SHUTDOWN。它们仍需在本课统一到完整的完成边界。
 
@@ -138,7 +138,7 @@ Plan 建议规则：CREATED → IN_PROGRESS → COMPLETED / FAILED；规划阶�
 
 先用可控的 Agent 替身验证状态与因果，再用真实模型演示一次正常工单流程。替身应能控制完成时机和抛错，不依赖模型随机输出制造故障。
 
-下面是下一课验收矩阵，当前没有执行这些专项用例：
+以下矩阵现已由可控专项用例覆盖；实际运行命令、数量与页面边界见[验收记录](06-implementation.md)：
 
 | 场景 | 必须观察到的结果 |
 | --- | --- |
@@ -153,7 +153,7 @@ Plan 建议规则：CREATED → IN_PROGRESS → COMPLETED / FAILED；规划阶�
 | 全部主任务完成，额外汇总失败 | 主任务成功，Plan 失败，原因指向汇总 |
 | 规划失败，无有效 Plan | outcome 失败，业务工作 Agent 没有开始 |
 
-这些是第六课任务要求，实施时按你的验收安排运行；第五课记录不宣称已覆盖它们。
+本轮运行 48 个专项与相关回归用例，无失败、错误或跳过。它们的数量与第三课独立记录；没有运行全套外部模型 / MCP 测试。
 
 ## 6. 建议分两批连续完成
 
@@ -178,3 +178,6 @@ Plan 建议规则：CREATED → IN_PROGRESS → COMPLETED / FAILED；规划阶�
 沿用[源码导读的 S2](reference-guide.md)，对照 Shannon 的任务等待与结束决策，写出你在 Java 中采用的状态所有者和失败策略；不要直接把其他语言工作流代码当作本项目已经具备的能力。
 
 本课完成后，第七课继续处理截止时间、真实取消传播、资源配额与排队；第八课处理可重试错误、退避和业务幂等。第六课建立终态保护，是这些机制共同的前提。
+
+
+下一课：[第七课：截止时间、取消与并发容量](07-deadlines-cancellation-and-capacity.md)。
