@@ -166,7 +166,7 @@ public class OrchestratorAgent implements AgentInterface {
                 if (blocked.applied()) publishTask(EventType.TASK_BLOCKED, task);
             }
             WorkflowError authoritative = task.snapshot().failure() == null ? error : task.snapshot().failure();
-            if (path.equals("planning") || path.equals("synthesis")) authoritative = new WorkflowError(authoritative.code(), path,
+            if (path.equals("synthesis") || (path.equals("planning") && authoritative.path().equals("tasks." + task.getId()))) authoritative = new WorkflowError(authoritative.code(), path,
                     authoritative.message(), authoritative.sourceTaskId(), authoritative.blockedByTaskIds(), authoritative.reason());
             throw new WorkflowException(authoritative, e);
         } finally {

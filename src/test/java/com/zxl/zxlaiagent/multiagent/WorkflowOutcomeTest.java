@@ -142,6 +142,11 @@ class WorkflowOutcomeTest {
         assertTrue(outcome.tasks().isEmpty());
         assertEquals(0, calls.get());
         exportReport("planning-failure");
+        planner("[{\"task_description\":\"A\",\"dependencies\":[\"0\"],\"required_capability\":\"research\"}]");
+        WorkflowOutcome invalidField = orchestrator.run("goal", Map.of(), reports::add);
+        assertEquals("INVALID_PLAN_FIELD", invalidField.error().code());
+        assertEquals("tasks[0].dependencies[0]", invalidField.error().path());
+        assertEquals(0, calls.get());
     }
     @Test void terminalReportIsFrozenAndSubscriberExceptionsDoNotAlterSuccess() {
         WorkflowRun run = new WorkflowRun("goal", report -> { reports.add(report); throw new IllegalStateException("subscriber"); });
