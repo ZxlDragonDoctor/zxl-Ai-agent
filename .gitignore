@@ -42,3 +42,4 @@ chat-memory/
 .DS_Store
 *.log
 /runtime-data/
+/zxl-Ai-agent-fronted/dev/lesson6/*.generated.json
