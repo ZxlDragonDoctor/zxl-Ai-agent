@@ -18,6 +18,7 @@ const materialInput = ref('')
 const workflowReport = ref<WorkflowReport | null>(null)
 const streamError = ref('')
 let workflowConnection: { close(): void } | undefined
+let workflowGeneration = 0
 const progressPercent = computed(() => {
   const tasks = workflowReport.value?.tasks || []
   return tasks.length ? tasks.filter(task => task.status === 'COMPLETED').length / tasks.length * 100 : 0
@@ -85,12 +86,16 @@ function fillExample() {
 
 function submitGoal() {
   if (!goalInput.value.trim() || isRunning.value) return
+  const generation = ++workflowGeneration
+  workflowConnection?.close()
   isRunning.value = true
   orchestrationResult.value = ''
   streamError.value = ''
   workflowReport.value = null
   workflowConnection = orchestrateGoalStream(goalInput.value, { material: materialInput.value }, event => {
+    if (generation !== workflowGeneration) return
     if (event.type === 'report') {
+      if (workflowReport.value?.status === 'completed' || workflowReport.value?.status === 'failed') return
       if (workflowReport.value && event.data.sequence <= workflowReport.value.sequence) return
       workflowReport.value = event.data
       if (event.data.status === 'completed' || event.data.status === 'failed') {
@@ -109,6 +114,7 @@ function submitGoal() {
       void refreshStatus()
     }
   }, () => {
+    if (generation !== workflowGeneration) return
     if (workflowReport.value?.status === 'completed' || workflowReport.value?.status === 'failed') return
     streamError.value = t('workflow.disconnected')
     isRunning.value = false
@@ -149,6 +155,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (statusInterval) clearInterval(statusInterval)
+  workflowGeneration++
   workflowConnection?.close()
 })
 </script>

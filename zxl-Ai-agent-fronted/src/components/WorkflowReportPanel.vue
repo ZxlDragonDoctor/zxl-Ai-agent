@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { t } from '../i18n'
+import { t, locale } from '../i18n'
 import type { WorkflowReport } from '../types/workflow'
 
 const props = defineProps<{ report: WorkflowReport }>()
 const completed = computed(() => props.report.tasks.filter(task => task.status === 'COMPLETED').length)
 const modelCalls = computed(() => props.report.planningModelCalls + props.report.workerModelCalls + props.report.synthesisModelCalls)
-const taskNumber = (id: string) => `#${props.report.tasks.findIndex(task => task.id === id) + 1}`
+const taskNumber = (id: string) => {
+  const index = props.report.tasks.findIndex(task => task.id === id)
+  if (index >= 0) return `#${index + 1}`
+  if (props.report.planningTask?.id === id) return t('workflow.planner')
+  if (props.report.synthesisTask?.id === id) return t('workflow.synthesis')
+  return id.slice(0, 8)
+}
+const finishedTime = (value: number) => new Date(value).toLocaleTimeString(locale.value === 'zh-CN' ? 'zh-CN' : 'en-US', { timeZone: 'Asia/Shanghai' })
 const showValue = (value: unknown) => typeof value === 'string' ? value : JSON.stringify(value, null, 2)
 </script>
 
@@ -24,7 +31,16 @@ const showValue = (value: unknown) => typeof value === 'string' ? value : JSON.s
       <span>{{ t('workflow.planner') }} {{ report.planningModelCalls }} · {{ t('workflow.workers') }} {{ report.workerModelCalls }} · {{ t('workflow.synthesis') }} {{ report.synthesisModelCalls }}</span>
       <span v-if="report.finishedAt">{{ t('workflow.duration') }} {{ ((report.finishedAt - report.startedAt) / 1000).toFixed(1) }}s</span>
     </div>
-    <p v-if="!report.tasks.length" class="empty-plan">{{ t('workflow.awaitPlan') }}</p>
+    <div class="phase-summary">
+      <span v-if="report.planningTask">{{ t('workflow.planner') }} · {{ t(`workflow.task.${report.planningTask.status}`) }}
+        <small v-if="report.planningTask.completedAt">{{ t('workflow.finishedAt') }} {{ finishedTime(report.planningTask.completedAt) }}</small>
+      </span>
+      <span v-if="report.synthesisTask">{{ t('workflow.synthesis') }} · {{ t(`workflow.task.${report.synthesisTask.status}`) }}
+        <small v-if="report.synthesisTask.completedAt">{{ t('workflow.finishedAt') }} {{ finishedTime(report.synthesisTask.completedAt) }}</small>
+      </span>
+    </div>
+    <p v-if="report.tasks.length && completed === report.tasks.length && report.status !== 'completed'" class="completion-note">{{ t('workflow.ratioNotice') }}</p>
+    <p v-if="!report.tasks.length" class="empty-plan">{{ t(report.status === 'failed' ? 'workflow.noTasksStarted' : 'workflow.awaitPlan') }}</p>
     <ol class="task-flow">
       <li v-for="(task, index) in report.tasks" :key="task.id" class="flow-task" :class="task.status.toLowerCase()">
         <div class="task-heading">
@@ -57,14 +73,34 @@ const showValue = (value: unknown) => typeof value === 'string' ? value : JSON.s
           <summary>{{ t('workflow.output') }} · {{ task.modelCalls }} {{ t('workflow.callUnit') }}</summary>
           <pre class="task-output">{{ task.result }}</pre>
         </details>
-        <p v-if="task.error" class="task-error">{{ task.errorCode }} · {{ task.error }}</p>
+        <div v-if="task.failure" class="failure-detail">
+          <strong>{{ t(`workflow.reason.${task.failure.reason || 'EXECUTION_ERROR'}`) }}</strong>
+          <p>{{ task.failure.code }} · {{ task.failure.message }}</p>
+          <span v-if="task.failure.sourceTaskId">{{ t('workflow.rootCause') }} {{ taskNumber(task.failure.sourceTaskId) }}</span>
+          <span v-if="task.failure.blockedByTaskIds?.length">{{ t('workflow.blockedBy') }} {{ task.failure.blockedByTaskIds.map(taskNumber).join(', ') }}</span>
+        </div>
+        <p v-else-if="task.error" class="task-error">{{ task.errorCode }} · {{ task.error }}</p>
+        <p v-if="task.completedAt" class="task-finished">{{ t('workflow.finishedAt') }} <time :datetime="new Date(task.completedAt).toISOString()">{{ finishedTime(task.completedAt) }}</time></p>
       </li>
     </ol>
-    <p v-if="report.error" class="task-error" role="alert">{{ report.error.code }} · {{ report.error.path }} · {{ report.error.message }}</p>
+    <div v-if="report.synthesisTask?.failure" class="failure-detail synthesis-error">
+      <strong>{{ t('workflow.synthesisFailure') }}</strong>
+      <p>{{ report.synthesisTask.failure.code }} · {{ report.synthesisTask.failure.message }}</p>
+    </div>
+    <p v-if="report.error" class="task-error" role="alert">{{ report.error.code }} · {{ report.error.path }} · {{ report.error.message }}
+      <span v-if="report.error.sourceTaskId"> · {{ t('workflow.rootCause') }} {{ taskNumber(report.error.sourceTaskId) }}</span>
+    </p>
   </section>
 </template>
 
 <style scoped>
+.phase-summary { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 12px 22px 0; font-size: 12px; color: var(--color-text-secondary); }
+.phase-summary small { display: block; margin-top: 3px; font-size: 11px; }
+.failure-detail { margin-top: 12px; padding: 12px; background: var(--color-error-light); border-radius: 8px; color: var(--color-error); font-size: 12px; line-height: 1.7; }
+.failure-detail p { margin: 4px 0; } .failure-detail span { display: inline-block; margin-right: 12px; }
+.synthesis-error { margin: 0 22px 16px; }
+.task-finished, .completion-note { font-size: 11px; color: var(--color-text-tertiary); margin: 10px 0 0; }
+.completion-note { margin: 14px 22px 0; }
 .workflow-report { border: 1px solid var(--color-border); border-radius: 14px; overflow: hidden; background: var(--color-bg); }
 .report-heading { padding: 20px 22px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .eyebrow { font-size: 11px; color: var(--color-text-tertiary); letter-spacing: .08em; }
