@@ -14,7 +14,7 @@
 
 | 统一对话 · 历史恢复 | Agent 协作中心 · 中文 |
 | --- | --- |
-| [![统一对话空间：会话列表、工具记录与刷新后的昵称恢复](docs/images/lesson4-memory-refresh.jpg)](docs/images/lesson4-memory-refresh.jpg) | [![第五课真实任务数据流：三任务工单草稿、调用次数与完成状态](docs/images/lesson5-workflow.png)](docs/images/lesson5-workflow.png) |
+| [![统一对话空间：会话列表、工具记录与刷新后的昵称恢复](docs/images/lesson4-memory-refresh.jpg)](docs/images/lesson4-memory-refresh.jpg) | [![第六课真实执行：任务状态、结束时间与模型调用次数](docs/images/lesson6-success.png)](docs/images/lesson6-success.png) |
 | **恋爱助手 · Agent 类型** | **Agent Hub · English** |
 | [![在统一对话页面选择恋爱助手类型并交流](docs/images/lesson4-agent-types.jpg)](docs/images/lesson4-agent-types.jpg) | [![英文 Agent Hub：任务编排、智能体状态与性能面板](docs/images/agent-hub-en.jpg)](docs/images/agent-hub-en.jpg) |
 
@@ -27,7 +27,7 @@
 | 统一 Agent 对话 | 新建、搜索、切换、恢复、删除会话；可选择 Agent 类型；JSON 持久化 | `/chat-room`；通用工具助手与恋爱助手共用页面，每个会话固定自己的类型 |
 | 恋爱助手 | `LoveAssistantProvider` 提供角色型示例，使用统一历史与真实流式输出 | 新类型没有文件 / 命令工具；旧 `LoveApp` 接口、Kryo 记忆与 RAG 方法保留，旧数据未自动迁移 |
 | 通用工具助手 `ZxlManus` | 模型选择工具、结果回填、预算、明确结束原因、实际执行卡片 | 每次创建新的 Agent，默认 20 步；恢复最近 8 轮完整上下文，完整历史另存 |
-| 多 Agent 编排 | 严格计划契约、DAG 校验、能力匹配、直接依赖结果快照、真实流式报告 | 三角色工单草稿演示；分析给定材料，尚无联网检索或工单写入工具；终态保护、取消与持久化继续完善 |
+| 多 Agent 编排 | 严格计划契约、DAG 校验、能力匹配、直接依赖结果快照、真实流式报告 | 三角色工单草稿演示；分析给定材料，尚无联网检索或工单写入工具；原子状态与终态保护已实现，取消与持久化继续完善 |
 | 工具集 | 文件读写、网页搜索与抓取、资源下载、终端操作、PDF 生成、图片分割、终止 | 执行能力由注册的 `ToolCallback` 提供；外部服务需要有效配置 |
 | RAG | Markdown 加载、关键词元数据、Embedding、内存向量库、查询重写、本地与云端检索方法 | 默认聊天页面尚未接入 RAG 方法 |
 | MCP | MCP 客户端工具合并、独立图片搜索服务 | 图片搜索依赖 Pexels 服务与凭据 |
@@ -226,6 +226,8 @@ API 文档：[Knife4j](http://localhost:8123/api/doc.html) · [Swagger UI](http:
 | GET | `/api/ai/multiagent/harness/benchmark` | 运行整组基准任务 |
 | GET | `/api/image/multipleConditions` | 图片生成；参数 `subject`、`environment`、`height`、`width`、`style` |
 
+多 Agent 的 HTTP 响应新增不可变 `outcome`，保留原 `success/result/code/path/error` 字段；终态 SSE 的 `report.outcome` 使用同一份业务结果。连接等待超时使用 `executionStatus=unknown`，不据此伪造后台失败。
+
 `harness` 接口会实际执行 Agent 并调用模型，不是只读的历史报表查询。
 
 ## 项目结构
@@ -299,7 +301,8 @@ npm run build
 - [第三课实现与验收](docs/learning/03-acceptance.md)：48 个专项用例、前端构建与真实模型页面记录。
 - [第四课：会话、历史存储与上下文恢复](docs/learning/04-conversations-and-memory.md)：6 项工程任务已实现；[实现记录与页面证据](docs/learning/04-implementation.md) 区分构建、实测与未覆盖范围。
 - [第五课：Plan、Task 与依赖数据流](docs/learning/05-plans-tasks-and-dataflow.md)：六项任务已实现；[实现记录与页面证据](docs/learning/05-implementation.md) 包含真实三任务工单演示及未覆盖范围。
-- [第六课：生命周期与失败传播](docs/learning/06-lifecycle-and-failure-propagation.md)：已发布六项任务，学习原子状态、终态保护、失败因果、统一结果和集中验收。
+- [第六课：生命周期与失败传播](docs/learning/06-lifecycle-and-failure-propagation.md)：六项任务已完成；[48 个专项与相关回归、真实模型及故障页面证据](docs/learning/06-implementation.md)。
+- [第七课：截止时间、取消与并发容量](docs/learning/07-deadlines-cancellation-and-capacity.md)：任务包已发布，覆盖统一预算、协作取消、资源清理和有界排队。
 
 ![真实工具结果与结束原因](docs/images/lesson3-acceptance.jpg)
 
@@ -311,7 +314,7 @@ npm run build
 - **可观察性**：Agent Hub 已用真实报告替换随机进度；完整事件保存、断线恢复和全局耗时指标仍需完善。
 - **会话存储边界**：统一对话已提供 JSON 历史恢复，当前为单进程、单用户演示；多实例、数据库、身份授权与大历史分页仍需扩展。
 - **长期记忆**：`HierarchicalMemory` 有分层存储与关键词召回结构，尚未接入业务调用链。
-- **运行可靠性**：计划入口与 DAG 校验已接通；继续完善原子状态、超时晚到保护、取消、重试、幂等和并发配额。
+- **运行可靠性**：计划校验、原子状态、超时晚到保护、失败因果和不可变结果已接通；继续完善真实取消、统一截止时间、重试、幂等和并发配额。
 - **质量评估**：在执行耗时与异常统计之外，为代码、研究结果和工具输出增加明确验收标准。
 
 建议学习顺序：先完成一次普通模型调用和一个只读工具，再掌握 Agent 循环，随后进入多 Agent 编排与失败处理，最后接入 RAG、MCP 和质量评估。
