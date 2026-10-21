@@ -1,5 +1,7 @@
 # Browser 风格动态图谱
 
+本页记录二维备用视图。用户后续选择了 [3D 星空知识网络](3d-starfield.md)，当前页面默认进入 3D 全图；点击 2D 后使用下面的操作。
+
 2026-10-22，按用户选择的 Neo4j Browser 经典节点图改版。参考：[官方 Graph result frame](https://neo4j.com/docs/browser/operations/result-frames/)。展示采用白底、分类彩色圆点、圆内多行标题、细箭头和沿线关系标题。
 
 ## 页面操作
