@@ -12,13 +12,11 @@ import com.zxl.zxlaiagent.multiagent.orchestration.OrchestratorAgent;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @RestController
 @RequestMapping("/ai/multiagent")
@@ -34,21 +32,15 @@ public class MultiAgentController {
     @Resource
     private AgentObserver agentObserver;
 
-    private final ExecutorService executor = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r);
-        t.setDaemon(true);
-        t.setName("ctrl-agent-" + r.hashCode());
-        return t;
-    });
-
-    public record OrchestrationRequest(String goal, Map<String, Object> context) {}
+    public record OrchestrationRequest(String goal, Map<String, Object> context, Long timeoutMs) {
+        public OrchestrationRequest(String goal, Map<String, Object> context) { this(goal, context, null); }
+    }
 
     @PostMapping("/orchestrate")
     public Map<String, Object> orchestrate(@RequestBody OrchestrationRequest request) {
-        CompletableFuture<WorkflowOutcome> future = CompletableFuture.supplyAsync(() ->
-                orchestratorAgent.run(request.goal(), request.context(), report -> {}), executor);
         try {
-            WorkflowOutcome outcome = future.get(300, java.util.concurrent.TimeUnit.SECONDS);
+            WorkflowOutcome outcome = request.timeoutMs() == null ? orchestratorAgent.run(request.goal(), request.context(), report -> {})
+                    : orchestratorAgent.run(request.goal(), request.context(), request.timeoutMs(), report -> {});
             if (outcome.successful()) return Map.of("success", true, "result", outcome.result(), "outcome", outcome);
             WorkflowError error = outcome.error();
             return Map.of("success", false, "code", error.code(), "path", error.path(), "error", error.message(), "outcome", outcome);
@@ -58,6 +50,27 @@ public class MultiAgentController {
                     ? new WorkflowError("REQUEST_TIMEOUT", "request", "请求等待超时，后台执行可能仍在进行") : WorkflowError.from(e);
             return Map.of("success", false, "code", error.code(), "path", error.path(), "error", error.message(), "executionStatus", "unknown");
         }
+    }
+
+    /** 本地单用户演示；生产接入前须绑定认证用户与租户，不能把 UUID 当授权。 */
+    @PostMapping("/runs")
+    public ResponseEntity<?> submitRun(@RequestBody OrchestrationRequest request) {
+        try {
+            var handle = orchestratorAgent.submit(request.goal(), request.context(), request.timeoutMs(), report -> {});
+            return ResponseEntity.accepted().body(Map.of("executionId", handle.executionId()));
+        } catch (Exception e) { return ResponseEntity.badRequest().body(WorkflowError.from(e)); }
+    }
+
+    @GetMapping("/runs/{executionId}")
+    public ResponseEntity<?> getRun(@PathVariable String executionId) {
+        var view = orchestratorAgent.runStatus(executionId);
+        return view == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(view);
+    }
+
+    @PostMapping("/runs/{executionId}/cancel")
+    public ResponseEntity<?> cancelRun(@PathVariable String executionId) {
+        var receipt = orchestratorAgent.cancel(executionId);
+        return ResponseEntity.status(receipt.status().equals("not_found") ? 404 : 200).body(receipt);
     }
 
     @GetMapping(value = "/orchestrate/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -81,18 +94,17 @@ public class MultiAgentController {
             try { emitter.send(SseEmitter.event().name(name).data(data)); }
             catch (Exception e) { connected.set(false); }
         };
-        executor.execute(() -> {
-            try {
-                WorkflowOutcome outcome = orchestratorAgent.run(request.goal(), request.context(),
-                        report -> send.accept("report", report));
+        try {
+            var handle = orchestratorAgent.submit(request.goal(), request.context(), request.timeoutMs(), report -> send.accept("report", report));
+            handle.result().whenComplete((outcome, failure) -> {
+                if (failure != null) send.accept("error", WorkflowError.from(failure));
+                else {
                 if (outcome.successful()) send.accept("complete", outcome.result());
                 else send.accept("error", outcome.error());
-            } catch (Exception e) {
-                send.accept("error", WorkflowError.from(e));
-            } finally {
-                emitter.complete();
-            }
-        });
+                }
+                try { emitter.complete(); } catch (Exception ignored) { connected.set(false); }
+            });
+        } catch (Exception e) { send.accept("error", WorkflowError.from(e)); emitter.complete(); }
         return emitter;
     }
 
