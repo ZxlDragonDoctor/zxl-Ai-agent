@@ -46,7 +46,7 @@ public class CodeAgent extends AbstractBaseAgent {
 
     @Override
     public CompletableFuture<String> processTask(Task task) {
-        return CompletableFuture.supplyAsync(() -> {
+        return async(task, () -> {
             log.info("CodeAgent executing: {}", task.getDescription());
             String result = callLlm(task, CODE_SYSTEM_PROMPT, renderer.render(task));
             log.info("CodeAgent completed: {}", task.getDescription());

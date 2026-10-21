@@ -36,7 +36,7 @@ public class PlannerAgent extends AbstractBaseAgent {
     }
     @Override
     public CompletableFuture<String> processTask(Task task) {
-        return CompletableFuture.supplyAsync(() -> {
+        return async(task, () -> {
             try {
                 String response = callLlm(task, SYSTEM, "用户目标：" + task.getDescription()
                         + "\n业务输入 JSON：" + mapper.writeValueAsString(task.getInput()));

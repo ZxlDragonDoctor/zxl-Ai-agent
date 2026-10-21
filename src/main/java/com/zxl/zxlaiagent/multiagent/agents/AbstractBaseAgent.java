@@ -8,6 +8,9 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import com.zxl.zxlaiagent.multiagent.runtime.*;
+import java.util.concurrent.*;
+import java.util.function.Supplier;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -27,6 +30,15 @@ public abstract class AbstractBaseAgent implements AgentInterface {
     @Setter
     protected ChatClient chatClient;
     protected ChatModel chatModel;
+    private volatile ExecutionRuntime runtime;
+    private static final ExecutorService STANDALONE = new ThreadPoolExecutor(4, 4, 30, TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(16), r -> { Thread t = new Thread(r, "agent-standalone"); t.setDaemon(true); return t; }, new ThreadPoolExecutor.AbortPolicy());
+    public void attachRuntime(ExecutionRuntime runtime) { this.runtime = runtime; }
+    protected <T> CompletableFuture<T> async(Task task, Supplier<T> action) {
+        return runtime == null ? CompletableFuture.supplyAsync(action, STANDALONE) : runtime.async(task, action);
+    }
+    /** 新增工具/副作用时，必须在动作开始前调用该入口。控制对象不进入模型输入。 */
+    protected void checkExecution(Task task) { if (runtime != null) runtime.check(task); }
     @Resource
     protected AgentMessageBus messageBus;
     protected final Map<String, Object> config = new ConcurrentHashMap<>();
@@ -63,6 +75,7 @@ public abstract class AbstractBaseAgent implements AgentInterface {
 
     @Override
     public CompletableFuture<String> executeTask(Task task) {
+        try { checkExecution(task); } catch (Exception e) { return CompletableFuture.failedFuture(e); }
         if (!compareAndSetState(AgentState.IDLE, AgentState.BUSY))
             return CompletableFuture.failedFuture(new WorkflowException("AGENT_BUSY", "agents." + agentId, "Agent 当前不可领取任务：" + state.get()));
         try {
@@ -80,11 +93,18 @@ public abstract class AbstractBaseAgent implements AgentInterface {
             if (!once.compareAndSet(false, true)) return;
             TaskSnapshot snapshot;
             try {
-                TaskLifecycle.Transition transition = error == null ? TaskLifecycle.complete(task, output)
-                        : TaskLifecycle.fail(task, WorkflowError.from(error));
+                ExecutionControl control = runtime == null ? null : runtime.control(task);
+                WorkflowError stop = control == null ? null : control.stopReason();
+                TaskLifecycle.Transition transition;
+                if (stop != null) transition = stop.code().equals("RUN_CANCELLED") ? TaskLifecycle.cancel(task, stop.forTask(task.getId())) : TaskLifecycle.fail(task, stop);
+                else {
+                    Supplier<TaskLifecycle.Transition> decide = () -> error == null ? TaskLifecycle.complete(task, output) : TaskLifecycle.fail(task, WorkflowError.from(error));
+                    try { transition = control == null ? decide.get() : control.admit(decide); }
+                    catch (WorkflowException stopped) { transition = stopped.getCode().equals("RUN_CANCELLED") ? TaskLifecycle.cancel(task, stopped.getError().forTask(task.getId())) : TaskLifecycle.fail(task, stopped.getError()); }
+                }
                 snapshot = transition.snapshot();
                 if (transition.applied()) publishSafely(AgentEvent.of(agentId,
-                        snapshot.status() == TaskStatus.COMPLETED ? EventType.TASK_COMPLETED : EventType.TASK_FAILED,
+                        snapshot.status() == TaskStatus.COMPLETED ? EventType.TASK_COMPLETED : snapshot.status() == TaskStatus.CANCELLED ? EventType.TASK_CANCELLED : EventType.TASK_FAILED,
                         Map.of("taskId", task.getId(), "execution", snapshot)));
                 else log.debug("Ignored late completion for task {} in {}", task.getId(), snapshot.status());
             } catch (Throwable finishError) {
@@ -156,6 +176,7 @@ public abstract class AbstractBaseAgent implements AgentInterface {
     }
 
     protected String callLlm(Task task, String systemPrompt, String userMessage) {
+        if (runtime != null) return runtime.modelCall(task, () -> callLlm(systemPrompt, userMessage));
         if (!TaskLifecycle.recordModelCall(task))
             throw new WorkflowException("TASK_ALREADY_TERMINAL", "tasks." + task.getId(), "任务已经结束，不能继续调用模型");
         return callLlm(systemPrompt, userMessage);

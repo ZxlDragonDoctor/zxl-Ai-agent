@@ -46,7 +46,7 @@ public class ResearchAgent extends AbstractBaseAgent {
 
     @Override
     public CompletableFuture<String> processTask(Task task) {
-        return CompletableFuture.supplyAsync(() -> {
+        return async(task, () -> {
             log.info("ResearchAgent executing: {}", task.getDescription());
             String result = callLlm(task, RESEARCH_SYSTEM_PROMPT, renderer.render(task));
             log.info("ResearchAgent completed: {}", task.getDescription());

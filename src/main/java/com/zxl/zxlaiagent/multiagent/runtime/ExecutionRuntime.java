@@ -77,7 +77,7 @@ public final class ExecutionRuntime implements AutoCloseable {
                 control.check();
                 synchronized (this) {
                     if (roleWaiters.get(type).peekFirst() == ticket) {
-                        AgentLease lease = control.admit(() -> take(type, agents.get()));
+                        AgentLease lease = take(type, agents.get());
                         if (lease != null) return lease;
                     }
                     if (System.nanoTime() - start >= TimeUnit.MILLISECONDS.toNanos(settings.getQueueTimeoutMs()))

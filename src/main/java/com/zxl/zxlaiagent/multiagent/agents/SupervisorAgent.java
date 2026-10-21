@@ -43,7 +43,7 @@ public class SupervisorAgent extends AbstractBaseAgent {
 
     @Override
     public CompletableFuture<String> processTask(Task task) {
-        return CompletableFuture.supplyAsync(() -> {
+        return async(task, () -> {
             log.info("SupervisorAgent reviewing task: {}", task.getId());
 
             Plan plan = null;
