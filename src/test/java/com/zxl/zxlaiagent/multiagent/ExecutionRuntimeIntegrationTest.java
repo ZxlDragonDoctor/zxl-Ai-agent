@@ -33,7 +33,10 @@ class ExecutionRuntimeIntegrationTest {
     void planner(String json) { register(new PlannerAgent(model) { @Override protected String callLlm(String s, String p) { return json; } }); }
     void register(AbstractBaseAgent agent) { agent.attachMessageBus(bus); orchestrator.registerAgent(agent); }
     AbstractBaseAgent worker(String role, Function<Task, CompletableFuture<String>> action) {
-        AbstractBaseAgent a = new AbstractBaseAgent(role + "-fixture", role, model) {
+        return worker(role + "-fixture", role, action);
+    }
+    AbstractBaseAgent worker(String id, String role, Function<Task, CompletableFuture<String>> action) {
+        AbstractBaseAgent a = new AbstractBaseAgent(id, role, model) {
             @Override public CompletableFuture<String> processTask(Task task) { return action.apply(task); }
         }; register(a); return a;
     }
@@ -135,18 +138,66 @@ class ExecutionRuntimeIntegrationTest {
     }
     @Test void earlierBusinessFailureSurvivesLaterSiblingTimeout() throws Exception {
         settings.setTaskTimeoutMs(1000); planner(DAG);
-        CountDownLatch started = new CountDownLatch(2); CompletableFuture<String> pending = new CompletableFuture<>();
+        CountDownLatch started = new CountDownLatch(2), businessFailureRecorded = new CountDownLatch(1);
+        CompletableFuture<String> pending = new CompletableFuture<>();
         worker("research", t -> { started.countDown(); return pending; });
-        worker("code", t -> { started.countDown(); return CompletableFuture.failedFuture(new WorkflowException("BUSINESS_FAILURE", "rules", "B failed first")); });
+        AbstractBaseAgent code = new AbstractBaseAgent("code-fixture", "code", model) {
+            @Override public CompletableFuture<String> processTask(Task task) {
+                started.countDown();
+                return CompletableFuture.failedFuture(new WorkflowException("BUSINESS_FAILURE", "rules", "B failed first"));
+            }
+            @Override protected void publishSafely(AgentEvent event) {
+                super.publishSafely(event);
+                if (event.getType() == EventType.TASK_FAILED) businessFailureRecorded.countDown();
+            }
+        };
+        register(code);
         worker("supervisor", t -> fail("must not start"));
         var handle = orchestrator.submit("goal", Map.of(), null, r -> {});
         assertTrue(started.await(3, TimeUnit.SECONDS));
-        // B 的失败快照由同步 failedFuture 完成；等报告确认，而不依赖随机 sleep。
-        CountDownLatch observed = new CountDownLatch(1);
-        pending.whenComplete((v,e) -> observed.countDown());
+        assertTrue(businessFailureRecorded.await(3, TimeUnit.SECONDS));
         clock.addAndGet(TimeUnit.SECONDS.toNanos(2));
         WorkflowOutcome outcome = handle.result().get(3, TimeUnit.SECONDS);
         assertEquals("BUSINESS_FAILURE", outcome.error().code());
         pending.complete("late");
+    }
+
+    @Test void cancellationOfOneRunDoesNotStopAnotherRun() throws Exception {
+        String oneTask = "[{\"task_description\":\"A\",\"dependencies\":[],\"required_capability\":\"research\"}]";
+        planner(oneTask);
+        CompletableFuture<String> firstWork = new CompletableFuture<>(), secondWork = new CompletableFuture<>();
+        CountDownLatch bothStarted = new CountDownLatch(2);
+        Function<Task, CompletableFuture<String>> workByGoal = task -> {
+            bothStarted.countDown();
+            TaskExecutionContext context = (TaskExecutionContext) task.getInput().get("executionContext");
+            return context.originalGoal().equals("run A") ? firstWork : secondWork;
+        };
+        worker("research-a", "research", workByGoal);
+        worker("research-b", "research", workByGoal);
+
+        var first = orchestrator.submit("run A", Map.of(), null, report -> {});
+        var second = orchestrator.submit("run B", Map.of(), null, report -> {});
+        assertTrue(bothStarted.await(3, TimeUnit.SECONDS));
+
+        assertEquals("accepted", orchestrator.cancel(first.executionId()).status());
+        assertEquals("cancelled", first.result().get(1, TimeUnit.SECONDS).status());
+        assertFalse(second.result().isDone());
+        secondWork.complete("run B completed");
+        assertEquals("run B completed", second.result().get(2, TimeUnit.SECONDS).result());
+
+        firstWork.complete("late result from cancelled run A");
+        assertEquals("cancelled", first.result().join().status());
+    }
+
+    @Test void cancellingCompletedRunKeepsItsOriginalOutcome() throws Exception {
+        planner("[{\"task_description\":\"A\",\"dependencies\":[],\"required_capability\":\"research\"}]");
+        worker("research", task -> CompletableFuture.completedFuture("already complete"));
+        var handle = orchestrator.submit("complete then cancel", Map.of(), null, report -> {});
+        WorkflowOutcome completed = handle.result().get(2, TimeUnit.SECONDS);
+
+        assertTrue(completed.successful());
+        assertEquals("already_finished", orchestrator.cancel(handle.executionId()).status());
+        assertSame(completed, orchestrator.runStatus(handle.executionId()).report().outcome());
+        assertEquals("already complete", orchestrator.runStatus(handle.executionId()).report().outcome().result());
     }
 }

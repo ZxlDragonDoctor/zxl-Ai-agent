@@ -7,6 +7,7 @@ import com.zxl.zxlaiagent.multiagent.execution.*;
 import com.zxl.zxlaiagent.multiagent.model.*;
 import com.zxl.zxlaiagent.multiagent.orchestration.OrchestratorAgent;
 import com.zxl.zxlaiagent.controller.MultiAgentController;
+import com.zxl.zxlaiagent.multiagent.runtime.RuntimeSettings;
 import org.junit.jupiter.api.*;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -21,7 +22,10 @@ import static org.mockito.Mockito.*;
 class WorkflowOutcomeTest {
     private final ChatModel model = mock(ChatModel.class);
     private final AgentMessageBus bus = mock(AgentMessageBus.class);
-    private final OrchestratorAgent orchestrator = new OrchestratorAgent(model);
+    private static RuntimeSettings shortLimits() {
+        RuntimeSettings settings = new RuntimeSettings(); settings.setTaskTimeoutMs(100); settings.setQueueTimeoutMs(100); return settings;
+    }
+    private final OrchestratorAgent orchestrator = new OrchestratorAgent(model, shortLimits(), System::nanoTime);
     private final List<WorkflowRun.Report> reports = new CopyOnWriteArrayList<>();
     private static final String THREE = """
             [{"task_description":"A","dependencies":[],"required_capability":"research"},
@@ -243,7 +247,7 @@ class WorkflowOutcomeTest {
         WorkflowOutcome outcome = orchestrator.run("goal", Map.of(), reports::add);
         assertFalse(outcome.successful());
         assertTrue(outcome.tasks().stream().allMatch(task -> task.status() == TaskStatus.COMPLETED));
-        assertEquals("AGENT_BUSY", outcome.error().code());
+        assertEquals("CAPACITY_QUEUE_TIMEOUT", outcome.error().code());
         assertEquals("synthesis", outcome.error().path());
         assertEquals(TaskStatus.BLOCKED, outcome.synthesisTask().status());
         assertTrue(outcome.synthesisTask().completedAt() > 0);
