@@ -2,8 +2,9 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import KnowledgeGraphCanvas from '../learning/graph/KnowledgeGraphCanvas.vue'
+import { discoverScene } from '../learning/graph/graphPresentation'
 import {
-  catalogue, createRecord, exportGraph, exportLearningProgress, filterNodes, findShortestPath, getNeighborhood,
+  catalogue, createRecord, exportGraph, exportLearningProgress, filterNodes, findShortestPath,
   getNeighbors, importLearningProgress, loadProgress, nodeById, saveProgress,
 } from '../learning/graph/model'
 import type { GraphNode, LearningProgress, LearningState, NodeKind, RelationType } from '../learning/graph/model'
@@ -19,10 +20,16 @@ const learningFilter = ref<LearningState | 'all'>('all')
 const relationFilter = ref<RelationType | 'all'>('all')
 const viewMode = ref<'all' | 'one' | 'two'>('one')
 const reducedMotion = ref(false)
+const catalogueOpen = ref(false)
+const readerOpen = ref(false)
 const importPicker = ref<HTMLInputElement>()
 const reader = ref<HTMLElement>()
 const transferMessage = ref('')
 const selectedId = ref(typeof route.query.node === 'string' && nodeById.has(route.query.node) ? route.query.node : 'lesson-08')
+const sceneRootId = ref(selectedId.value)
+const expandedIds = ref(new Set<string>())
+const collapsedIds = ref(new Set<string>())
+const dismissedIds = ref(new Set<string>())
 const localeKey = computed(() => locale.value)
 const selectedNode = computed(() => nodeById.get(selectedId.value) ?? catalogue.nodes[0])
 const allLessons = computed(() => catalogue.nodes.filter(node => node.kind === 'lesson'))
@@ -57,15 +64,27 @@ const filteredList = computed(() => filterNodes({ query: query.value, kind: kind
 const relationTypes = computed(() => relationFilter.value === 'all' ? undefined : new Set([relationFilter.value]))
 const visibleNodes = computed(() => {
   const baseIds = new Set(filteredList.value.map(node => node.id))
-  if (viewMode.value === 'all') return filteredList.value
+  if (viewMode.value === 'all') return filteredList.value.filter(node => !dismissedIds.value.has(node.id))
   const hops = viewMode.value === 'one' ? 1 : 2
-  const neighborhood = getNeighborhood(selectedId.value, hops, relationTypes.value)
-  const stageNodes = new Set(stages.value.map(node => node.id))
-  const expanded = new Set([...baseIds].filter(id => neighborhood.has(id)))
-  if (baseIds.has(selectedId.value)) expanded.add(selectedId.value)
-  // Keep the selected node visible when filters hide its kind, so the reader never loses context.
-  if (nodeById.has(selectedId.value)) expanded.add(selectedId.value)
-  return catalogue.nodes.filter(node => expanded.has(node.id) || (stageNodes.has(node.id) && node.id === selectedNode.value.stage))
+  const allowedEdges = catalogue.edges.filter(edge => (!relationTypes.value || relationTypes.value.has(edge.type))
+    && !dismissedIds.value.has(edge.from) && !dismissedIds.value.has(edge.to)
+    && baseIds.has(edge.from) && baseIds.has(edge.to))
+  const neighborhood = discoverScene(sceneRootId.value, hops, allowedEdges, expandedIds.value, collapsedIds.value)
+  return catalogue.nodes.filter(node => neighborhood.has(node.id) && !dismissedIds.value.has(node.id)
+    && (baseIds.has(node.id) || node.id === sceneRootId.value))
+})
+const expandedNodeIds = computed(() => {
+  const ids = new Set(expandedIds.value)
+  if (viewMode.value !== 'all' && !collapsedIds.value.has(sceneRootId.value)) {
+    ids.add(sceneRootId.value)
+    if (viewMode.value === 'two') {
+      for (const edge of getNeighbors(sceneRootId.value, 'both', relationTypes.value)) {
+        const neighbor = edge.from === sceneRootId.value ? edge.to : edge.from
+        if (!collapsedIds.value.has(neighbor)) ids.add(neighbor)
+      }
+    }
+  }
+  return [...ids]
 })
 const visibleIds = computed(() => new Set(visibleNodes.value.map(node => node.id)))
 const visibleEdges = computed(() => catalogue.edges.filter(edge => visibleIds.value.has(edge.from) && visibleIds.value.has(edge.to)
@@ -98,8 +117,9 @@ const highlightedEdgeIds = computed(() => pathToNext.value.map(edge => edge.id))
 
 watch(progress, value => saveProgress(value), { deep: true })
 watch(() => route.query.node, value => {
-  if (typeof value === 'string' && nodeById.has(value)) selectedId.value = value
+  if (typeof value === 'string' && nodeById.has(value)) chooseNode(value)
 })
+watch(viewMode, () => { expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set() })
 watch(selectedId, async value => {
   if (route.query.node !== value) router.replace({ query: { ...route.query, node: value } })
   await nextTick()
@@ -108,7 +128,7 @@ watch(selectedId, async value => {
 watch([query, kindFilter, stageFilter, learningFilter], () => {
   if (query.value.trim()) {
     const match = filteredList.value[0]
-    if (match) selectedId.value = match.id
+    if (match) chooseNode(match.id)
   }
 })
 
@@ -122,7 +142,31 @@ function onReadScroll(event: Event): void {
   scrollSaveTimer = setTimeout(() => saveProgress(progress.value), 300)
 }
 
-function chooseNode(id: string): void { if (nodeById.has(id)) selectedId.value = id }
+function chooseNode(id: string): void {
+  if (!nodeById.has(id)) return
+  if (!visibleIds.value.has(id)) {
+    sceneRootId.value = id
+    expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set()
+  }
+  selectedId.value = id
+}
+function toggleExpansion(id: string): void {
+  if (viewMode.value === 'all') { sceneRootId.value = id; viewMode.value = 'one'; selectedId.value = id; return }
+  const expanded = new Set(expandedIds.value), collapsed = new Set(collapsedIds.value)
+  if (expandedNodeIds.value.includes(id)) { expanded.delete(id); collapsed.add(id) }
+  else { expanded.add(id); collapsed.delete(id) }
+  expandedIds.value = expanded; collapsedIds.value = collapsed
+}
+function dismissNode(id: string): void {
+  dismissedIds.value = new Set([...dismissedIds.value, id])
+}
+function restoreScene(): void { dismissedIds.value = new Set() }
+function openReader(id: string): void { chooseNode(id); readerOpen.value = true }
+function focusSelected(): void {
+  sceneRootId.value = selectedId.value
+  expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set()
+  if (viewMode.value === 'all') viewMode.value = 'one'
+}
 function setLearningState(state: LearningState): void {
   const existing = progress.value.records[selectedId.value] ?? createRecord()
   progress.value.records[selectedId.value] = { ...existing, state, updatedAt: new Date().toISOString() }
@@ -194,6 +238,8 @@ onMounted(() => {
         <p>{{ t('learning.subtitle') }}</p>
       </div>
       <div class="learning-header__actions">
+        <button class="learning-action" type="button" :aria-expanded="catalogueOpen" @click="catalogueOpen = !catalogueOpen">{{ locale === 'zh-CN' ? '课程目录 / 筛选' : 'Lessons / filters' }}</button>
+        <button class="learning-action" type="button" :aria-expanded="readerOpen" @click="readerOpen = !readerOpen">{{ locale === 'zh-CN' ? '知识阅读面板' : 'Knowledge reader' }}</button>
         <div class="learning-progress-chip"><strong>{{ completedCount }}/{{ allLessons.length }}</strong><span>{{ t('learning.masteredLessons') }}</span></div>
         <button class="learning-action" type="button" @click="exportCatalogue">{{ t('learning.exportGraph') }}</button>
         <button class="learning-action" type="button" @click="exportProgress">{{ t('learning.exportProgress') }}</button>
@@ -204,8 +250,8 @@ onMounted(() => {
 
     <div v-if="transferMessage" class="learning-toast" role="status">{{ transferMessage }}</div>
 
-    <div class="learning-workspace">
-      <aside class="learning-sidebar" :aria-label="t('learning.filters')">
+    <div class="learning-workspace" :class="{ 'has-catalogue': catalogueOpen, 'has-reader': readerOpen }">
+      <aside v-show="catalogueOpen" class="learning-sidebar" :aria-label="t('learning.filters')">
         <label class="learning-search">
           <span>{{ t('learning.search') }}</span>
           <input v-model="query" type="search" :placeholder="t('learning.searchHint')">
@@ -257,20 +303,22 @@ onMounted(() => {
         <div class="learning-map-toolbar">
           <div><strong>{{ t('learning.relationshipMap') }}</strong><span>{{ visibleNodes.length }} {{ t('learning.visibleEntities') }} · {{ visibleEdges.length }} {{ t('learning.visibleRelations') }}</span></div>
           <div class="learning-view-switch" role="group" :aria-label="t('learning.graphRange')">
+            <button type="button" @click="focusSelected">{{ locale === 'zh-CN' ? '以所选为中心' : 'Focus selected' }}</button>
             <button type="button" :class="{ active: viewMode === 'one' }" @click="viewMode = 'one'">1{{ t('learning.hop') }}</button>
             <button type="button" :class="{ active: viewMode === 'two' }" @click="viewMode = 'two'">2{{ t('learning.hop') }}</button>
             <button type="button" :class="{ active: viewMode === 'all' }" @click="viewMode = 'all'">{{ t('learning.fullGraph') }}</button>
           </div>
         </div>
-        <KnowledgeGraphCanvas :nodes="visibleNodes" :edges="visibleEdges" :selected-id="selectedId" :highlighted-edge-ids="highlightedEdgeIds" :reduced-motion="reducedMotion" @select="chooseNode" />
+        <KnowledgeGraphCanvas :nodes="visibleNodes" :edges="visibleEdges" :selected-id="selectedId" :highlighted-edge-ids="highlightedEdgeIds"
+          :expanded-node-ids="expandedNodeIds" :reduced-motion="reducedMotion" @select="chooseNode" @expand="toggleExpansion" @dismiss="dismissNode" @reset="restoreScene" @read="openReader" />
         <div class="learning-map-footer">
           <span><i class="learning-status-ring"></i>{{ t('learning.projectStateLegend') }}</span>
           <label class="learning-motion"><input v-model="reducedMotion" type="checkbox">{{ t('learning.reduceMotion') }}</label>
         </div>
       </section>
 
-      <aside ref="reader" class="learning-reader" @scroll.passive="onReadScroll" :aria-label="t('learning.reader')">
-        <div class="learning-reader__scroll">
+      <aside v-show="readerOpen" class="learning-reader" :aria-label="t('learning.reader')">
+        <div ref="reader" class="learning-reader__scroll" @scroll.passive="onReadScroll">
           <div class="learning-reader__eyebrow"><span>{{ kindLabel(selectedNode.kind) }}</span><span v-if="selectedNode.number">{{ lessonNumber(selectedNode) }}</span></div>
           <h2>{{ title(selectedNode) }}</h2>
           <p class="learning-reader__summary">{{ summary(selectedNode) }}</p>
@@ -364,4 +412,13 @@ onMounted(() => {
 @media(max-width:1180px){.learning-workspace{grid-template-columns:230px minmax(340px,1fr) 310px;gap:10px}.learning-reader__scroll{padding:15px}.learning-header__actions{max-width:430px}}
 @media(max-width:900px){.learning-header{align-items:flex-start;flex-direction:column}.learning-header__actions{justify-content:flex-start}.learning-workspace{height:auto;max-height:none;grid-template-columns:220px minmax(0,1fr);min-height:0}.learning-sidebar{height:650px}.learning-map-column{height:650px}.learning-reader{grid-column:1/-1;max-height:720px;min-height:450px}.learning-footnote{flex-direction:column;gap:5px}}
 @media(max-width:620px){.learning-header h1{font-size:25px}.learning-header p{max-width:40ch;line-height:1.6}.learning-header__actions{gap:5px}.learning-progress-chip{width:100%}.learning-workspace{display:flex;flex-direction:column}.learning-sidebar{height:540px}.learning-map-column{height:520px}.learning-reader{height:620px;min-height:400px}.learning-filter-grid{grid-template-columns:1fr 1fr}.learning-map-toolbar{align-items:flex-start;flex-direction:column}.learning-footnote{font-size:8px}}
+.learning-workspace{grid-template-columns:minmax(0,1fr);height:calc(100vh - 225px);max-height:none;min-height:620px;gap:10px}
+.learning-workspace.has-catalogue{grid-template-columns:230px minmax(0,1fr)}
+.learning-workspace.has-reader{grid-template-columns:minmax(0,1fr) 340px}
+.learning-workspace.has-catalogue.has-reader{grid-template-columns:230px minmax(0,1fr) 340px}
+.learning-map-toolbar{padding:0 3px}.learning-reader,.learning-sidebar{border-radius:4px}
+.learning-header h1{font-size:26px}.learning-header{margin-bottom:16px}
+.learning-map-column :deep(.graph-canvas){min-height:500px}
+@media(max-width:1000px){.learning-workspace.has-catalogue.has-reader{grid-template-columns:200px minmax(0,1fr)}.learning-workspace.has-catalogue.has-reader .learning-reader{grid-column:1/-1;min-height:500px}.learning-workspace.has-reader{grid-template-columns:minmax(0,1fr) 280px}.learning-workspace{height:auto}.learning-map-column{height:680px}.learning-sidebar{height:680px}}
+@media(max-width:620px){.learning-workspace{display:flex;min-height:0}.learning-workspace .learning-sidebar{height:420px}.learning-workspace .learning-map-column{height:600px}.learning-workspace .learning-reader{height:600px}.learning-map-column :deep(.graph-canvas){min-height:470px}}
 </style>
