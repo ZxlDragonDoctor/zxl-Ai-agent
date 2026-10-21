@@ -1,0 +1,367 @@
+<script setup lang="ts">
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import KnowledgeGraphCanvas from '../learning/graph/KnowledgeGraphCanvas.vue'
+import {
+  catalogue, createRecord, exportGraph, exportLearningProgress, filterNodes, findShortestPath, getNeighborhood,
+  getNeighbors, importLearningProgress, loadProgress, nodeById, saveProgress,
+} from '../learning/graph/model'
+import type { GraphNode, LearningProgress, LearningState, NodeKind, RelationType } from '../learning/graph/model'
+import { locale, t } from '../i18n'
+
+const route = useRoute()
+const router = useRouter()
+const progress = ref<LearningProgress>(loadProgress())
+const query = ref('')
+const kindFilter = ref<NodeKind | 'all'>('all')
+const stageFilter = ref<string | 'all'>('all')
+const learningFilter = ref<LearningState | 'all'>('all')
+const relationFilter = ref<RelationType | 'all'>('all')
+const viewMode = ref<'all' | 'one' | 'two'>('one')
+const reducedMotion = ref(false)
+const importPicker = ref<HTMLInputElement>()
+const reader = ref<HTMLElement>()
+const transferMessage = ref('')
+const selectedId = ref(typeof route.query.node === 'string' && nodeById.has(route.query.node) ? route.query.node : 'lesson-08')
+const localeKey = computed(() => locale.value)
+const selectedNode = computed(() => nodeById.get(selectedId.value) ?? catalogue.nodes[0])
+const allLessons = computed(() => catalogue.nodes.filter(node => node.kind === 'lesson'))
+const stages = computed(() => catalogue.nodes.filter(node => node.kind === 'topic'))
+const kindOptions: Array<NodeKind | 'all'> = ['all', 'lesson', 'topic', 'concept', 'evidence', 'source']
+const relationOptions: Array<RelationType | 'all'> = ['all', 'prerequisite', 'contains', 'related', 'implements', 'documented-by', 'documents', 'informed-by']
+const selectedProgress = computed(() => progress.value.records[selectedId.value] ?? createRecord())
+
+function stateFor(id: string): LearningState { return progress.value.records[id]?.state ?? 'notStarted' }
+function title(node: GraphNode): string { return node.title[localeKey.value] || node.title['zh-CN'] }
+function summary(node: GraphNode): string { return node.summary[localeKey.value] || node.summary['zh-CN'] }
+function localized(value?: Record<'zh-CN' | 'en', string>): string { return value?.[localeKey.value] || value?.['zh-CN'] || '' }
+function sectionText(key: string): string {
+  const value = selectedNode.value.sections?.[key]
+  if (!value || Array.isArray(value)) return ''
+  return localized(value as Record<'zh-CN' | 'en', string>)
+}
+function interviewQuestions(): string[] {
+  const value = selectedNode.value.sections?.interview
+  if (!value || !('zh-CN' in value)) return []
+  const localizedQuestions = (value as Record<'zh-CN' | 'en', string[]>)[localeKey.value]
+  return localizedQuestions?.length ? localizedQuestions : (value as Record<'zh-CN' | 'en', string[]>)['zh-CN']
+}
+
+function lessonNumber(node: GraphNode): string { return t('learning.lessonNumber').replace('{number}', String(node.number ?? '')) }
+function graphCounts(): string { return t('learning.graphCounts').replace('{nodes}', String(catalogue.nodes.length)).replace('{edges}', String(catalogue.edges.length)) }
+function onStateChange(event: Event): void { setLearningState((event.target as HTMLSelectElement).value as LearningState) }
+function onNoteInput(event: Event): void { setNote((event.target as HTMLTextAreaElement).value) }
+
+const filteredList = computed(() => filterNodes({ query: query.value, kind: kindFilter.value, stage: stageFilter.value,
+  learningState: learningFilter.value, stateFor }))
+const relationTypes = computed(() => relationFilter.value === 'all' ? undefined : new Set([relationFilter.value]))
+const visibleNodes = computed(() => {
+  const baseIds = new Set(filteredList.value.map(node => node.id))
+  if (viewMode.value === 'all') return filteredList.value
+  const hops = viewMode.value === 'one' ? 1 : 2
+  const neighborhood = getNeighborhood(selectedId.value, hops, relationTypes.value)
+  const stageNodes = new Set(stages.value.map(node => node.id))
+  const expanded = new Set([...baseIds].filter(id => neighborhood.has(id)))
+  if (baseIds.has(selectedId.value)) expanded.add(selectedId.value)
+  // Keep the selected node visible when filters hide its kind, so the reader never loses context.
+  if (nodeById.has(selectedId.value)) expanded.add(selectedId.value)
+  return catalogue.nodes.filter(node => expanded.has(node.id) || (stageNodes.has(node.id) && node.id === selectedNode.value.stage))
+})
+const visibleIds = computed(() => new Set(visibleNodes.value.map(node => node.id)))
+const visibleEdges = computed(() => catalogue.edges.filter(edge => visibleIds.value.has(edge.from) && visibleIds.value.has(edge.to)
+  && (!relationTypes.value || relationTypes.value.has(edge.type))))
+const selectedRelations = computed(() => getNeighbors(selectedId.value).map(edge => ({
+  edge,
+  other: nodeById.get(edge.from === selectedId.value ? edge.to : edge.from),
+  outgoing: edge.from === selectedId.value,
+})).filter(item => item.other))
+const completedCount = computed(() => allLessons.value.filter(node => stateFor(node.id) === 'mastered').length)
+const nextLesson = computed(() => {
+  if (Object.keys(progress.value.records).length === 0) return nodeById.get('lesson-08')
+  const inProgress = allLessons.value.find(node => stateFor(node.id) === 'inProgress')
+  if (inProgress) return inProgress
+  const firstReady = allLessons.value.find(node => stateFor(node.id) !== 'mastered'
+    && catalogue.edges.filter(edge => edge.type === 'prerequisite' && edge.to === node.id).every(edge => stateFor(edge.from) === 'mastered'))
+  return firstReady ?? nodeById.get('lesson-08')
+})
+const pathToNext = computed(() => nextLesson.value ? findShortestPath(selectedId.value, nextLesson.value.id) ?? [] : [])
+const pathNodeIds = computed(() => {
+  const ids = [selectedId.value]
+  let current = selectedId.value
+  for (const edge of pathToNext.value) {
+    current = edge.from === current ? edge.to : edge.from
+    ids.push(current)
+  }
+  return ids
+})
+const highlightedEdgeIds = computed(() => pathToNext.value.map(edge => edge.id))
+
+watch(progress, value => saveProgress(value), { deep: true })
+watch(() => route.query.node, value => {
+  if (typeof value === 'string' && nodeById.has(value)) selectedId.value = value
+})
+watch(selectedId, async value => {
+  if (route.query.node !== value) router.replace({ query: { ...route.query, node: value } })
+  await nextTick()
+  if (reader.value) reader.value.scrollTop = progress.value.records[value]?.scrollTop ?? 0
+})
+watch([query, kindFilter, stageFilter, learningFilter], () => {
+  if (query.value.trim()) {
+    const match = filteredList.value[0]
+    if (match) selectedId.value = match.id
+  }
+})
+
+let scrollSaveTimer: ReturnType<typeof setTimeout> | undefined
+function onReadScroll(event: Event): void {
+  const node = selectedNode.value
+  const scrollTop = (event.target as HTMLElement).scrollTop
+  const existing = progress.value.records[node.id] ?? createRecord()
+  progress.value.records[node.id] = { ...existing, scrollTop, updatedAt: new Date().toISOString() }
+  if (scrollSaveTimer) clearTimeout(scrollSaveTimer)
+  scrollSaveTimer = setTimeout(() => saveProgress(progress.value), 300)
+}
+
+function chooseNode(id: string): void { if (nodeById.has(id)) selectedId.value = id }
+function setLearningState(state: LearningState): void {
+  const existing = progress.value.records[selectedId.value] ?? createRecord()
+  progress.value.records[selectedId.value] = { ...existing, state, updatedAt: new Date().toISOString() }
+}
+function setNote(value: string): void {
+  const existing = progress.value.records[selectedId.value] ?? createRecord()
+  progress.value.records[selectedId.value] = { ...existing, note: value.slice(0, 12000), updatedAt: new Date().toISOString() }
+}
+function copyPath(path: string): void {
+  navigator.clipboard?.writeText(path).then(() => {
+    transferMessage.value = t('learning.pathCopied')
+    setTimeout(() => transferMessage.value = '', 1800)
+  }).catch(() => { transferMessage.value = path })
+}
+function download(filename: string, text: string): void {
+  const blob = new Blob([text], { type: 'application/json;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  anchor.click()
+  URL.revokeObjectURL(url)
+}
+function exportCatalogue(): void { download('agent-learning-graph.json', exportGraph()) }
+function exportProgress(): void { download('agent-learning-progress.json', exportLearningProgress(progress.value)) }
+async function importProgressFile(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  try {
+    const imported = importLearningProgress(await file.text())
+    progress.value = imported
+    saveProgress(imported)
+    transferMessage.value = t('learning.progressImported')
+  } catch (error) {
+    transferMessage.value = error instanceof Error ? error.message : t('learning.importFailed')
+  } finally {
+    input.value = ''
+    setTimeout(() => transferMessage.value = '', 3500)
+  }
+}
+function relationLabel(type: RelationType): string {
+  return t(`learning.relation.${type === 'documented-by' ? 'documentedBy' : type === 'informed-by' ? 'informedBy' : type}`)
+}
+function kindLabel(kind: NodeKind): string { return t(`learning.kind.${kind}`) }
+function stateLabel(state: LearningState): string { return t(`learning.progress.${state}`) }
+function projectStateLabel(state?: GraphNode['state']): string {
+  return state ? t(`learning.projectState.${state}`) : t('learning.projectState.notBuilt')
+}
+function stageTitle(id: string): string { const node = nodeById.get(id); return node ? title(node) : id }
+function recommendationExplanation(): string {
+  if (Object.keys(progress.value.records).length === 0) return t('learning.firstVisitRecommendation')
+  return t('learning.recommendationExplain')
+}
+
+onMounted(() => {
+  const routeId = typeof route.query.node === 'string' && nodeById.has(route.query.node) ? route.query.node : selectedId.value
+  selectedId.value = routeId
+  if (reader.value) reader.value.scrollTop = progress.value.records[routeId]?.scrollTop ?? 0
+})
+</script>
+
+<template>
+  <main class="learning-page">
+    <header class="learning-header">
+      <div>
+        <div class="learning-eyebrow"><span class="learning-eyebrow__dot"></span>{{ t('learning.eyebrow') }}</div>
+        <h1>{{ t('learning.title') }}</h1>
+        <p>{{ t('learning.subtitle') }}</p>
+      </div>
+      <div class="learning-header__actions">
+        <div class="learning-progress-chip"><strong>{{ completedCount }}/{{ allLessons.length }}</strong><span>{{ t('learning.masteredLessons') }}</span></div>
+        <button class="learning-action" type="button" @click="exportCatalogue">{{ t('learning.exportGraph') }}</button>
+        <button class="learning-action" type="button" @click="exportProgress">{{ t('learning.exportProgress') }}</button>
+        <button class="learning-action learning-action--quiet" type="button" @click="importPicker?.click()">{{ t('learning.importProgress') }}</button>
+        <input ref="importPicker" class="visually-hidden" type="file" accept="application/json,.json" @change="importProgressFile">
+      </div>
+    </header>
+
+    <div v-if="transferMessage" class="learning-toast" role="status">{{ transferMessage }}</div>
+
+    <div class="learning-workspace">
+      <aside class="learning-sidebar" :aria-label="t('learning.filters')">
+        <label class="learning-search">
+          <span>{{ t('learning.search') }}</span>
+          <input v-model="query" type="search" :placeholder="t('learning.searchHint')">
+        </label>
+        <div class="learning-filter-grid">
+          <label><span>{{ t('learning.entityType') }}</span><select v-model="kindFilter">
+            <option v-for="kind in kindOptions" :key="kind" :value="kind">{{ kind === 'all' ? t('learning.allKinds') : kindLabel(kind) }}</option>
+          </select></label>
+          <label><span>{{ t('learning.stage') }}</span><select v-model="stageFilter">
+            <option value="all">{{ t('learning.allStages') }}</option>
+            <option v-for="stage in stages" :key="stage.id" :value="stage.id">{{ title(stage) }}</option>
+          </select></label>
+          <label><span>{{ t('learning.myProgress') }}</span><select v-model="learningFilter">
+            <option value="all">{{ t('learning.allProgress') }}</option>
+            <option value="notStarted">{{ stateLabel('notStarted') }}</option>
+            <option value="inProgress">{{ stateLabel('inProgress') }}</option>
+            <option value="mastered">{{ stateLabel('mastered') }}</option>
+          </select></label>
+          <label><span>{{ t('learning.relationType') }}</span><select v-model="relationFilter">
+            <option value="all">{{ t('learning.allRelations') }}</option>
+            <option v-for="type in relationOptions.filter(value => value !== 'all')" :key="type" :value="type">{{ relationLabel(type) }}</option>
+          </select></label>
+        </div>
+
+        <section class="learning-next" aria-label="recommended lesson">
+          <div class="learning-next__top"><span>{{ t('learning.nextSuggestion') }}</span><span class="learning-next__spark">✦</span></div>
+          <button v-if="nextLesson" type="button" @click="chooseNode(nextLesson.id)">
+            <small>{{ lessonNumber(nextLesson) }}</small>
+            <strong>{{ title(nextLesson) }}</strong>
+            <span>{{ t('learning.openLesson') }} <b>↗</b></span>
+          </button>
+          <p>{{ recommendationExplanation() }}</p>
+        </section>
+
+        <div class="learning-list-heading"><span>{{ t('learning.entities') }} <b>{{ filteredList.length }}</b></span><span>{{ t('learning.keyboardHint') }}</span></div>
+        <nav class="learning-node-list" :aria-label="t('learning.entityList')">
+          <button v-for="node in filteredList" :key="node.id" type="button" class="learning-list-row"
+            :class="{ 'learning-list-row--selected': node.id === selectedId }" :aria-current="node.id === selectedId ? 'true' : undefined"
+            @click="chooseNode(node.id)">
+            <i :class="`kind-dot kind-dot--${node.kind}`"></i>
+            <span class="learning-list-row__copy"><strong>{{ node.number ? `${String(node.number).padStart(2,'0')} · ` : '' }}{{ title(node) }}</strong><small>{{ kindLabel(node.kind) }}<template v-if="node.stage"> · {{ stageTitle(node.stage) }}</template></small></span>
+            <span v-if="node.kind === 'lesson'" class="learning-list-state" :class="`learning-list-state--${stateFor(node.id)}`">{{ stateLabel(stateFor(node.id)) }}</span>
+          </button>
+          <p v-if="!filteredList.length" class="learning-empty">{{ t('learning.noResults') }}</p>
+        </nav>
+      </aside>
+
+      <section class="learning-map-column">
+        <div class="learning-map-toolbar">
+          <div><strong>{{ t('learning.relationshipMap') }}</strong><span>{{ visibleNodes.length }} {{ t('learning.visibleEntities') }} · {{ visibleEdges.length }} {{ t('learning.visibleRelations') }}</span></div>
+          <div class="learning-view-switch" role="group" :aria-label="t('learning.graphRange')">
+            <button type="button" :class="{ active: viewMode === 'one' }" @click="viewMode = 'one'">1{{ t('learning.hop') }}</button>
+            <button type="button" :class="{ active: viewMode === 'two' }" @click="viewMode = 'two'">2{{ t('learning.hop') }}</button>
+            <button type="button" :class="{ active: viewMode === 'all' }" @click="viewMode = 'all'">{{ t('learning.fullGraph') }}</button>
+          </div>
+        </div>
+        <KnowledgeGraphCanvas :nodes="visibleNodes" :edges="visibleEdges" :selected-id="selectedId" :highlighted-edge-ids="highlightedEdgeIds" :reduced-motion="reducedMotion" @select="chooseNode" />
+        <div class="learning-map-footer">
+          <span><i class="learning-status-ring"></i>{{ t('learning.projectStateLegend') }}</span>
+          <label class="learning-motion"><input v-model="reducedMotion" type="checkbox">{{ t('learning.reduceMotion') }}</label>
+        </div>
+      </section>
+
+      <aside ref="reader" class="learning-reader" @scroll.passive="onReadScroll" :aria-label="t('learning.reader')">
+        <div class="learning-reader__scroll">
+          <div class="learning-reader__eyebrow"><span>{{ kindLabel(selectedNode.kind) }}</span><span v-if="selectedNode.number">{{ lessonNumber(selectedNode) }}</span></div>
+          <h2>{{ title(selectedNode) }}</h2>
+          <p class="learning-reader__summary">{{ summary(selectedNode) }}</p>
+          <section v-if="pathNodeIds.length > 1" class="learning-path-route">
+            <div><strong>{{ t('learning.pathToNext') }}</strong><small>{{ lessonNumber(nextLesson!) }}</small></div>
+            <div class="learning-path-route__steps">
+              <template v-for="(id, index) in pathNodeIds" :key="`${id}-${index}`">
+                <button type="button" :class="{ 'learning-path-route__current': id === selectedId }" @click="chooseNode(id)">{{ title(nodeById.get(id)!) }}</button>
+                <span v-if="index < pathNodeIds.length - 1" aria-hidden="true">→</span>
+              </template>
+            </div>
+          </section>
+          <div v-else-if="selectedId === nextLesson?.id" class="learning-path-reached">{{ t('learning.pathReached') }}</div>
+
+          <template v-if="selectedNode.kind === 'lesson'">
+            <div class="learning-status-row">
+              <span class="project-status" :class="`project-status--${selectedNode.state ?? 'planned'}`">{{ t('learning.projectStatus') }}: {{ projectStateLabel(selectedNode.state) }}</span>
+              <span class="reading-time">{{ selectedNode.minutes }} {{ t('learning.minutesReference') }}</span>
+            </div>
+            <div class="learning-own-status">
+              <label>{{ t('learning.myStatus') }}</label>
+              <select :value="selectedProgress.state" @change="onStateChange">
+                <option value="notStarted">{{ stateLabel('notStarted') }}</option>
+                <option value="inProgress">{{ stateLabel('inProgress') }}</option>
+                <option value="mastered">{{ stateLabel('mastered') }}</option>
+              </select>
+            </div>
+            <article class="learning-article">
+              <section v-for="section in ['concept','project','practice','acceptance']" :key="section" class="learning-article__section">
+                <h3>{{ t(`learning.section.${section}`) }}</h3>
+                <p>{{ sectionText(section) }}</p>
+              </section>
+              <section class="learning-article__section">
+                <h3>{{ t('learning.section.springBoot') }}</h3>
+                <p>{{ localized(catalogue.springBootAnalogies[selectedNode.id]) }}</p>
+              </section>
+              <section v-if="interviewQuestions().length" class="learning-article__section learning-interview">
+                <h3>{{ t('learning.section.interview') }}</h3>
+                <ol><li v-for="question in interviewQuestions()" :key="question">{{ question }}</li></ol>
+              </section>
+              <section v-if="selectedNode.paths?.length" class="learning-article__section learning-paths">
+                <h3>{{ t('learning.codeAndDocs') }}</h3>
+                <button v-for="path in selectedNode.paths" :key="path" type="button" class="source-path" @click="copyPath(path)">
+                  <code>{{ path }}</code><span>{{ t('learning.copyPath') }}</span>
+                </button>
+              </section>
+            </article>
+            <section class="learning-note">
+              <label :for="`note-${selectedNode.id}`">{{ t('learning.myNotes') }}</label>
+              <textarea :id="`note-${selectedNode.id}`" :value="selectedProgress.note" :placeholder="t('learning.noteHint')" rows="4" maxlength="12000" @input="onNoteInput"></textarea>
+            </section>
+          </template>
+          <template v-else>
+            <section class="learning-article__section learning-concept-body">
+              <h3>{{ t('learning.knowledgeContent') }}</h3>
+              <p>{{ localized(selectedNode.content) || summary(selectedNode) }}</p>
+            </section>
+            <section v-if="selectedNode.path" class="learning-article__section learning-paths">
+              <h3>{{ t('learning.sourceLocation') }}</h3>
+              <button type="button" class="source-path" @click="copyPath(selectedNode.path)"><code>{{ selectedNode.path }}</code><span>{{ t('learning.copyPath') }}</span></button>
+            </section>
+          </template>
+
+          <section v-if="selectedRelations.length" class="learning-relations">
+            <div class="learning-section-title"><h3>{{ t('learning.connections') }}</h3><span>{{ selectedRelations.length }}</span></div>
+            <button v-for="item in selectedRelations" :key="item.edge.id" type="button" class="learning-relation-row" @click="chooseNode(item.other!.id)">
+              <span class="relation-type">{{ relationLabel(item.edge.type) }}</span>
+              <strong>{{ item.outgoing ? '→' : '←' }} {{ title(item.other!) }}</strong>
+              <small>{{ localized(item.edge.reason) }}</small>
+            </button>
+          </section>
+          <div class="learning-reader__tail">{{ transferMessage }}</div>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="learning-footnote">
+      <span>{{ t('learning.progressLocalNote') }}</span>
+      <span>{{ graphCounts() }}</span>
+    </footer>
+  </main>
+</template>
+
+<style scoped>
+.learning-page{--ink:#17211f;--muted:#78827e;--line:#e6e9e5;--mint:#3e917e;--paper:#fffefa;max-width:none;padding:2px 0 14px;color:var(--ink)}
+.learning-header{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin:4px 0 22px}.learning-eyebrow{display:flex;align-items:center;gap:8px;color:var(--mint);font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase}.learning-eyebrow__dot{width:7px;height:7px;border-radius:50%;background:#51a68f;box-shadow:0 0 0 4px #51a68f20}.learning-header h1{margin:9px 0 4px;font-family:var(--font-display);font-size:30px;letter-spacing:-.035em}.learning-header p{margin:0;color:var(--muted);font-size:13px}.learning-header__actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:7px}.learning-progress-chip{display:flex;align-items:baseline;gap:7px;margin-right:5px;padding:8px 11px;border:1px solid #dce7e1;border-radius:9px;background:#f5faf7;color:var(--muted);font-size:11px}.learning-progress-chip strong{color:#317d6c;font-size:15px}.learning-action{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:#46534e;font-size:11px;font-weight:600;cursor:pointer}.learning-action:hover{border-color:#9ac8ba;color:#347e6d}.learning-action--quiet{background:transparent}.visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}.learning-toast{position:fixed;z-index:20;top:75px;right:24px;padding:10px 14px;border:1px solid #c6e5d7;border-radius:8px;background:#f0faf4;color:#247258;box-shadow:0 8px 24px #19251d15;font-size:12px}
+.learning-workspace{display:grid;grid-template-columns:258px minmax(420px,1fr) 350px;gap:14px;align-items:stretch;min-height:670px;height:calc(100vh - 218px);max-height:860px}.learning-sidebar,.learning-reader{min-height:0;border:1px solid var(--line);border-radius:14px;background:var(--paper)}.learning-sidebar{display:flex;flex-direction:column;padding:13px 11px 8px;overflow:hidden}.learning-search span,.learning-filter-grid label span{display:block;margin-bottom:6px;color:#68736e;font-size:10px;font-weight:700}.learning-search input,.learning-filter-grid select,.learning-own-status select{width:100%;height:35px;padding:0 10px;border:1px solid #e0e5e1;border-radius:7px;background:#fff;color:#34423c;font-size:11px;outline:none}.learning-search input:focus,.learning-filter-grid select:focus,.learning-own-status select:focus{border-color:#8bbdaf;box-shadow:0 0 0 3px #69ad961b}.learning-filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px 7px;margin-top:12px}.learning-filter-grid label{min-width:0}.learning-filter-grid select{padding:0 6px}.learning-next{margin:13px 0 13px;padding:10px;border:1px solid #d9e9e0;border-radius:10px;background:linear-gradient(140deg,#f5faf7,#fdfaf3)}.learning-next__top{display:flex;justify-content:space-between;color:#567368;font-size:10px;font-weight:700}.learning-next__spark{color:#c3994d}.learning-next button{display:flex;flex-direction:column;align-items:flex-start;width:100%;margin-top:6px;padding:0;border:0;background:none;text-align:left;cursor:pointer}.learning-next button small{color:#7b8d84;font-size:9px}.learning-next button strong{margin:3px 0;color:#28443b;font-size:12px}.learning-next button span{color:#4b9782;font-size:10px}.learning-next button b{font-size:14px}.learning-next p{margin:7px 0 0;color:#87918c;font-size:9px;line-height:1.5}.learning-list-heading{display:flex;justify-content:space-between;align-items:center;margin:1px 3px 6px;color:#5f6d66;font-size:10px;font-weight:700}.learning-list-heading b{margin-left:3px;color:#2d826d}.learning-list-heading span:last-child{color:#a1aaa5;font-size:9px;font-weight:400}.learning-node-list{display:flex;flex-direction:column;gap:2px;overflow:auto;min-height:0;padding:2px 1px 10px;scrollbar-width:thin}.learning-list-row{display:flex;align-items:center;gap:8px;width:100%;min-height:45px;padding:6px 7px;border:1px solid transparent;border-radius:8px;background:transparent;text-align:left;cursor:pointer}.learning-list-row:hover{background:#f6f8f5}.learning-list-row--selected{border-color:#d9eae2;background:#f2f8f4}.kind-dot{flex:0 0 8px;width:8px;height:8px;border-radius:50%}.kind-dot--lesson{background:#4da992}.kind-dot--topic{background:#d39c50}.kind-dot--concept{background:#688de1}.kind-dot--evidence{background:#a778d0}.kind-dot--source{background:#d9756d}.learning-list-row__copy{display:flex;flex:1;flex-direction:column;min-width:0;gap:3px}.learning-list-row__copy strong{overflow:hidden;color:#34413c;font-size:10.5px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}.learning-list-row__copy small{overflow:hidden;color:#929b96;font-size:9px;text-overflow:ellipsis;white-space:nowrap}.learning-list-state{color:#8d9992;font-size:8px;white-space:nowrap}.learning-list-state--mastered{color:#3a927a}.learning-list-state--inProgress{color:#b58039}.learning-empty{padding:12px;color:#87918c;font-size:11px;text-align:center}
+.learning-map-column{display:flex;flex-direction:column;min-width:0;min-height:0}.learning-map-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 3px 9px}.learning-map-toolbar>div:first-child{display:flex;flex-direction:column;gap:3px}.learning-map-toolbar strong{color:#31403a;font-size:13px}.learning-map-toolbar span{color:#849089;font-size:10px}.learning-view-switch{display:flex;gap:3px;padding:3px;border:1px solid #e4e8e4;border-radius:8px;background:#f7f8f5}.learning-view-switch button{padding:5px 7px;border:0;border-radius:5px;background:transparent;color:#79837e;font-size:9px;cursor:pointer}.learning-view-switch button.active{background:white;color:#337e6c;box-shadow:0 1px 3px #243a2d18}.learning-map-column :deep(.graph-canvas){flex:1;min-height:0}.learning-map-footer{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 3px 0;color:#818c85;font-size:9px}.learning-map-footer>span{display:flex;align-items:center;gap:6px}.learning-status-ring{width:8px;height:8px;border:1px dashed #4eaa92;border-radius:50%}.learning-motion{display:flex;align-items:center;gap:5px;cursor:pointer}.learning-motion input{accent-color:#3f927d}
+.learning-reader{overflow:hidden}.learning-reader__scroll{height:100%;overflow:auto;padding:18px 18px 20px;scrollbar-width:thin}.learning-reader__eyebrow{display:flex;gap:8px;align-items:center;color:#438b79;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.learning-reader__eyebrow span+span{padding-left:8px;border-left:1px solid #d8ded9;color:#9a8a69}.learning-reader h2{margin:10px 0 7px;color:#25332e;font-family:var(--font-display);font-size:21px;line-height:1.3;letter-spacing:-.025em}.learning-reader__summary{margin:0 0 12px;color:#6c7972;font-size:11px;line-height:1.7}.learning-status-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #edf0ec;border-bottom:1px solid #edf0ec}.project-status{padding:4px 7px;border-radius:5px;font-size:9px}.project-status--completed{background:#eaf6ef;color:#397d60}.project-status--in-progress{background:#fff4df;color:#9d7130}.project-status--planned{background:#f0f2ef;color:#849089}.reading-time{color:#949d98;font-size:9px}.learning-own-status{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:10px 0 4px}.learning-own-status label,.learning-note label{color:#5e6c64;font-size:10px;font-weight:700}.learning-own-status select{width:auto;min-width:95px;height:29px;font-size:10px}.learning-article__section{padding:11px 0 10px;border-bottom:1px solid #eef0ed}.learning-article__section h3,.learning-section-title h3{margin:0 0 6px;color:#3f554b;font-size:11px;font-weight:700}.learning-article__section p,.learning-article__section li{margin:0;color:#596761;font-size:10.5px;line-height:1.72;white-space:pre-line}.learning-interview ol{display:flex;flex-direction:column;gap:7px;margin:0;padding-left:17px}.learning-paths{display:flex;flex-direction:column;gap:5px}.source-path{display:flex;justify-content:space-between;align-items:center;gap:7px;padding:6px 7px;border:1px solid #e7ebe7;border-radius:6px;background:#fbfcf9;text-align:left;cursor:pointer}.source-path:hover{border-color:#b8d8cc;background:#f4faf6}.source-path code{overflow-wrap:anywhere;color:#52675d;font-size:9px}.source-path span{flex:0 0 auto;color:#438b79;font-size:8px}.learning-note{display:flex;flex-direction:column;gap:7px;padding:12px 0}.learning-note textarea{resize:vertical;width:100%;min-height:74px;padding:8px;border:1px solid #e3e8e3;border-radius:7px;background:#fff;color:#405048;font:inherit;font-size:10px;line-height:1.5;outline:none}.learning-note textarea:focus{border-color:#8bbdaf;box-shadow:0 0 0 3px #69ad961b}.learning-concept-body p{line-height:1.85}.learning-relations{padding:12px 0 3px}.learning-section-title{display:flex;justify-content:space-between;align-items:center}.learning-section-title h3{margin:0 0 7px}.learning-section-title>span{color:#8b9790;font-size:9px}.learning-relation-row{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;margin-top:6px;padding:8px;border:1px solid #e9ece8;border-radius:7px;background:#fff;text-align:left;cursor:pointer}.learning-relation-row:hover{border-color:#b7d9cd;background:#f7fbf8}.relation-type{color:#558d7d;font-size:8px;font-weight:700;text-transform:uppercase}.learning-relation-row strong{color:#394942;font-size:10px}.learning-relation-row small{color:#89948d;font-size:9px;line-height:1.5}.learning-reader__tail{min-height:1px;color:#438b79;font-size:9px}.learning-footnote{display:flex;justify-content:space-between;gap:16px;margin:10px 2px 0;color:#98a19b;font-size:9px}.learning-footnote span:last-child{white-space:nowrap}
+.learning-path-route{margin:7px 0 11px;padding:9px;border:1px solid #ecdacb;border-radius:8px;background:#fff9f2}.learning-path-route>div:first-child{display:flex;justify-content:space-between;gap:8px;margin-bottom:7px}.learning-path-route strong{color:#a36f43;font-size:9px}.learning-path-route small{color:#a58f7b;font-size:8px}.learning-path-route__steps{display:flex;flex-wrap:wrap;align-items:center;gap:5px}.learning-path-route__steps button{padding:4px 5px;border:1px solid #f0dfcc;border-radius:5px;background:#fff;color:#765b40;font-size:8px;cursor:pointer}.learning-path-route__steps button:hover,.learning-path-route__steps button.learning-path-route__current{border-color:#d49d65;background:#fff2e2}.learning-path-route__steps span{color:#bf9670;font-size:10px}.learning-path-reached{margin:6px 0 11px;padding:8px;border-radius:7px;background:#edf7f0;color:#48826a;font-size:9px}
+@media(max-width:1180px){.learning-workspace{grid-template-columns:230px minmax(340px,1fr) 310px;gap:10px}.learning-reader__scroll{padding:15px}.learning-header__actions{max-width:430px}}
+@media(max-width:900px){.learning-header{align-items:flex-start;flex-direction:column}.learning-header__actions{justify-content:flex-start}.learning-workspace{height:auto;max-height:none;grid-template-columns:220px minmax(0,1fr);min-height:0}.learning-sidebar{height:650px}.learning-map-column{height:650px}.learning-reader{grid-column:1/-1;max-height:720px;min-height:450px}.learning-footnote{flex-direction:column;gap:5px}}
+@media(max-width:620px){.learning-header h1{font-size:25px}.learning-header p{max-width:40ch;line-height:1.6}.learning-header__actions{gap:5px}.learning-progress-chip{width:100%}.learning-workspace{display:flex;flex-direction:column}.learning-sidebar{height:540px}.learning-map-column{height:520px}.learning-reader{height:620px;min-height:400px}.learning-filter-grid{grid-template-columns:1fr 1fr}.learning-map-toolbar{align-items:flex-start;flex-direction:column}.learning-footnote{font-size:8px}}
+</style>
