@@ -1,0 +1,73 @@
+export interface Point { x: number; y: number }
+export interface SceneEdge { from: string; to: string }
+
+/** Explore only reachable expansions; collapsing one branch preserves shared neighbors. */
+export function discoverScene(root: string, hops: number, edges: SceneEdge[], expanded: Set<string>, collapsed: Set<string>): Set<string> {
+  const adjacent = new Map<string, Set<string>>()
+  for (const edge of edges) {
+    for (const [a, b] of [[edge.from, edge.to], [edge.to, edge.from]]) {
+      if (!adjacent.has(a!)) adjacent.set(a!, new Set())
+      adjacent.get(a!)!.add(b!)
+    }
+  }
+  const visible = new Set([root])
+  let frontier = new Set([root])
+  for (let depth = 0; depth < hops; depth++) {
+    const next = new Set<string>()
+    for (const id of frontier) {
+      if (collapsed.has(id)) continue
+      for (const neighbor of adjacent.get(id) ?? []) {
+        if (!visible.has(neighbor)) next.add(neighbor)
+        visible.add(neighbor)
+      }
+    }
+    frontier = next
+  }
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const id of expanded) {
+      if (!visible.has(id) || collapsed.has(id)) continue
+      for (const neighbor of adjacent.get(id) ?? []) {
+        if (!visible.has(neighbor)) { visible.add(neighbor); changed = true }
+      }
+    }
+  }
+  return visible
+}
+
+/** Arrows end outside circles; relationship captions remain upright in either direction. */
+export function edgeGeometry(source: Point, target: Point, sourceRadius: number, targetRadius: number, bend = 0) {
+  const dx = target.x - source.x, dy = target.y - source.y
+  const distance = Math.hypot(dx, dy)
+  const ux = distance < .001 ? 1 : dx / distance, uy = distance < .001 ? 0 : dy / distance
+  const control = { x: (source.x + target.x) / 2 - uy * bend, y: (source.y + target.y) / 2 + ux * bend }
+  const startLength = Math.hypot(control.x - source.x, control.y - source.y) || 1
+  const endLength = Math.hypot(target.x - control.x, target.y - control.y) || 1
+  const sr = Math.min(sourceRadius + 2, distance / 3), tr = Math.min(targetRadius + 7, distance / 3)
+  const start = { x: source.x + (control.x - source.x) / startLength * sr, y: source.y + (control.y - source.y) / startLength * sr }
+  const end = { x: target.x - (target.x - control.x) / endLength * tr, y: target.y - (target.y - control.y) / endLength * tr }
+  let angle = Math.atan2(end.y - start.y, end.x - start.x) * 180 / Math.PI
+  if (angle > 90) angle -= 180
+  if (angle < -90) angle += 180
+  return {
+    path: `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`,
+    x: (start.x + 2 * control.x + end.x) / 4,
+    y: (start.y + 2 * control.y + end.y) / 4,
+    angle,
+  }
+}
+
+export function captionLines(text: string, chinese: boolean): string[] {
+  const tokens = chinese ? Array.from(text) : text.split(/\s+/)
+  const limit = chinese ? 6 : 12
+  const lines: string[] = []
+  let line = ''
+  for (const token of tokens) {
+    const next = line ? line + (chinese ? '' : ' ') + token : token
+    if (next.length > limit && line) { lines.push(line); line = token } else line = next
+  }
+  if (line) lines.push(line)
+  if (lines.length > 4) return [...lines.slice(0, 3), lines[3]!.slice(0, limit - 1) + '…']
+  return lines
+}
