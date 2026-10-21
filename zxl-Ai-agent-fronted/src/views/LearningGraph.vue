@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import KnowledgeGraphCanvas from '../learning/graph/KnowledgeGraphCanvas.vue'
 import { discoverScene } from '../learning/graph/graphPresentation'
@@ -9,6 +9,7 @@ import {
 } from '../learning/graph/model'
 import type { GraphNode, LearningProgress, LearningState, NodeKind, RelationType } from '../learning/graph/model'
 import { locale, t } from '../i18n'
+const KnowledgeGraph3D = defineAsyncComponent(() => import('../learning/graph/KnowledgeGraph3D.vue'))
 
 const route = useRoute()
 const router = useRouter()
@@ -18,8 +19,10 @@ const kindFilter = ref<NodeKind | 'all'>('all')
 const stageFilter = ref<string | 'all'>('all')
 const learningFilter = ref<LearningState | 'all'>('all')
 const relationFilter = ref<RelationType | 'all'>('all')
-const viewMode = ref<'all' | 'one' | 'two'>('one')
-const reducedMotion = ref(false)
+const viewMode = ref<'all' | 'one' | 'two'>('all')
+const graphDimension = ref<'3d' | '2d'>('3d')
+const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)')
+const reducedMotion = ref(motionPreference.matches)
 const catalogueOpen = ref(false)
 const readerOpen = ref(false)
 const importPicker = ref<HTMLInputElement>()
@@ -167,6 +170,13 @@ function focusSelected(): void {
   expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set()
   if (viewMode.value === 'all') viewMode.value = 'one'
 }
+function fallBackTo2D(): void {
+  graphDimension.value = '2d'
+  transferMessage.value = locale.value === 'zh-CN' ? '当前环境无法创建 3D 画布，已切换到 2D，课程仍可阅读。' : '3D rendering is unavailable here. Switched to 2D; lessons remain accessible.'
+}
+function updateMotionPreference(event: MediaQueryListEvent): void { reducedMotion.value = event.matches }
+motionPreference.addEventListener('change', updateMotionPreference)
+onBeforeUnmount(() => { motionPreference.removeEventListener('change', updateMotionPreference); if (scrollSaveTimer) clearTimeout(scrollSaveTimer) })
 function setLearningState(state: LearningState): void {
   const existing = progress.value.records[selectedId.value] ?? createRecord()
   progress.value.records[selectedId.value] = { ...existing, state, updatedAt: new Date().toISOString() }
@@ -303,16 +313,21 @@ onMounted(() => {
         <div class="learning-map-toolbar">
           <div><strong>{{ t('learning.relationshipMap') }}</strong><span>{{ visibleNodes.length }} {{ t('learning.visibleEntities') }} · {{ visibleEdges.length }} {{ t('learning.visibleRelations') }}</span></div>
           <div class="learning-view-switch" role="group" :aria-label="t('learning.graphRange')">
+            <button type="button" :class="{ active: graphDimension === '3d' }" @click="graphDimension = '3d'">3D {{ locale === 'zh-CN' ? '星图' : 'space' }}</button>
+            <button type="button" :class="{ active: graphDimension === '2d' }" @click="graphDimension = '2d'">2D</button>
             <button type="button" @click="focusSelected">{{ locale === 'zh-CN' ? '以所选为中心' : 'Focus selected' }}</button>
             <button type="button" :class="{ active: viewMode === 'one' }" @click="viewMode = 'one'">1{{ t('learning.hop') }}</button>
             <button type="button" :class="{ active: viewMode === 'two' }" @click="viewMode = 'two'">2{{ t('learning.hop') }}</button>
             <button type="button" :class="{ active: viewMode === 'all' }" @click="viewMode = 'all'">{{ t('learning.fullGraph') }}</button>
           </div>
         </div>
-        <KnowledgeGraphCanvas :nodes="visibleNodes" :edges="visibleEdges" :selected-id="selectedId" :highlighted-edge-ids="highlightedEdgeIds"
+        <KnowledgeGraph3D v-if="graphDimension === '3d'" :nodes="visibleNodes" :edges="visibleEdges" :selected-id="selectedId"
+          :highlighted-edge-ids="highlightedEdgeIds" :reduced-motion="reducedMotion"
+          @select="chooseNode" @read="openReader" @browse="catalogueOpen = true" @unavailable="fallBackTo2D" />
+        <KnowledgeGraphCanvas v-else :nodes="visibleNodes" :edges="visibleEdges" :selected-id="selectedId" :highlighted-edge-ids="highlightedEdgeIds"
           :expanded-node-ids="expandedNodeIds" :reduced-motion="reducedMotion" @select="chooseNode" @expand="toggleExpansion" @dismiss="dismissNode" @reset="restoreScene" @read="openReader" />
         <div class="learning-map-footer">
-          <span><i class="learning-status-ring"></i>{{ t('learning.projectStateLegend') }}</span>
+          <span>{{ graphDimension === '3d' ? (locale === 'zh-CN' ? '节点大小代表连接数 · 颜色区分知识类型' : 'Node size reflects connections · color represents knowledge type') : (locale === 'zh-CN' ? '颜色区分知识类型' : 'Color represents knowledge type') }}</span>
           <label class="learning-motion"><input v-model="reducedMotion" type="checkbox">{{ t('learning.reduceMotion') }}</label>
         </div>
       </section>
