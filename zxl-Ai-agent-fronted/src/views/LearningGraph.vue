@@ -27,6 +27,31 @@ const catalogueOpen = ref(false)
 const readerOpen = ref(false)
 const importPicker = ref<HTMLInputElement>()
 const reader = ref<HTMLElement>()
+const graphStage = ref<HTMLElement>()
+const stageSize = ref({ width: 1000, height: 650 })
+const detailAnchor = ref<{ x: number; y: number; width: number; height: number; visible: boolean }>()
+let stageObserver: ResizeObserver | undefined
+const readerPlacement = computed(() => {
+  const { width, height } = stageSize.value
+  const compact = width < 680
+  const cardWidth = Math.min(390, width - 24)
+  const cardHeight = Math.min(compact ? height * .5 : 560, height - (compact ? 110 : 160))
+  const anchor = detailAnchor.value
+  const x = anchor?.visible ? anchor.x : width * .48
+  const y = anchor?.visible ? anchor.y : height * .4
+  const left = compact ? 12 : Math.max(12, Math.min(width - cardWidth - 12, x + cardWidth + 36 < width ? x + 30 : x - cardWidth - 30))
+  const top = compact ? height - cardHeight - 48 : Math.max(100, Math.min(height - cardHeight - 48, y - 72))
+  return { left: `${left}px`, top: `${top}px`, width: `${cardWidth}px`, height: `${Math.max(200, cardHeight)}px` }
+})
+const detailConnector = computed(() => {
+  const point = detailAnchor.value
+  if (!point?.visible || stageSize.value.width < 680 || graphDimension.value !== '3d') return ''
+  const left = parseFloat(readerPlacement.value.left), top = parseFloat(readerPlacement.value.top)
+  const right = left + parseFloat(readerPlacement.value.width)
+  const x = point.x < left ? left : right
+  const y = Math.max(top + 28, Math.min(top + parseFloat(readerPlacement.value.height) - 28, point.y))
+  return `M ${point.x} ${point.y} Q ${(point.x + x) / 2} ${point.y - 12} ${x} ${y}`
+})
 const transferMessage = ref('')
 const selectedId = ref(typeof route.query.node === 'string' && nodeById.has(route.query.node) ? route.query.node : 'lesson-08')
 const sceneRootId = ref(selectedId.value)
@@ -128,6 +153,11 @@ watch(selectedId, async value => {
   await nextTick()
   if (reader.value) reader.value.scrollTop = progress.value.records[value]?.scrollTop ?? 0
 })
+watch(readerOpen, async open => {
+  if (!open) return
+  await nextTick()
+  if (reader.value) reader.value.scrollTop = progress.value.records[selectedId.value]?.scrollTop ?? 0
+})
 watch([query, kindFilter, stageFilter, learningFilter], () => {
   if (query.value.trim()) {
     const match = filteredList.value[0]
@@ -147,11 +177,13 @@ function onReadScroll(event: Event): void {
 
 function chooseNode(id: string): void {
   if (!nodeById.has(id)) return
+  if (id !== selectedId.value) detailAnchor.value = undefined
   if (!visibleIds.value.has(id)) {
     sceneRootId.value = id
     expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set()
   }
   selectedId.value = id
+  readerOpen.value = true
   const revealed = revealSelection(id, catalogue.edges, expandedIds.value, collapsedIds.value, dismissedIds.value)
   expandedIds.value = revealed.expanded; collapsedIds.value = revealed.collapsed; dismissedIds.value = revealed.dismissed
 }
@@ -178,7 +210,7 @@ function fallBackTo2D(): void {
 }
 function updateMotionPreference(event: MediaQueryListEvent): void { reducedMotion.value = event.matches }
 motionPreference.addEventListener('change', updateMotionPreference)
-onBeforeUnmount(() => { motionPreference.removeEventListener('change', updateMotionPreference); if (scrollSaveTimer) clearTimeout(scrollSaveTimer) })
+onBeforeUnmount(() => { stageObserver?.disconnect(); motionPreference.removeEventListener('change', updateMotionPreference); if (scrollSaveTimer) clearTimeout(scrollSaveTimer) })
 function setLearningState(state: LearningState): void {
   const existing = progress.value.records[selectedId.value] ?? createRecord()
   progress.value.records[selectedId.value] = { ...existing, state, updatedAt: new Date().toISOString() }
@@ -235,6 +267,11 @@ function recommendationExplanation(): string {
 }
 
 onMounted(() => {
+  stageObserver = new ResizeObserver(entries => {
+    const size = entries[0]?.contentRect
+    if (size) stageSize.value = { width: size.width, height: size.height }
+  })
+  if (graphStage.value) stageObserver.observe(graphStage.value)
   const routeId = typeof route.query.node === 'string' && nodeById.has(route.query.node) ? route.query.node : selectedId.value
   selectedId.value = routeId
   if (reader.value) reader.value.scrollTop = progress.value.records[routeId]?.scrollTop ?? 0
@@ -251,7 +288,7 @@ onMounted(() => {
       </div>
       <div class="learning-header__actions">
         <button class="learning-action" type="button" :aria-expanded="catalogueOpen" @click="catalogueOpen = !catalogueOpen">{{ locale === 'zh-CN' ? '课程目录 / 筛选' : 'Lessons / filters' }}</button>
-        <button class="learning-action" type="button" :aria-expanded="readerOpen" @click="readerOpen = !readerOpen">{{ locale === 'zh-CN' ? '知识阅读面板' : 'Knowledge reader' }}</button>
+        <button class="learning-action" type="button" :aria-expanded="readerOpen" @click="readerOpen = !readerOpen">{{ locale === 'zh-CN' ? '所选知识' : 'Selected knowledge' }}</button>
         <div class="learning-progress-chip"><strong>{{ completedCount }}/{{ allLessons.length }}</strong><span>{{ t('learning.masteredLessons') }}</span></div>
         <button class="learning-action" type="button" @click="exportCatalogue">{{ t('learning.exportGraph') }}</button>
         <button class="learning-action" type="button" @click="exportProgress">{{ t('learning.exportProgress') }}</button>
@@ -262,7 +299,7 @@ onMounted(() => {
 
     <div v-if="transferMessage" class="learning-toast" role="status">{{ transferMessage }}</div>
 
-    <div class="learning-workspace" :class="{ 'has-catalogue': catalogueOpen, 'has-reader': readerOpen }">
+    <div class="learning-workspace" :class="{ 'has-catalogue': catalogueOpen }">
       <aside v-show="catalogueOpen" class="learning-sidebar" :aria-label="t('learning.filters')">
         <label class="learning-search">
           <span>{{ t('learning.search') }}</span>
@@ -323,18 +360,15 @@ onMounted(() => {
             <button type="button" :class="{ active: viewMode === 'all' }" @click="viewMode = 'all'">{{ t('learning.fullGraph') }}</button>
           </div>
         </div>
+        <div ref="graphStage" class="learning-graph-stage" @keydown.esc="readerOpen = false">
         <KnowledgeGraph3D v-if="graphDimension === '3d'" :nodes="visibleNodes" :edges="visibleEdges" :selected-id="selectedId"
-          :highlighted-edge-ids="highlightedEdgeIds" :reduced-motion="reducedMotion"
-          @select="chooseNode" @read="openReader" @browse="catalogueOpen = true" @unavailable="fallBackTo2D" />
+          :highlighted-edge-ids="highlightedEdgeIds" :reduced-motion="reducedMotion" :reading="readerOpen"
+          @anchor="detailAnchor = $event" @close="readerOpen = false" @select="chooseNode" @read="openReader" @browse="catalogueOpen = true" @unavailable="fallBackTo2D" />
         <KnowledgeGraphCanvas v-else :nodes="visibleNodes" :edges="visibleEdges" :selected-id="selectedId" :highlighted-edge-ids="highlightedEdgeIds"
           :expanded-node-ids="expandedNodeIds" :reduced-motion="reducedMotion" @select="chooseNode" @expand="toggleExpansion" @dismiss="dismissNode" @reset="restoreScene" @read="openReader" />
-        <div class="learning-map-footer">
-          <span>{{ graphDimension === '3d' ? (locale === 'zh-CN' ? '节点大小代表连接数 · 颜色区分知识类型' : 'Node size reflects connections · color represents knowledge type') : (locale === 'zh-CN' ? '颜色区分知识类型' : 'Color represents knowledge type') }}</span>
-          <label class="learning-motion"><input v-model="reducedMotion" type="checkbox">{{ t('learning.reduceMotion') }}</label>
-        </div>
-      </section>
-
-      <aside v-show="readerOpen" class="learning-reader" :aria-label="t('learning.reader')">
+        <svg v-if="readerOpen && detailConnector" class="learning-detail-connector" :viewBox="`0 0 ${stageSize.width} ${stageSize.height}`" aria-hidden="true"><path :d="detailConnector"/><circle :cx="detailAnchor?.x" :cy="detailAnchor?.y" r="7"/></svg>
+      <aside v-if="readerOpen" class="learning-reader learning-reader--floating" :style="readerPlacement" role="region" :aria-label="t('learning.reader')" @pointerdown.stop @wheel.stop>
+        <div class="learning-reader__bar"><span>✦ {{ locale === 'zh-CN' ? '正在探索' : 'EXPLORING' }} · {{ kindLabel(selectedNode.kind) }}</span><button type="button" :aria-label="locale === 'zh-CN' ? '关闭详情' : 'Close details'" @click="readerOpen = false">×</button></div>
         <div ref="reader" class="learning-reader__scroll" @scroll.passive="onReadScroll">
           <div class="learning-reader__eyebrow"><span>{{ kindLabel(selectedNode.kind) }}</span><span v-if="selectedNode.number">{{ lessonNumber(selectedNode) }}</span></div>
           <h2>{{ title(selectedNode) }}</h2>
@@ -410,6 +444,12 @@ onMounted(() => {
           <div class="learning-reader__tail">{{ transferMessage }}</div>
         </div>
       </aside>
+        </div>
+        <div class="learning-map-footer">
+          <span>{{ graphDimension === '3d' ? (locale === 'zh-CN' ? '节点大小代表连接数 · 颜色区分知识类型' : 'Node size reflects connections · color represents knowledge type') : (locale === 'zh-CN' ? '颜色区分知识类型' : 'Color represents knowledge type') }}</span>
+          <label class="learning-motion"><input v-model="reducedMotion" type="checkbox">{{ t('learning.reduceMotion') }}</label>
+        </div>
+      </section>
     </div>
 
     <footer class="learning-footnote">
@@ -431,12 +471,10 @@ onMounted(() => {
 @media(max-width:620px){.learning-header h1{font-size:25px}.learning-header p{max-width:40ch;line-height:1.6}.learning-header__actions{gap:5px}.learning-progress-chip{width:100%}.learning-workspace{display:flex;flex-direction:column}.learning-sidebar{height:540px}.learning-map-column{height:520px}.learning-reader{height:620px;min-height:400px}.learning-filter-grid{grid-template-columns:1fr 1fr}.learning-map-toolbar{align-items:flex-start;flex-direction:column}.learning-footnote{font-size:8px}}
 .learning-workspace{grid-template-columns:minmax(0,1fr);height:calc(100vh - 225px);max-height:none;min-height:620px;gap:10px}
 .learning-workspace.has-catalogue{grid-template-columns:230px minmax(0,1fr)}
-.learning-workspace.has-reader{grid-template-columns:minmax(0,1fr) 340px}
-.learning-workspace.has-catalogue.has-reader{grid-template-columns:230px minmax(0,1fr) 340px}
 .learning-map-toolbar{padding:0 3px}.learning-reader,.learning-sidebar{border-radius:4px}
 .learning-header h1{font-size:26px}.learning-header{margin-bottom:16px}
 .learning-map-column :deep(.graph-canvas){min-height:500px}
-@media(max-width:1000px){.learning-workspace.has-catalogue.has-reader{grid-template-columns:200px minmax(0,1fr)}.learning-workspace.has-catalogue.has-reader .learning-reader{grid-column:1/-1;min-height:500px}.learning-workspace.has-reader{grid-template-columns:minmax(0,1fr) 280px}.learning-workspace{height:auto}.learning-map-column{height:680px}.learning-sidebar{height:680px}}
+@media(max-width:1000px){.learning-workspace{height:auto}.learning-map-column{height:680px}.learning-sidebar{height:680px}}
 @media(max-width:620px){.learning-workspace{display:flex;min-height:0}.learning-workspace .learning-sidebar{height:420px}.learning-workspace .learning-map-column{height:600px}.learning-workspace .learning-reader{height:600px}.learning-map-column :deep(.graph-canvas){min-height:470px}}
 .learning-page .learning-action,.learning-page .learning-map-toolbar span,.learning-page .learning-map-footer{font-size:12px}
 .learning-page .learning-list-row__copy strong{font-size:13px}.learning-page .learning-list-row__copy small,.learning-page .learning-list-state{font-size:11px}
@@ -448,4 +486,29 @@ onMounted(() => {
 .learning-page .source-path code,.learning-page .source-path span{font-size:12px}
 .learning-page .learning-relation-row strong{font-size:13px}.learning-page .learning-relation-row small,.learning-page .relation-type{font-size:12px}
 .learning-page .learning-view-switch button{font-size:12px}.learning-view-switch{flex-wrap:wrap}
+/* A contextual reading window belongs to the map; opening it never resizes the graph. */
+.learning-graph-stage{position:relative;flex:1;min-height:500px;isolation:isolate}
+.learning-graph-stage>:deep(.graph-canvas){height:100%;min-height:100%}
+.learning-graph-stage:fullscreen{width:100vw;height:100vh;background:#050914}
+.learning-detail-connector{position:absolute;inset:0;width:100%;height:100%;z-index:6;pointer-events:none;overflow:hidden}
+.learning-detail-connector path{fill:none;stroke:#a1d9ff;stroke-width:1;opacity:.7}.learning-detail-connector circle{fill:none;stroke:#a1d9ff;stroke-width:1;opacity:.6}
+.learning-page .learning-reader--floating{position:absolute;z-index:8;min-height:0;max-height:none;grid-column:auto;display:flex;flex-direction:column;overflow:hidden;border:1px solid #a4c5df88;border-radius:14px;background:#f7f9fc;box-shadow:0 24px 70px #0007,0 0 0 1px #ffffff18;animation:reader-appear .18s ease-out}
+.learning-reader__bar{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;padding:10px 14px;border-bottom:1px solid #dbe5ee;background:#eaf0f7;color:#47657e;font-size:11px;font-weight:600;letter-spacing:.05em}
+.learning-reader__bar button{display:grid;place-items:center;width:28px;height:28px;border:1px solid #cad9e7;border-radius:7px;background:#f9fcff;color:#37566e;font-size:20px;cursor:pointer}
+.learning-reader__bar button:hover{background:#dce9f5}.learning-reader__bar button:focus-visible{outline:2px solid #287dc3;outline-offset:2px}
+.learning-reader--floating .learning-reader__scroll{height:auto;min-height:0;flex:1;overscroll-behavior:contain;padding:17px 20px 24px}
+.learning-reader--floating h2{font-size:21px;color:#1d3249}
+.learning-reader--floating .learning-reader__eyebrow{color:#4c6c8c;font-size:11px}
+.learning-reader--floating .learning-reader__summary{color:#536880;font-size:13px;line-height:1.8}
+.learning-reader--floating .learning-article__section{border-color:#e0e7ef}
+.learning-reader--floating .learning-article__section h3,.learning-reader--floating .learning-section-title h3{color:#294d70;font-size:13px}
+.learning-reader--floating .learning-article__section p,.learning-reader--floating .learning-article__section li{color:#3b5068;font-size:13px;line-height:1.85}
+.learning-reader--floating .learning-status-row{flex-wrap:wrap;border-color:#e0e7ef}
+.learning-reader--floating .project-status,.learning-reader--floating .reading-time{font-size:11px}
+.learning-reader--floating .source-path{width:100%;background:#eef3f9;border-color:#dbe4ef}
+.learning-reader--floating .source-path code{font-size:11px;color:#3c5c7b}
+.learning-reader--floating .learning-note textarea{box-sizing:border-box}
+@keyframes reader-appear{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.learning-page .learning-reader--floating{animation:none}}
+@media(max-width:620px){.learning-page .learning-workspace .learning-reader--floating{min-height:0}.learning-graph-stage{min-height:470px}}
 </style>

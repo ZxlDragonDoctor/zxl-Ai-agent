@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { AdditiveBlending, BufferGeometry, CanvasTexture, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial, Points, PointsMaterial, SphereGeometry, Sprite, SpriteMaterial } from 'three'
+import { AdditiveBlending, BufferGeometry, CanvasTexture, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial, Points, PointsMaterial, SphereGeometry, Sprite, SpriteMaterial, Vector3 } from 'three'
 import type { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js'
 import type { PerspectiveCamera } from 'three'
@@ -11,8 +11,8 @@ import { incidentSelection } from './graphPresentation'
 import type { SpatialLink, SpatialNode } from './graph3DModel'
 import { locale, t } from '../../i18n'
 
-const props = defineProps<{ nodes: GraphNode[]; edges: GraphEdge[]; selectedId: string; highlightedEdgeIds?: string[]; reducedMotion: boolean }>()
-const emit = defineEmits<{ select: [id: string]; read: [id: string]; browse: []; unavailable: [] }>()
+const props = defineProps<{ nodes: GraphNode[]; edges: GraphEdge[]; selectedId: string; highlightedEdgeIds?: string[]; reducedMotion: boolean; reading?: boolean }>()
+const emit = defineEmits<{ select: [id: string]; read: [id: string]; browse: []; unavailable: []; close: []; anchor: [point: { x: number; y: number; width: number; height: number; visible: boolean }] }>()
 const host = ref<HTMLElement>(), viewport = ref<HTMLElement>()
 const ready = ref(false), failed = ref(false), paused = ref(false), showLabels = ref(false)
 const hovered = ref(''), focused = ref(''), selectedEdge = ref<GraphEdge>()
@@ -20,15 +20,15 @@ const tr = (cn: string, en: string) => locale.value === 'zh-CN' ? cn : en
 const title = (node: GraphNode) => node.title[locale.value] || node.title['zh-CN']
 const currentNode = computed(() => props.nodes.find(node => node.id === props.selectedId))
 const motion = computed(() => !paused.value && !props.reducedMotion)
-const activeId = computed(() => hovered.value || focused.value || props.selectedId)
+const activeId = computed(() => focused.value || hovered.value)
 const selection = computed(() => incidentSelection(activeId.value, props.edges))
 const neighborIds = computed(() => selection.value.nodeIds)
 const colors = { lesson: '#5bbdff', topic: '#ffcd7b', concept: '#ac98ff', evidence: '#51d9b5', source: '#ff91b9' }
-interface Visual { group: Group; sphere: Mesh<SphereGeometry, MeshBasicMaterial>; halo: Sprite; caption: CSS2DObject; captionLocale: string }
+interface Visual { group: Group; sphere: Mesh<SphereGeometry, MeshBasicMaterial>; halo: Sprite; flare: Sprite; caption: CSS2DObject; captionLocale: string; radius: number; emphasis: number; phase: number }
 const visuals = new Map<string, Visual>()
 const sphereGeometry = new SphereGeometry(1, 18, 12)
 let graph: ForceGraph3DInstance<SpatialNode, SpatialLink> | undefined
-let glowTexture: CanvasTexture | undefined, stars: Points | undefined
+let glowTexture: CanvasTexture | undefined, flareTexture: CanvasTexture | undefined, stars: Points | undefined
 let resizeObserver: ResizeObserver | undefined, intersectionObserver: IntersectionObserver | undefined
 let resumeTimer: ReturnType<typeof setTimeout> | undefined, fitTimer: ReturnType<typeof setTimeout> | undefined
 let destroyed = false, intersecting = true, orbitHeld = false, fitted = false
@@ -36,6 +36,9 @@ let controls: OrbitControls | undefined
 let renderCanvas: HTMLCanvasElement | undefined
 let labelsRenderer: CSS2DRenderer | undefined
 let focusFrame = 0
+let lastFrameUpdate = 0
+let lastAnchor = ''
+const projected = new Vector3()
 
 function relationship(type: GraphEdge['type']) { return t(`learning.relation.${type === 'documented-by' ? 'documentedBy' : type === 'informed-by' ? 'informedBy' : type}`) }
 function tooltip(text: string) {
@@ -52,6 +55,16 @@ function glow() {
   ctx.fillStyle = gradient; ctx.fillRect(0, 0, 128, 128)
   return new CanvasTexture(canvas)
 }
+function starFlare() {
+  const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128
+  const ctx = canvas.getContext('2d')!
+  const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 62)
+  gradient.addColorStop(0, '#ffffffff'); gradient.addColorStop(.1, '#ffffffc0'); gradient.addColorStop(1, '#ffffff00')
+  ctx.fillStyle = gradient
+  ctx.beginPath(); ctx.moveTo(64, 2); ctx.quadraticCurveTo(68, 59, 126, 64); ctx.quadraticCurveTo(69, 68, 64, 126)
+  ctx.quadraticCurveTo(60, 69, 2, 64); ctx.quadraticCurveTo(59, 60, 64, 2); ctx.fill()
+  return new CanvasTexture(canvas)
+}
 function setCaption(visual: Visual, node: SpatialNode) {
   visual.caption.element.textContent = title(node)
   visual.captionLocale = locale.value
@@ -62,27 +75,73 @@ function visualFor(node: SpatialNode): Visual {
   const group = new Group()
   const sphere = new Mesh(sphereGeometry, new MeshBasicMaterial({ color: colors[node.kind], transparent: true }))
   const halo = new Sprite(new SpriteMaterial({ map: glowTexture, color: colors[node.kind], transparent: true, blending: AdditiveBlending, depthWrite: false }))
+  const flare = new Sprite(new SpriteMaterial({ map: flareTexture, color: '#e4f4ff', transparent: true, blending: AdditiveBlending, depthWrite: false }))
   const element = document.createElement('div')
   element.className = 'knowledge-node-label'
   const caption = new CSS2DObject(element)
   caption.center.set(.5, 1)
-  group.add(sphere, halo, caption)
-  const result = { group, sphere, halo, caption, captionLocale: locale.value }
+  group.add(sphere, halo, flare, caption)
+  let hash = 0
+  for (const char of node.id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
+  const result = { group, sphere, halo, flare, caption, captionLocale: locale.value, radius: 1, emphasis: 1, phase: (hash % 628) / 100 }
   visuals.set(node.id, result); setCaption(result, node); styleVisual(node, result)
   return result
 }
 function styleVisual(node: SpatialNode, visual: Visual) {
   const active = activeId.value, neighbors = neighborIds.value
-  const selected = node.id === props.selectedId, emphasized = node.id === active || selected
+  const selected = node.id === focused.value, emphasized = node.id === active || selected
   const dimmed = !!active && !neighbors.has(node.id) && node.id !== active
-  const radius = spatialNodeRadius(node) * (emphasized ? 1.25 : 1)
-  visual.sphere.scale.setScalar(radius)
-  visual.sphere.material.opacity = dimmed ? .12 : 1
-  ;(visual.halo.material as SpriteMaterial).opacity = dimmed ? .04 : emphasized ? .65 : .3
-  visual.halo.scale.setScalar(radius * (emphasized ? 7 : 6))
-  visual.caption.position.set(0, radius + 4, 0)
+  const radius = spatialNodeRadius(node) * (emphasized ? 1.35 : 1)
+  visual.radius = radius; visual.emphasis = dimmed ? .18 : emphasized ? 1.5 : neighbors.has(node.id) ? 1.15 : .85
+  visual.sphere.scale.setScalar(radius * .55)
+  visual.sphere.material.color.set(dimmed ? colors[node.kind] : '#f0f8ff')
+  visual.sphere.material.opacity = dimmed ? .22 : 1
+  visual.halo.scale.setScalar(radius * 7)
+  visual.flare.scale.setScalar(radius * (emphasized ? 11 : 8))
+  ;(visual.halo.material as SpriteMaterial).opacity = visual.emphasis * .5
+  ;(visual.flare.material as SpriteMaterial).opacity = visual.emphasis * .5
+  visual.caption.position.set(0, radius + 5, 0)
   visual.caption.visible = !dimmed && (showLabels.value || emphasized || neighbors.has(node.id) || node.kind === 'topic')
   visual.caption.element.classList.toggle('knowledge-node-label--selected', emphasized)
+}
+// Reuse the graph render loop: no extra timer/RAF that keeps running offscreen.
+function updateFrame() {
+  if (!graph || destroyed) return
+  const now = performance.now(), seconds = now / 1000
+  for (const visual of visuals.values()) {
+    const pulse = motion.value ? .78 + .22 * Math.sin(seconds * 1.4 + visual.phase) : 1
+    ;(visual.halo.material as SpriteMaterial).opacity = visual.emphasis * .46 * pulse
+    ;(visual.flare.material as SpriteMaterial).opacity = visual.emphasis * .52 * pulse
+    visual.flare.scale.setScalar(visual.radius * (visual.emphasis > 1.3 ? 11 : 8) * (.93 + pulse * .07))
+  }
+  if (now - lastFrameUpdate < 80) return
+  lastFrameUpdate = now
+  // Keep captions sparse and resolve screen-space collisions, prioritizing the selected star.
+  const width = graph.width(), height = graph.height(), occupied: Array<{ x: number; y: number; w: number; h: number }> = []
+  const nodes = [...graph.graphData().nodes].sort((a, b) => Number(b.id === activeId.value) - Number(a.id === activeId.value) || Number(b.kind === 'topic') - Number(a.kind === 'topic') || b.degree - a.degree)
+  let neighborLabels = 0
+  for (const node of nodes) {
+    const visual = visuals.get(node.id)
+    if (!visual || !visual.caption.visible) continue
+    projected.set(node.x ?? 0, node.y ?? 0, node.z ?? 0).project(graph.camera())
+    const x = (projected.x + 1) * width / 2, y = (1 - projected.y) * height / 2
+    const w = visual.caption.element.offsetWidth || 140, h = visual.caption.element.offsetHeight || 22
+    const selected = node.id === activeId.value
+    const overlaps = occupied.some(box => Math.abs(x - box.x) < (w + box.w) / 2 + 12 && Math.abs(y - box.y) < (h + box.h) / 2 + 16)
+    const capped = !showLabels.value && !selected && node.kind !== 'topic' && neighborLabels >= 5
+    const visible = projected.z > -1 && projected.z < 1 && x > 12 && x < width - 12 && y > 110 && y < height - 50 && !capped && (!overlaps || selected)
+    visual.caption.element.style.visibility = visible ? 'visible' : 'hidden'
+    if (visible) { occupied.push({ x, y, w, h }); if (node.kind !== 'topic' && !selected) neighborLabels++ }
+  }
+  if (props.reading) {
+    const node = graph.graphData().nodes.find(item => item.id === props.selectedId)
+    if (node) {
+      projected.set(node.x ?? 0, node.y ?? 0, node.z ?? 0).project(graph.camera())
+      const point = { x: (projected.x + 1) * width / 2, y: (1 - projected.y) * height / 2, width, height, visible: projected.z > -1 && projected.z < 1 }
+      const key = `${node.id}:${Math.round(point.x)}:${Math.round(point.y)}:${width}:${height}:${point.visible}`
+      if (key !== lastAnchor) { lastAnchor = key; emit('anchor', point) }
+    }
+  }
 }
 function refreshAppearance() {
   if (!graph) return
@@ -96,8 +155,8 @@ function refreshAppearance() {
     if (active && (link.from === active || link.to === active)) return '#83e8ff'
     if (props.highlightedEdgeIds?.includes(link.id)) return '#cbaa70'
     return active ? '#142039' : '#38516d'
-  }).linkWidth(link => active && (link.from === active || link.to === active) ? .65 : 0)
-    .linkDirectionalParticles(link => !motion.value ? 0 : active ? (link.from === active || link.to === active ? 3 : 0) : 1)
+  }).linkWidth(link => active && (link.from === active || link.to === active) ? .45 : 0)
+    .linkDirectionalParticles(link => !motion.value ? 0 : active && (link.from === active || link.to === active) ? 2 : 0)
 }
 function buildStars() {
   const geometry = new BufferGeometry(), positions = new Float32Array(650 * 3)
@@ -108,12 +167,12 @@ function buildStars() {
     positions.set([Math.cos(theta) * ring * radius, Math.sin(theta) * ring * radius, z * radius], i * 3)
   }
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
-  return new Points(geometry, new PointsMaterial({ color: '#8ea6cd', size: 1.7, transparent: true, opacity: .5, depthWrite: false }))
+  return new Points(geometry, new PointsMaterial({ color: '#7893b8', size: .65, transparent: true, opacity: .24, depthWrite: false }))
 }
 function updateGraph() {
   if (!graph) return
   const data = createSpatialGraph(props.nodes, props.edges, graph.graphData().nodes)
-  graph.warmupTicks(props.reducedMotion ? 180 : 30).cooldownTicks(motion.value ? Infinity : 0).graphData(data)
+  graph.warmupTicks(props.reducedMotion ? 180 : 60).cooldownTicks(motion.value && !props.reading ? Infinity : 0).graphData(data)
   refreshAppearance()
   if (focused.value) scheduleFocus(focused.value)
   if (!fitted && props.nodes.length) {
@@ -123,8 +182,11 @@ function updateGraph() {
 }
 function syncMotion() {
   if (!graph) return
-  if (controls) controls.autoRotate = motion.value && !orbitHeld && !hovered.value
-  graph.cooldownTicks(motion.value ? Infinity : 0)
+  const camera = graph.camera() as PerspectiveCamera
+  if (props.reading) camera.setViewOffset(graph.width(), graph.height(), graph.width() >= 680 ? graph.width() * .18 : 0, graph.width() < 680 ? graph.height() * .16 : 0, graph.width(), graph.height())
+  else camera.clearViewOffset()
+  if (controls) controls.autoRotate = motion.value && !props.reading && !orbitHeld && !hovered.value
+  graph.cooldownTicks(motion.value && !props.reading ? Infinity : 0)
   refreshAppearance()
 }
 function holdOrbit() {
@@ -169,7 +231,7 @@ function updateResolution() {
   graph.postProcessingComposer().setPixelRatio(ratio)
 }
 function fit() { holdOrbit(); releaseOrbit(); graph?.zoomToFit(props.reducedMotion ? 0 : 850, 85) }
-function reheat() { focused.value = ''; selectedEdge.value = undefined; fitted = false; graph?.d3ReheatSimulation(); updateGraph() }
+function reheat() { emit('close'); focused.value = ''; selectedEdge.value = undefined; fitted = false; graph?.d3ReheatSimulation(); updateGraph() }
 function visibilityChanged() {
   if (!graph) return
   if (document.hidden || !intersecting) graph.pauseAnimation()
@@ -181,8 +243,8 @@ function contextLost(event: Event) {
 }
 async function fullscreen() {
   try {
-    if (document.fullscreenElement === host.value) await document.exitFullscreen()
-    else await host.value?.requestFullscreen()
+    if (document.fullscreenElement) await document.exitFullscreen()
+    else await (host.value?.closest('.learning-graph-stage') ?? host.value)?.requestFullscreen()
   } catch { /* The embedded viewer may disable fullscreen. */ }
 }
 function nextNode(direction: number) {
@@ -193,6 +255,7 @@ function nextNode(direction: number) {
 
 watch(() => [props.nodes.map(node => node.id).join('|'), props.edges.map(edge => edge.id).join('|')].join('::'), updateGraph)
 watch(() => props.selectedId, id => { focused.value = id; selectedEdge.value = undefined; scheduleFocus(id); refreshAppearance() })
+watch(() => props.reading, value => { lastAnchor = ''; focused.value = value ? props.selectedId : ''; syncMotion() })
 watch([motion, () => props.reducedMotion], () => {
   if (props.reducedMotion) updateGraph()
   else if (motion.value) graph?.d3ReheatSimulation()
@@ -211,9 +274,11 @@ onMounted(async () => {
     if (destroyed || !viewport.value) return
     type Constructor = new (el: HTMLElement, options?: ConfigOptions) => ForceGraph3DInstance<SpatialNode, SpatialLink>
     const Constructor = module.default as unknown as Constructor
-    glowTexture = glow()
+    glowTexture = glow(); flareTexture = starFlare()
     labelsRenderer = new CSS2DRenderer()
     labelsRenderer.domElement.className = 'knowledge-label-layer'
+    const renderLabels = labelsRenderer.render.bind(labelsRenderer)
+    labelsRenderer.render = (scene, camera) => { renderLabels(scene, camera); updateFrame() }
     graph = new Constructor(viewport.value, { controlType: 'orbit', extraRenderers: [labelsRenderer], rendererConfig: { antialias: true, alpha: false } })
     graph.backgroundColor('#050914').showNavInfo(false)
       .width(viewport.value.clientWidth).height(viewport.value.clientHeight)
@@ -222,10 +287,10 @@ onMounted(async () => {
       .linkCurvature(link => spatialLinkCurve(link.id).curvature).linkCurveRotation(link => spatialLinkCurve(link.id).rotation)
       .linkDirectionalParticleColor(() => '#99edff').linkLabel(link => tooltip(relationship(link.type)))
       .d3AlphaDecay(.018).d3VelocityDecay(.35).cooldownTime(12000)
-      .onNodeClick(node => { focused.value = node.id; selectedEdge.value = undefined; emit('select', node.id); scheduleFocus(node.id); refreshAppearance() })
-      .onNodeHover(node => { hovered.value = node?.id ?? ''; if (controls) controls.autoRotate = motion.value && !orbitHeld && !node })
-      .onLinkClick(link => { selectedEdge.value = link; holdOrbit(); releaseOrbit() })
-      .onBackgroundClick(() => { focused.value = ''; hovered.value = ''; selectedEdge.value = undefined; refreshAppearance() })
+      .onNodeClick(node => { host.value?.focus({ preventScroll: true }); focused.value = node.id; selectedEdge.value = undefined; emit('select', node.id); scheduleFocus(node.id); refreshAppearance() })
+      .onNodeHover(node => { hovered.value = node?.id ?? ''; if (controls) controls.autoRotate = motion.value && !props.reading && !orbitHeld && !node })
+      .onLinkClick(link => { selectedEdge.value = link; emit('close'); holdOrbit(); releaseOrbit() })
+      .onBackgroundClick(() => { focused.value = ''; hovered.value = ''; selectedEdge.value = undefined; emit('close'); refreshAppearance() })
     updateResolution()
     renderCanvas = graph.renderer().domElement
     renderCanvas.addEventListener('webglcontextlost', contextLost)
@@ -240,7 +305,7 @@ onMounted(async () => {
     resizeObserver = new ResizeObserver(() => {
       if (!graph || !viewport.value) return
       const { clientWidth, clientHeight } = viewport.value
-      if (clientWidth > 0 && clientHeight > 0) { updateResolution(); graph.width(clientWidth).height(clientHeight) }
+      if (clientWidth > 0 && clientHeight > 0) { updateResolution(); graph.width(clientWidth).height(clientHeight); syncMotion() }
     })
     resizeObserver.observe(viewport.value)
     intersectionObserver = new IntersectionObserver(entries => { intersecting = entries[0]?.isIntersecting ?? false; visibilityChanged() })
@@ -267,10 +332,10 @@ onBeforeUnmount(() => {
   renderer?.forceContextLoss()
   for (const visual of visuals.values()) {
     visual.sphere.material.dispose()
-    ;(visual.halo.material as SpriteMaterial).dispose()
+    ;(visual.halo.material as SpriteMaterial).dispose(); (visual.flare.material as SpriteMaterial).dispose()
     visual.caption.element.remove()
   }
-  visuals.clear(); sphereGeometry.dispose(); glowTexture?.dispose()
+  visuals.clear(); sphereGeometry.dispose(); glowTexture?.dispose(); flareTexture?.dispose()
   stars?.geometry.dispose(); (stars?.material as PointsMaterial | undefined)?.dispose()
   labelsRenderer?.domElement.remove()
 })
@@ -284,6 +349,7 @@ onBeforeUnmount(() => {
     <div class="graph-3d__heading">
       <span class="graph-3d__eyebrow"><i></i>{{ tr('三维知识网络', 'KNOWLEDGE CONSTELLATION') }}</span>
       <span class="graph-3d__counts">{{ nodes.length }} {{ tr('节点', 'nodes') }} <b>·</b> {{ edges.length }} {{ tr('连接', 'connections') }}</span>
+      <span class="graph-3d__hint">{{ reading && currentNode ? `${tr('正在探索', 'Exploring')} · ${title(currentNode)}` : tr('点击一颗星，直接阅读知识与关联', 'Click a star to read its knowledge and connections') }}</span>
     </div>
     <div class="graph-3d__controls">
       <button type="button" :aria-pressed="motion" :disabled="reducedMotion" @click="paused = !paused">{{ motion ? 'Ⅱ' : '▷' }} {{ reducedMotion ? tr('静态模式', 'Static mode') : motion ? tr('暂停动态', 'Pause motion') : tr('继续动态', 'Resume motion') }}</button>
@@ -298,13 +364,8 @@ onBeforeUnmount(() => {
     <div v-if="selectedEdge" class="graph-3d__detail" aria-live="polite">
       <small>{{ tr('知识关系', 'RELATIONSHIP') }}</small><h3>{{ relationship(selectedEdge.type) }}</h3><p>{{ selectedEdge.reason[locale] }}</p>
     </div>
-    <div v-else-if="currentNode" class="graph-3d__detail" aria-live="polite">
-      <small :style="{ color: colors[currentNode.kind] }">{{ t(`learning.kind.${currentNode.kind}`) }}</small>
-      <h3>{{ title(currentNode) }}</h3><p>{{ currentNode.summary[locale] }}</p>
-      <button type="button" @click="emit('read', currentNode.id)">{{ tr('阅读知识', 'Read knowledge') }} <span>↗</span></button>
-    </div>
     <div class="graph-3d__footer">
-      <span>{{ tr('拖动旋转 · 右键平移 · 滚轮缩放 · 点击节点飞近', 'Drag to orbit · right-drag to pan · scroll to zoom · click to fly closer') }}</span>
+      <span>{{ reading ? tr('已停住视角 · 点击其他星点继续探索 · 空白处关闭详情', 'View held · click another star to explore · click empty space to close') : tr('拖动旋转 · 滚轮缩放 · 点击星点阅读', 'Drag to orbit · scroll to zoom · click a star to read') }}</span>
       <button type="button" @click="emit('browse')">{{ tr('打开知识列表', 'Open knowledge list') }} →</button>
     </div>
     <div v-if="ready && !nodes.length" class="graph-3d__loading">{{ t('learning.noResults') }}</div>
@@ -312,27 +373,27 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.graph-3d{position:relative;min-height:520px;height:100%;overflow:hidden;border:1px solid #23324a;border-radius:10px;background:#050914;color:#dce7f8;font-family:"Segoe UI","Microsoft YaHei",sans-serif;outline:none}
-.graph-3d:focus-visible{outline:2px solid #58bbfd;outline-offset:3px}.graph-3d:fullscreen{width:100vw;height:100vh;border:0;border-radius:0}
-.graph-3d__viewport{position:absolute;inset:0}.graph-3d__viewport :deep(canvas){display:block;outline:none}
-.graph-3d__heading{position:absolute;left:22px;top:20px;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.graph-3d__eyebrow{display:flex;align-items:center;gap:8px;color:#b7c9e5;font-size:11px;letter-spacing:.12em}.graph-3d__eyebrow i{width:5px;height:5px;border-radius:50%;background:#61d8ff;box-shadow:0 0 12px #63e0ff}
-.graph-3d__counts{padding-left:13px;color:#637b9d;font-size:10px}.graph-3d__counts b{padding:0 5px;font-weight:400;color:#3b5477}
-.graph-3d__controls{position:absolute;top:17px;right:17px;display:flex;align-items:center;gap:5px;padding:5px;border:1px solid #293951a8;border-radius:8px;background:#101a2bb8;backdrop-filter:blur(12px)}
-.graph-3d__controls button{padding:7px 10px;border:0;border-radius:5px;background:transparent;color:#91a7c6;font:inherit;font-size:10px;cursor:pointer}.graph-3d__controls button:hover,.graph-3d__controls button[aria-pressed=true]{background:#26374d;color:#d9edff}.graph-3d__controls button:disabled{opacity:.4;cursor:default}
+.graph-3d{position:relative;min-height:500px;height:100%;overflow:hidden;border:1px solid #24354c;border-radius:12px;background:#050914;color:#dce7f8;font-family:"Segoe UI","Microsoft YaHei",sans-serif;outline:none}
+.graph-3d:focus-visible{outline:2px solid #58bbfd;outline-offset:3px}
+.graph-3d__viewport{position:absolute;inset:0;z-index:0}.graph-3d__viewport :deep(canvas){display:block;outline:none}
+.graph-3d__heading{position:absolute;z-index:2;left:22px;top:20px;display:flex;flex-direction:column;gap:7px;pointer-events:none;max-width:45%}
+.graph-3d__eyebrow{display:flex;align-items:center;gap:8px;color:#d7e7fc;font-size:11px;font-weight:600;letter-spacing:.12em}
+.graph-3d__eyebrow i{width:5px;height:5px;border-radius:50%;background:#b6edff;box-shadow:0 0 12px #63e0ff}
+.graph-3d__counts{padding-left:13px;color:#8da8c7;font-size:11px}.graph-3d__counts b{padding:0 5px;font-weight:400;color:#486185}
+.graph-3d__hint{margin-top:5px;color:#9bb7d3;font-size:12px;line-height:1.6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.graph-3d__controls{position:absolute;z-index:3;top:17px;right:17px;display:flex;align-items:center;gap:3px;padding:4px;border:1px solid #293951a8;border-radius:9px;background:#0d1727e8}
+.graph-3d__controls button{padding:7px 9px;border:0;border-radius:5px;background:transparent;color:#a9bfd9;font:inherit;font-size:11px;cursor:pointer}
+.graph-3d__controls button:hover,.graph-3d__controls button[aria-pressed=true]{background:#26374d;color:#eef8ff}.graph-3d__controls button:disabled{opacity:.4;cursor:default}
 .graph-3d button:focus-visible{outline:2px solid #68ceff;outline-offset:2px}
-.graph-3d__legend{position:absolute;left:22px;top:84px;display:flex;gap:15px;pointer-events:none}.graph-3d__legend span{display:flex;align-items:center;gap:6px;color:#798fae;font-size:9px}.graph-3d__legend i{width:5px;height:5px;border-radius:50%}
-.graph-3d__detail{position:absolute;left:20px;bottom:61px;width:min(290px,calc(100% - 40px));padding:16px 18px;border:1px solid #2c3f5b88;border-radius:10px;background:linear-gradient(120deg,#142037df,#0a1325dd);box-shadow:0 10px 40px #0002;backdrop-filter:blur(15px)}
-.graph-3d__detail small{color:#91b5d5;font-size:9px;letter-spacing:.1em}.graph-3d__detail h3{margin:7px 0 6px;font-size:16px;line-height:1.4;color:#dceaff;font-weight:500}.graph-3d__detail p{display:-webkit-box;overflow:hidden;-webkit-line-clamp:2;-webkit-box-orient:vertical;margin:0;color:#8299b9;font-size:11px;line-height:1.7}
-.graph-3d__detail button{display:flex;justify-content:space-between;align-items:center;width:100%;margin:14px 0 0;padding:8px 0 0;border:0;border-top:1px solid #2a3a5288;background:none;color:#83c8f6;font:inherit;font-size:10px;cursor:pointer}.graph-3d__detail button span{font-size:16px}
-.graph-3d__footer{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 20px;background:linear-gradient(0deg,#080e1de8,#080e1d80);border-top:1px solid #1c2a4080;color:#617b9e;font-size:10px}
-.graph-3d__footer button{flex-shrink:0;padding:3px 0;border:0;background:none;color:#91b8df;font:inherit;font-size:10px;cursor:pointer}.graph-3d__loading{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;color:#a6bad6;font-size:13px}
-@media(max-width:800px){.graph-3d__controls{top:67px;left:18px;right:auto}.graph-3d__legend{top:123px;gap:10px}.graph-3d__detail{bottom:72px}.graph-3d__footer{align-items:flex-start;font-size:8px}.graph-3d__footer>span{max-width:65%;line-height:1.5}}
-.graph-3d__viewport{z-index:0}.graph-3d__heading,.graph-3d__controls,.graph-3d__legend,.graph-3d__detail,.graph-3d__footer,.graph-3d__loading{z-index:2}
-.graph-3d :deep(.knowledge-node-label){width:max-content;max-width:220px;padding:4px 8px;border:1px solid #34506d;border-radius:5px;background:#07111fe8;color:#f2f7ff;font-size:14px;font-weight:500;line-height:1.35;text-align:center;overflow-wrap:anywhere;pointer-events:none;user-select:none}
-.graph-3d :deep(.knowledge-node-label--selected){border-color:#76cfff;color:#fff;font-size:16px;font-weight:600;background:#0a2338f2}
-.graph-3d__controls button{font-size:13px}.graph-3d__legend span,.graph-3d__counts{font-size:12px;color:#a9bbd4}
-.graph-3d__eyebrow,.graph-3d__footer,.graph-3d__footer button{font-size:12px;color:#a3b9d7}
-.graph-3d__detail p{font-size:14px;color:#c0d0e6}.graph-3d__detail h3{font-size:19px}.graph-3d__detail small,.graph-3d__detail button{font-size:13px}
-@media(max-width:800px){.graph-3d__controls{flex-wrap:wrap;max-width:calc(100% - 36px)}.graph-3d__legend{top:156px;flex-wrap:wrap}.graph-3d__footer{font-size:11px}.graph-3d__footer button{font-size:11px}}
+.graph-3d__legend{position:absolute;z-index:2;left:22px;bottom:65px;display:flex;flex-wrap:wrap;gap:13px;pointer-events:none}
+.graph-3d__legend span{display:flex;align-items:center;gap:6px;color:#99b0ca;font-size:10px}.graph-3d__legend i{width:5px;height:5px;border-radius:50%}
+.graph-3d__detail{position:absolute;z-index:4;left:20px;bottom:100px;width:min(290px,calc(100% - 80px));padding:18px;border:1px solid #36516c;border-radius:12px;background:#0d1b2cf5;box-shadow:0 16px 45px #0005}
+.graph-3d__detail small{color:#8ebdd9;font-size:10px;letter-spacing:.1em}.graph-3d__detail h3{margin:8px 0;font-size:16px;color:#e3f1ff;font-weight:500}.graph-3d__detail p{margin:0;color:#bbcee4;font-size:13px;line-height:1.8}
+.graph-3d__footer{position:absolute;z-index:2;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 20px;background:#080f1ed9;border-top:1px solid #1c2a4080;color:#92aecb;font-size:11px}
+.graph-3d__footer button{flex-shrink:0;padding:3px 0;border:0;background:none;color:#a5ccef;font:inherit;font-size:11px;cursor:pointer}
+.graph-3d__loading{position:absolute;z-index:2;inset:0;display:grid;place-items:center;pointer-events:none;color:#a6bad6;font-size:13px}
+/* Native text stays sharp at 11px; sparse captions never cover the stars with boxed cards. */
+.graph-3d :deep(.knowledge-node-label){width:max-content;max-width:165px;padding:2px 5px;border:0;border-radius:3px;background:#05091480;color:#bdd2ea;font-size:11px;font-weight:400;line-height:1.4;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;user-select:none;text-shadow:0 1px 3px #000}
+.graph-3d :deep(.knowledge-node-label--selected){color:#f2faff;font-size:12px;font-weight:600;background:#0b1e30c9}
+@media(max-width:800px){.graph-3d__heading{max-width:calc(100% - 36px);left:18px;top:16px}.graph-3d__hint{max-width:32ch}.graph-3d__controls{top:105px;left:18px;right:auto}.graph-3d__legend{left:18px;gap:10px}.graph-3d__footer{align-items:flex-start;font-size:10px}.graph-3d__footer>span{max-width:68%;line-height:1.5}.graph-3d__footer button{font-size:10px}}
 </style>
