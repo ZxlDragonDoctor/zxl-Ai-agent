@@ -44,7 +44,7 @@ public class OrchestratorAgent implements AgentInterface {
     }
     public OrchestratorAgent(ChatModel model, ObjectMapper mapper, PlanValidator validator, TaskInputBuilder inputs, RuntimeSettings settings, LongSupplier clock) {
         this.mapper = mapper; this.validator = validator; this.inputs = inputs; this.settings = settings; this.clock = clock;
-        runtime = new ExecutionRuntime(settings); registry = new RunRegistry(settings);
+        runtime = new ExecutionRuntime(settings, clock); registry = new RunRegistry(settings);
         timer.scheduleWithFixedDelay(() -> { try { sweepRuns(); } catch (Exception e) { log.warn("Runtime sweep failed", e); } }, 25, 25, TimeUnit.MILLISECONDS);
     }
     public void init(AgentMessageBus bus) {
@@ -69,8 +69,7 @@ public class OrchestratorAgent implements AgentInterface {
     public RunHandle submit(String goal, Map<String, Object> context, Long timeoutMs, Consumer<WorkflowRun.Report> reports) {
         ExecutionControl control = new ExecutionControl(System.currentTimeMillis(), Duration.ofMillis(settings.budget(timeoutMs)), clock);
         WorkflowRun run = new WorkflowRun(goal, reports);
-        RunRegistry.Entry entry = registry.register(run, control);
-        entry.queueStartedNanos = clock.getAsLong(); entry.waitingFor = "run";
+        RunRegistry.Entry entry = registry.register(run, control, clock.getAsLong());
         run.emit("queued", null, null);
         try {
             if (goal == null || goal.isBlank() || goal.length() > 12000) throw new WorkflowException("INVALID_GOAL", "goal", "目标不能为空且不能超过 12000 字符");
@@ -78,6 +77,10 @@ public class OrchestratorAgent implements AgentInterface {
             Runnable work = () -> {
                 synchronized (run) {
                     if (run.outcome() != null) return;
+                    if (clock.getAsLong() - entry.queueStartedNanos >= TimeUnit.MILLISECONDS.toNanos(settings.getQueueTimeoutMs())) {
+                        entry.control.stop(new WorkflowError("CAPACITY_QUEUE_TIMEOUT", "runs.queue", "运行排队时间已达上限"));
+                        finishError(entry, entry.control.stopReason()); return;
+                    }
                     entry.coordinating = true; entry.waitingFor = null;
                 }
                 try { executeRun(entry, userInput); }
@@ -129,14 +132,14 @@ public class OrchestratorAgent implements AgentInterface {
             entry.control.check(); List<Task> ready = plan.getReadyTasks();
             if (ready.isEmpty()) throw new WorkflowException("PLAN_STALLED", "tasks", "计划未完成且没有可执行任务");
             Map<Task, ExecutionRuntime.AgentLease> wave = new LinkedHashMap<>();
+            Set<Task> launched = new HashSet<>(); List<Work> work = new ArrayList<>();
+            try {
             for (Task task : ready) {
                 String role = role(task); requireType(role);
                 var lease = entry.control.admit(() -> runtime.tryAgent(role, agentDirectory.values()));
                 if (lease != null) wave.put(task, lease);
             }
             if (wave.isEmpty()) wave.put(ready.get(0), acquire(role(ready.get(0)), entry));
-            Set<Task> launched = new HashSet<>(); List<Work> work = new ArrayList<>();
-            try {
                 for (Task task : wave.keySet()) {
                     TaskExecutionContext context = inputs.build(plan, task, userInput);
                     task.setInput(Map.of("capability", role(task), "executionContext", context));
@@ -181,7 +184,11 @@ public class OrchestratorAgent implements AgentInterface {
                 finally { try { occupancy.close(); } finally { agent.close(); } }
             });
             entry.run.emit(stage, null, null); return new Work(task, actual, clock.getAsLong());
-        } catch (Exception e) { runtime.unbind(task); occupancy.close(); agent.close(); throw e; }
+        } catch (Exception e) {
+            runtime.unbind(task); occupancy.close(); agent.close();
+            if (entry.control.stopReason() == null) terminateTask(task, WorkflowError.from(e), false);
+            throw e;
+        }
     }
     private String awaitWork(Work work, long phaseMs, String path, RunRegistry.Entry entry) {
         try {
@@ -237,16 +244,17 @@ public class OrchestratorAgent implements AgentInterface {
         synchronized (entry.run) {
             if (entry.run.outcome() != null) return;
             WorkflowError stop = entry.control.stopReason(); boolean cancelled = stop != null && stop.code().equals("RUN_CANCELLED");
-            if (stop != null) failure = stop; else failure = FailurePropagation.firstFailure(entry.run.plan, failure);
+            failure = cancelled ? stop : FailurePropagation.firstFailure(entry.run.plan, stop == null ? failure : stop);
             if (stop != null) {
-                terminateTask(entry.run.planningTask, failure, cancelled);
-                if (entry.run.plan != null) for (Task task : entry.run.plan.getTasks()) terminateTask(task, failure, cancelled);
+                terminateTask(entry.run.planningTask, stop, cancelled);
+                if (entry.run.plan != null) for (Task task : entry.run.plan.getTasks()) terminateTask(task, stop, cancelled);
             } else {
                 terminateTask(entry.run.planningTask, failure, false);
                 for (Task task : FailurePropagation.blockPending(entry.run.plan, failure)) publishTask(EventType.TASK_BLOCKED, task);
             }
             if (entry.run.synthesisTask != null) terminateTask(entry.run.synthesisTask, failure, cancelled);
             if (entry.queuedWork != null) runtime.removeQueued(entry.queuedWork);
+            if (stop != null) runtime.removeStoppedWork(entry);
             entry.waitingFor = null;
             WorkflowOutcome outcome = cancelled ? entry.run.finishCancelled(failure) : entry.run.finishFailure(failure); entry.result.complete(outcome);
             publish(EventType.PLAN_FAILED, Map.of("executionId", entry.run.id, "outcome", outcome));
@@ -268,6 +276,7 @@ public class OrchestratorAgent implements AgentInterface {
     public RunRegistry.View runStatus(String id) { return registry.view(id); }
     public Map<String, Object> runtimeMetrics() { return runtime.metrics(); }
     public void sweepRuns() {
+        runtime.sweepWorkerQueue();
         for (RunRegistry.Entry entry : registry.entries()) {
             if (entry.run.outcome() != null) continue;
             if (!entry.coordinating && clock.getAsLong() - entry.queueStartedNanos >= TimeUnit.MILLISECONDS.toNanos(settings.getQueueTimeoutMs()))

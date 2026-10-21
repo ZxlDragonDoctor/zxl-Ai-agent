@@ -112,4 +112,41 @@ class ExecutionRuntimeIntegrationTest {
         assertTrue(reports.stream().anyMatch(r -> r.status().equals("queued")));
         assertEquals(0, orchestrator.runtimeMetrics().get("queuedRuns"));
     }
+    @Test void cancelledWorkerQueueReleasesUnstartedPlannerWhileOtherRunRemainsBusy() throws Exception {
+        orchestrator.shutdown(); settings.setWorkerThreads(1);
+        orchestrator = new OrchestratorAgent(model, settings, clock::get); orchestrator.init(bus);
+        planner("[{\"task_description\":\"A\",\"dependencies\":[],\"required_capability\":\"research\"}]");
+        CountDownLatch started = new CountDownLatch(1), release = new CountDownLatch(1);
+        var research = new ResearchAgent(model) { @Override protected String callLlm(String s, String p) {
+            started.countDown(); try { release.await(5, TimeUnit.SECONDS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            return "A";
+        }}; register(research);
+        var first = orchestrator.submit("first", Map.of(), null, r -> {}); assertTrue(started.await(3, TimeUnit.SECONDS));
+        CountDownLatch secondQueued = new CountDownLatch(1);
+        var second = orchestrator.submit("second", Map.of(), null, r -> { if (r.planningTask().status() == TaskStatus.IN_PROGRESS) secondQueued.countDown(); });
+        assertTrue(secondQueued.await(3, TimeUnit.SECONDS));
+        try {
+            orchestrator.cancel(second.executionId());
+            assertEquals(0, orchestrator.runStatus(second.executionId()).runtime().activeTasks());
+            assertEquals(0, orchestrator.runtimeMetrics().get("queuedWorkers"));
+            assertFalse(first.result().isDone()); assertEquals(AgentState.BUSY, research.getState());
+        } finally { release.countDown(); }
+        assertTrue(first.result().get(3, TimeUnit.SECONDS).successful());
+    }
+    @Test void earlierBusinessFailureSurvivesLaterSiblingTimeout() throws Exception {
+        settings.setTaskTimeoutMs(1000); planner(DAG);
+        CountDownLatch started = new CountDownLatch(2); CompletableFuture<String> pending = new CompletableFuture<>();
+        worker("research", t -> { started.countDown(); return pending; });
+        worker("code", t -> { started.countDown(); return CompletableFuture.failedFuture(new WorkflowException("BUSINESS_FAILURE", "rules", "B failed first")); });
+        worker("supervisor", t -> fail("must not start"));
+        var handle = orchestrator.submit("goal", Map.of(), null, r -> {});
+        assertTrue(started.await(3, TimeUnit.SECONDS));
+        // B 的失败快照由同步 failedFuture 完成；等报告确认，而不依赖随机 sleep。
+        CountDownLatch observed = new CountDownLatch(1);
+        pending.whenComplete((v,e) -> observed.countDown());
+        clock.addAndGet(TimeUnit.SECONDS.toNanos(2));
+        WorkflowOutcome outcome = handle.result().get(3, TimeUnit.SECONDS);
+        assertEquals("BUSINESS_FAILURE", outcome.error().code());
+        pending.complete("late");
+    }
 }

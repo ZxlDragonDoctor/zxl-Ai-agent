@@ -15,6 +15,9 @@ public final class RunRegistry {
     public RunRegistry(RuntimeSettings settings) { this(settings, System::currentTimeMillis); }
     public RunRegistry(RuntimeSettings settings, LongSupplier clock) { this.settings = settings; this.wallClock = clock; }
     public synchronized Entry register(WorkflowRun run, ExecutionControl control) {
+        return register(run, control, System.nanoTime());
+    }
+    public synchronized Entry register(WorkflowRun run, ExecutionControl control, long queueStartedNanos) {
         prune();
         if (entries.size() >= settings.getRegistryCapacity()) {
             String evict = entries.values().stream().filter(Entry::reclaimable).map(e -> e.run.id).findFirst().orElse(null);
@@ -22,6 +25,8 @@ public final class RunRegistry {
         }
         if (entries.size() >= settings.getRegistryCapacity()) throw new WorkflowException("AGENT_CAPACITY_EXCEEDED", "runs", "运行登记容量已满，请等待实际调用清理");
         Entry entry = new Entry(run, control);
+        entry.queueStartedNanos = queueStartedNanos;
+        entry.waitingFor = "run";
         entries.put(run.id, entry);
         run.setRuntimeView(entry::view);
         return entry;
