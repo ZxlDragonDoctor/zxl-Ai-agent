@@ -11,9 +11,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import com.zxl.zxlaiagent.multiagent.runtime.RuntimeSettings;
+import com.alibaba.cloud.ai.autoconfigure.dashscope.*;
 
 @Configuration
 @Slf4j
+@EnableConfigurationProperties(RuntimeSettings.class)
 public class MultiAgentConfig {
 
     private final OrchestratorAgent orchestratorAgent;
@@ -23,10 +27,12 @@ public class MultiAgentConfig {
     private final SupervisorAgent supervisorAgent;
     private final AgentMessageBus messageBus;
 
-    public MultiAgentConfig(ChatModel chatModel, AgentMessageBus messageBus, ObjectMapper mapper,
+    public MultiAgentConfig(AgentMessageBus messageBus, ObjectMapper mapper, RuntimeSettings limits,
+                            DashScopeConnectionProperties connection, DashScopeChatProperties chat,
                             PlanParser parser, PlanValidator validator, TaskInputBuilder inputs, TaskPromptRenderer renderer) {
         this.messageBus = messageBus;
-        this.orchestratorAgent = new OrchestratorAgent(chatModel, mapper, validator, inputs);
+        ChatModel chatModel = MultiAgentModelFactory.create(connection, chat, limits);
+        this.orchestratorAgent = new OrchestratorAgent(chatModel, mapper, validator, inputs, limits, System::nanoTime);
         this.plannerAgent = new PlannerAgent(chatModel, parser, mapper);
         this.codeAgent = new CodeAgent(chatModel, renderer);
         this.researchAgent = new ResearchAgent(chatModel, renderer);
@@ -37,7 +43,7 @@ public class MultiAgentConfig {
         supervisorAgent.attachMessageBus(messageBus);
     }
 
-    @Bean
+    @Bean(destroyMethod = "shutdown")
     public OrchestratorAgent orchestratorAgent() {
         return orchestratorAgent;
     }
