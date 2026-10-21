@@ -4,7 +4,7 @@ export interface SpatialNode extends GraphNode {
   degree: number
   x?: number; y?: number; z?: number
   vx?: number; vy?: number; vz?: number
-  fx?: number | null; fy?: number | null; fz?: number | null
+  fx?: number; fy?: number; fz?: number
 }
 export interface SpatialLink extends GraphEdge { source: string | SpatialNode; target: string | SpatialNode }
 export interface Position3D { x: number; y: number; z: number }
