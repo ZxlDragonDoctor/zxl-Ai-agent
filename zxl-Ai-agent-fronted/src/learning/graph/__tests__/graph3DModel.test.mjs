@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createSpatialGraph, focusDestination, spatialNodeRadius } from '../graph3DModel.ts'
+import { createSpatialGraph, focusDestination, spatialNodeRadius, neighborhoodDestination, spatialLinkCurve } from '../graph3DModel.ts'
 
 test('physics mutates copies and degrees count unique valid neighbors', () => {
   const nodes = [Object.freeze({ id:'A', kind:'lesson' }), Object.freeze({ id:'B', kind:'concept' })]
@@ -13,6 +13,21 @@ test('physics mutates copies and degrees count unique valid neighbors', () => {
   assert.equal(nodes[0].x, undefined)
   assert.equal(edges[0].source, undefined)
   assert.equal(graph.links.length, 2)
+})
+test('selection camera contains distant neighbors and accounts for portrait viewports', () => {
+  const node={x:0,y:0,z:0}, camera={x:0,y:0,z:500}, neighbors=[{x:210,y:0,z:0}]
+  const wide=neighborhoodDestination(node,neighbors,camera,50,1.6)
+  const narrow=neighborhoodDestination(node,neighbors,camera,50,.6)
+  assert.ok(wide.position.z > 500)
+  assert.ok(narrow.position.z > wide.position.z)
+  assert.deepEqual(wide.lookAt,node)
+  assert.ok(Object.values(neighborhoodDestination({},[{}],{x:0,y:0,z:0},50,0).position).every(Number.isFinite))
+})
+test('3D relationships always curve in a stable plane', () => {
+  const a=spatialLinkCurve('edge-A'), b=spatialLinkCurve('edge-B')
+  assert.ok(a.curvature >= .12 && a.curvature <= .24)
+  assert.deepEqual(a,spatialLinkCurve('edge-A'))
+  assert.notEqual(a.rotation,b.rotation)
 })
 test('camera approaches a node at a bounded distance even for degenerate coordinates', () => {
   for (const [node, camera] of [[{}, {x:0,y:0,z:0}], [{x:9,y:3,z:-7},{x:9,y:3,z:-7}], [{x:NaN,y:Infinity,z:2},{x:0,y:0,z:500}]]) {

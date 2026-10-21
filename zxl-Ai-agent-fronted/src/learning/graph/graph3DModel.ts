@@ -50,3 +50,29 @@ export function focusDestination(node: Partial<Position3D>, camera: Position3D, 
 export function spatialNodeRadius(node: Pick<SpatialNode, 'degree' | 'kind'>): number {
   return 2.5 + Math.sqrt(Math.min(25, Math.max(0, node.degree))) * .55 + (node.kind === 'topic' ? 1.2 : 0)
 }
+
+/** Frame the selected node and its neighbors rather than flying so close that links leave view. */
+export function neighborhoodDestination(node: Partial<Position3D>, neighbors: Partial<Position3D>[], camera: Position3D, fov = 50, aspect = 1) {
+  const base = focusDestination(node, camera).lookAt
+  let radius = 25
+  for (const neighbor of neighbors) {
+    if (![neighbor.x, neighbor.y, neighbor.z].every(Number.isFinite)) continue
+    radius = Math.max(radius, Math.hypot(neighbor.x! - base.x, neighbor.y! - base.y, neighbor.z! - base.z) + 22)
+  }
+  const vertical = Math.max(15, Math.min(90, fov)) * Math.PI / 360
+  const halfAngle = Math.min(vertical, Math.atan(Math.tan(vertical) * Math.max(.2, aspect || 1)))
+  const distance = Math.min(1900, Math.max(130, radius / Math.sin(halfAngle) * 1.08))
+  const direction = focusDestination(node, camera).position
+  const length = Math.hypot(direction.x - base.x, direction.y - base.y, direction.z - base.z)
+  return { lookAt: base, position: {
+    x: base.x + (direction.x - base.x) / length * distance,
+    y: base.y + (direction.y - base.y) / length * distance,
+    z: base.z + (direction.z - base.z) / length * distance,
+  } }
+}
+
+export function spatialLinkCurve(id: string) {
+  let hash = 0
+  for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
+  return { curvature: .14 + (hash % 9) * .01, rotation: (hash % 360) * Math.PI / 180 }
+}
