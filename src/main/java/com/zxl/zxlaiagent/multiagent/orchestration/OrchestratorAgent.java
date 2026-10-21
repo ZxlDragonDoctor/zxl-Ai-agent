@@ -295,7 +295,10 @@ public class OrchestratorAgent implements AgentInterface {
     }
     public Map<String, Object> getStatus() {
         Map<String, Object> status = new HashMap<>(); status.put("agentId", agentId); status.put("state", getState());
-        status.put("activePlans", activePlans.size()); status.put("pendingTasks", pendingTasks.size()); status.put("runtime", runtime.metrics());
+        status.put("activePlans", activePlans.size()); status.put("pendingTasks", pendingTasks.size());
+        Map<String, Object> runtimeStatus = new HashMap<>(runtime.metrics());
+        if (messageBus != null) runtimeStatus.putAll(messageBus.capacityMetrics());
+        status.put("runtime", runtimeStatus);
         status.put("knownAgents", agentDirectory.values().stream().collect(Collectors.toMap(AgentInterface::getAgentId, a -> Map.of("type", a.getAgentType(), "state", a.getState())))); return status;
     }
     public void registerAgent(AgentInterface agent) {

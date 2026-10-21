@@ -4,13 +4,18 @@ import com.zxl.zxlaiagent.multiagent.model.AgentEvent;
 import com.zxl.zxlaiagent.multiagent.model.AgentInterface;
 import com.zxl.zxlaiagent.multiagent.model.AgentMessage;
 import com.zxl.zxlaiagent.multiagent.model.EventType;
+import com.zxl.zxlaiagent.multiagent.model.WorkflowException;
+import com.zxl.zxlaiagent.multiagent.runtime.RuntimeSettings;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 
 @Component
@@ -19,17 +24,39 @@ public class AgentMessageBus {
 
     private final Map<String, AgentInterface> agentRegistry = new ConcurrentHashMap<>();
     private final Map<String, CopyOnWriteArrayList<Consumer<AgentEvent>>> eventListeners = new ConcurrentHashMap<>();
-    private final BlockingQueue<AgentMessage> messageQueue = new LinkedBlockingQueue<>();
-    private final BlockingQueue<AgentEvent> eventQueue = new LinkedBlockingQueue<>();
+    private final BlockingQueue<AgentMessage> messageQueue;
+    private final BlockingQueue<AgentEvent> eventQueue;
     private volatile boolean running = false;
     private Thread messageProcessor;
     private Thread eventProcessor;
-    private final ExecutorService taskExecutor = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r);
-        t.setDaemon(true);
-        t.setName("agent-bus-" + r.hashCode());
-        return t;
-    });
+    private final ThreadPoolExecutor taskExecutor;
+    private final LongAdder rejectedTasks = new LongAdder();
+    private final LongAdder rejectedMessages = new LongAdder();
+    private final LongAdder rejectedEvents = new LongAdder();
+
+    public AgentMessageBus() {
+        this(8, 256, 256, 512);
+    }
+
+    @Autowired
+    public AgentMessageBus(RuntimeSettings settings) {
+        this(settings.getBusThreads(), settings.getBusQueueCapacity(), settings.getMessageQueueCapacity(), settings.getEventQueueCapacity());
+    }
+
+    AgentMessageBus(int threads, int taskQueueCapacity, int messageQueueCapacity, int eventQueueCapacity) {
+        if (threads < 1 || taskQueueCapacity < 1 || messageQueueCapacity < 1 || eventQueueCapacity < 1) {
+            throw new IllegalArgumentException("Agent message bus capacities must be positive");
+        }
+        AtomicInteger ids = new AtomicInteger();
+        taskExecutor = new ThreadPoolExecutor(threads, threads, 0, TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(taskQueueCapacity), r -> {
+                    Thread thread = new Thread(r, "agent-bus-" + ids.incrementAndGet());
+                    thread.setDaemon(true);
+                    return thread;
+                }, new ThreadPoolExecutor.AbortPolicy());
+        messageQueue = new ArrayBlockingQueue<>(messageQueueCapacity);
+        eventQueue = new ArrayBlockingQueue<>(eventQueueCapacity);
+    }
 
     @PostConstruct
     public void start() {
@@ -95,12 +122,18 @@ public class AgentMessageBus {
     }
 
     public void sendMessage(AgentMessage message) {
-        messageQueue.offer(message);
+        if (!messageQueue.offer(message)) {
+            rejectedMessages.increment();
+            throw new WorkflowException("AGENT_CAPACITY_EXCEEDED", "messageBus.messages", "Agent 消息队列已满，请稍后重试");
+        }
         publishEvent(AgentEvent.of(message.getSourceAgentId(), EventType.MESSAGE_SENT));
     }
 
     public void publishEvent(AgentEvent event) {
-        eventQueue.offer(event);
+        if (!eventQueue.offer(event)) {
+            rejectedEvents.increment();
+            log.warn("Agent event queue is full; dropping best-effort event {} from {}", event.getType(), event.getAgentId());
+        }
     }
 
     public void addEventListener(EventType type, Consumer<AgentEvent> listener) {
@@ -116,38 +149,61 @@ public class AgentMessageBus {
     }
 
     public <T> CompletableFuture<T> submitTask(Callable<T> task) {
-        return CompletableFuture.supplyAsync(() -> {
+        CompletableFuture<T> result = new CompletableFuture<>();
+        try {
+            taskExecutor.execute(() -> {
             try {
-                return task.call();
+                    result.complete(task.call());
             } catch (Exception e) {
-                throw new CompletionException(e);
+                    result.completeExceptionally(e);
             }
-        }, taskExecutor);
+            });
+        } catch (RejectedExecutionException rejected) {
+            rejectedTasks.increment();
+            result.completeExceptionally(new WorkflowException("AGENT_CAPACITY_EXCEEDED", "messageBus.tasks", "Agent 消息总线执行容量已满，请稍后重试", rejected));
+        }
+        return result;
+    }
+
+    public Map<String, Object> capacityMetrics() {
+        Map<String, Object> metrics = new java.util.HashMap<>();
+        metrics.put("busThreads", taskExecutor.getPoolSize());
+        metrics.put("busActive", taskExecutor.getActiveCount());
+        metrics.put("busQueueSize", taskExecutor.getQueue().size());
+        metrics.put("busQueueCapacity", taskExecutor.getQueue().remainingCapacity() + taskExecutor.getQueue().size());
+        metrics.put("messageQueueSize", messageQueue.size());
+        metrics.put("messageQueueCapacity", messageQueue.size() + messageQueue.remainingCapacity());
+        metrics.put("eventQueueSize", eventQueue.size());
+        metrics.put("eventQueueCapacity", eventQueue.size() + eventQueue.remainingCapacity());
+        metrics.put("rejectedTasks", rejectedTasks.sum());
+        metrics.put("rejectedMessages", rejectedMessages.sum());
+        metrics.put("rejectedEvents", rejectedEvents.sum());
+        return Map.copyOf(metrics);
     }
 
     private void dispatchMessage(AgentMessage message) {
         if ("*".equals(message.getTargetAgentId())) {
             agentRegistry.values().forEach(agent -> {
                 if (!agent.getAgentId().equals(message.getSourceAgentId())) {
-                    taskExecutor.execute(() -> {
+                    dispatchBounded(() -> {
                         try {
                             agent.handleMessage(message);
                         } catch (Exception e) {
                             log.error("Error delivering message to agent {}: {}", agent.getAgentId(), e.getMessage());
                         }
-                    });
+                    }, "message");
                 }
             });
         } else {
             AgentInterface target = agentRegistry.get(message.getTargetAgentId());
             if (target != null) {
-                taskExecutor.execute(() -> {
+                dispatchBounded(() -> {
                     try {
                         target.handleMessage(message);
                     } catch (Exception e) {
                         log.error("Error delivering message to agent {}: {}", target.getAgentId(), e.getMessage());
                     }
-                });
+                }, "message");
             } else {
                 log.warn("Target agent not found: {}", message.getTargetAgentId());
             }
@@ -158,15 +214,26 @@ public class AgentMessageBus {
         var listeners = eventListeners.get(event.getType().name());
         if (listeners != null) {
             listeners.forEach(listener -> {
-                taskExecutor.execute(() -> {
+                dispatchBounded(() -> {
                     try {
                         listener.accept(event);
                     } catch (Exception e) {
                         log.error("Error in event listener", e);
                     }
-                });
+                }, "event");
             });
         }
         log.debug("Event: {} from agent {}", event.getType(), event.getAgentId());
+    }
+
+    /** Queue saturation applies caller-runs backpressure to the single queue consumer instead of losing a dispatched item. */
+    private void dispatchBounded(Runnable task, String kind) {
+        try {
+            taskExecutor.execute(task);
+        } catch (RejectedExecutionException rejected) {
+            rejectedTasks.increment();
+            log.warn("Agent bus executor is full while dispatching {}; applying caller-runs backpressure", kind);
+            if (running) task.run();
+        }
     }
 }

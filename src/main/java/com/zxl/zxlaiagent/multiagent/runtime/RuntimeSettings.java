@@ -13,6 +13,7 @@ public class RuntimeSettings {
     private long queueTimeoutMs = 30000, retentionMs = 600000;
     private int concurrentRuns = 2, runQueueCapacity = 8, registryCapacity = 200;
     private int workerThreads = 4, workerQueueCapacity = 16, modelConcurrency = 3;
+    private int busThreads = 8, busQueueCapacity = 256, messageQueueCapacity = 256, eventQueueCapacity = 512;
     private int connectTimeoutMs = 5000, requestTimeoutMs = 30000;
     public long budget(Long requested) {
         long value = requested == null ? defaultBudgetMs : requested;
@@ -23,7 +24,8 @@ public class RuntimeSettings {
     public void validate() {
         if (defaultBudgetMs <= 0 || maxBudgetMs < defaultBudgetMs || concurrentRuns < 1 || runQueueCapacity < 1
                 || registryCapacity < concurrentRuns + runQueueCapacity || workerThreads < 1 || workerQueueCapacity < 1
-                || modelConcurrency < 1 || queueTimeoutMs < 1 || retentionMs < 1 || planningTimeoutMs < 1
+                || modelConcurrency < 1 || busThreads < 1 || busQueueCapacity < 1 || messageQueueCapacity < 1 || eventQueueCapacity < 1
+                || queueTimeoutMs < 1 || retentionMs < 1 || planningTimeoutMs < 1
                 || taskTimeoutMs < 1 || synthesisTimeoutMs < 1 || connectTimeoutMs < 1 || requestTimeoutMs < 1)
             throw new IllegalArgumentException("Invalid agent.runtime limits");
     }
