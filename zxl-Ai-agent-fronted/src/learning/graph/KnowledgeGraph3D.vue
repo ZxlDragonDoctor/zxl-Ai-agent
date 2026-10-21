@@ -2,9 +2,12 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { AdditiveBlending, BufferGeometry, CanvasTexture, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial, Points, PointsMaterial, SphereGeometry, Sprite, SpriteMaterial } from 'three'
 import type { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js'
+import type { PerspectiveCamera } from 'three'
 import type { ConfigOptions, ForceGraph3DInstance } from '3d-force-graph'
 import type { GraphEdge, GraphNode } from './model'
-import { createSpatialGraph, focusDestination, spatialNodeRadius } from './graph3DModel'
+import { createSpatialGraph, neighborhoodDestination, spatialNodeRadius, spatialLinkCurve } from './graph3DModel'
+import { incidentSelection } from './graphPresentation'
 import type { SpatialLink, SpatialNode } from './graph3DModel'
 import { locale, t } from '../../i18n'
 
@@ -17,10 +20,11 @@ const tr = (cn: string, en: string) => locale.value === 'zh-CN' ? cn : en
 const title = (node: GraphNode) => node.title[locale.value] || node.title['zh-CN']
 const currentNode = computed(() => props.nodes.find(node => node.id === props.selectedId))
 const motion = computed(() => !paused.value && !props.reducedMotion)
-const activeId = computed(() => hovered.value || focused.value)
-const neighborIds = computed(() => new Set(props.edges.filter(edge => edge.from === activeId.value || edge.to === activeId.value).flatMap(edge => [edge.from, edge.to])))
+const activeId = computed(() => hovered.value || focused.value || props.selectedId)
+const selection = computed(() => incidentSelection(activeId.value, props.edges))
+const neighborIds = computed(() => selection.value.nodeIds)
 const colors = { lesson: '#5bbdff', topic: '#ffcd7b', concept: '#ac98ff', evidence: '#51d9b5', source: '#ff91b9' }
-interface Visual { group: Group; sphere: Mesh<SphereGeometry, MeshBasicMaterial>; halo: Sprite; caption: Sprite; captionLocale: string }
+interface Visual { group: Group; sphere: Mesh<SphereGeometry, MeshBasicMaterial>; halo: Sprite; caption: CSS2DObject; captionLocale: string }
 const visuals = new Map<string, Visual>()
 const sphereGeometry = new SphereGeometry(1, 18, 12)
 let graph: ForceGraph3DInstance<SpatialNode, SpatialLink> | undefined
@@ -30,6 +34,8 @@ let resumeTimer: ReturnType<typeof setTimeout> | undefined, fitTimer: ReturnType
 let destroyed = false, intersecting = true, orbitHeld = false, fitted = false
 let controls: OrbitControls | undefined
 let renderCanvas: HTMLCanvasElement | undefined
+let labelsRenderer: CSS2DRenderer | undefined
+let focusFrame = 0
 
 function relationship(type: GraphEdge['type']) { return t(`learning.relation.${type === 'documented-by' ? 'documentedBy' : type === 'informed-by' ? 'informedBy' : type}`) }
 function tooltip(text: string) {
@@ -46,50 +52,45 @@ function glow() {
   ctx.fillStyle = gradient; ctx.fillRect(0, 0, 128, 128)
   return new CanvasTexture(canvas)
 }
-function captionTexture(text: string) {
-  const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d')!
-  ctx.font = '500 28px "Microsoft YaHei", "Segoe UI", sans-serif'
-  canvas.width = Math.min(1536, Math.ceil(ctx.measureText(text).width) + 32); canvas.height = 64
-  ctx.font = '500 28px "Microsoft YaHei", "Segoe UI", sans-serif'
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#e3edff'
-  ctx.shadowColor = '#020817'; ctx.shadowBlur = 8
-  ctx.fillText(text, canvas.width / 2, 32, canvas.width - 20)
-  return { texture: new CanvasTexture(canvas), width: canvas.width / 14, height: canvas.height / 14 }
-}
 function setCaption(visual: Visual, node: SpatialNode) {
-  const result = captionTexture(title(node))
-  const material = visual.caption.material as SpriteMaterial
-  material.map?.dispose(); material.map = result.texture; material.needsUpdate = true
-  visual.caption.scale.set(result.width, result.height, 1)
+  visual.caption.element.textContent = title(node)
   visual.captionLocale = locale.value
 }
 function visualFor(node: SpatialNode): Visual {
   const old = visuals.get(node.id)
-  if (old) { if (old.captionLocale !== locale.value) setCaption(old, node); return old }
+  if (old) { if (old.captionLocale !== locale.value) setCaption(old, node); styleVisual(node, old); return old }
   const group = new Group()
   const sphere = new Mesh(sphereGeometry, new MeshBasicMaterial({ color: colors[node.kind], transparent: true }))
   const halo = new Sprite(new SpriteMaterial({ map: glowTexture, color: colors[node.kind], transparent: true, blending: AdditiveBlending, depthWrite: false }))
-  const caption = new Sprite(new SpriteMaterial({ transparent: true, depthWrite: false, depthTest: false }))
+  const element = document.createElement('div')
+  element.className = 'knowledge-node-label'
+  const caption = new CSS2DObject(element)
+  caption.center.set(.5, 1)
   group.add(sphere, halo, caption)
   const result = { group, sphere, halo, caption, captionLocale: locale.value }
-  visuals.set(node.id, result); setCaption(result, node)
+  visuals.set(node.id, result); setCaption(result, node); styleVisual(node, result)
   return result
+}
+function styleVisual(node: SpatialNode, visual: Visual) {
+  const active = activeId.value, neighbors = neighborIds.value
+  const selected = node.id === props.selectedId, emphasized = node.id === active || selected
+  const dimmed = !!active && !neighbors.has(node.id) && node.id !== active
+  const radius = spatialNodeRadius(node) * (emphasized ? 1.25 : 1)
+  visual.sphere.scale.setScalar(radius)
+  visual.sphere.material.opacity = dimmed ? .12 : 1
+  ;(visual.halo.material as SpriteMaterial).opacity = dimmed ? .04 : emphasized ? .65 : .3
+  visual.halo.scale.setScalar(radius * (emphasized ? 7 : 6))
+  visual.caption.position.set(0, radius + 4, 0)
+  visual.caption.visible = !dimmed && (showLabels.value || emphasized || neighbors.has(node.id) || node.kind === 'topic')
+  visual.caption.element.classList.toggle('knowledge-node-label--selected', emphasized)
 }
 function refreshAppearance() {
   if (!graph) return
-  const active = activeId.value, neighbors = neighborIds.value
+  const active = activeId.value
   for (const node of graph.graphData().nodes) {
     const visual = visuals.get(node.id)
     if (!visual) continue
-    const selected = node.id === props.selectedId, emphasized = node.id === active || selected
-    const dimmed = !!active && !neighbors.has(node.id) && node.id !== active
-    const radius = spatialNodeRadius(node) * (emphasized ? 1.18 : 1)
-    visual.sphere.scale.setScalar(radius)
-    visual.sphere.material.opacity = dimmed ? .18 : 1
-    ;(visual.halo.material as SpriteMaterial).opacity = dimmed ? .08 : emphasized ? .85 : .38
-    visual.halo.scale.setScalar(radius * (emphasized ? 9 : 7))
-    visual.caption.position.set(0, radius + 6, 0)
-    visual.caption.visible = !dimmed && (showLabels.value || emphasized || node.kind === 'topic')
+    styleVisual(node, visual)
   }
   graph.linkColor(link => {
     if (active && (link.from === active || link.to === active)) return '#83e8ff'
@@ -114,6 +115,7 @@ function updateGraph() {
   const data = createSpatialGraph(props.nodes, props.edges, graph.graphData().nodes)
   graph.warmupTicks(props.reducedMotion ? 180 : 30).cooldownTicks(motion.value ? Infinity : 0).graphData(data)
   refreshAppearance()
+  if (focused.value) scheduleFocus(focused.value)
   if (!fitted && props.nodes.length) {
     if (fitTimer) clearTimeout(fitTimer)
     fitTimer = setTimeout(() => { if (!destroyed) { fit(); fitted = true } }, props.reducedMotion ? 0 : 900)
@@ -141,8 +143,30 @@ function flyTo(id: string) {
   if (fitTimer) clearTimeout(fitTimer)
   fitted = true
   holdOrbit(); releaseOrbit()
-  const destination = focusDestination(node, graph.cameraPosition(), 95 + spatialNodeRadius(node) * 7)
-  graph.cameraPosition(destination.position, destination.lookAt, props.reducedMotion ? 0 : 1150)
+  const ids = incidentSelection(id, props.edges).nodeIds
+  const neighbors = graph.graphData().nodes.filter(item => ids.has(item.id))
+  const camera = graph.camera() as PerspectiveCamera
+  const destination = neighborhoodDestination(node, neighbors, graph.cameraPosition(), camera.fov, camera.aspect)
+  graph.cameraPosition(destination.position, destination.lookAt, props.reducedMotion ? 0 : 450)
+}
+function scheduleFocus(id: string) {
+  cancelAnimationFrame(focusFrame)
+  let attempts = 0
+  const frame = () => {
+    if (destroyed || !graph) return
+    const ids = incidentSelection(id, props.edges).nodeIds
+    const positioned = graph.graphData().nodes.filter(node => ids.has(node.id))
+      .every(node => [node.x, node.y, node.z].every(Number.isFinite))
+    if (!positioned && attempts++ < 12) { focusFrame = requestAnimationFrame(frame); return }
+    flyTo(id)
+  }
+  focusFrame = requestAnimationFrame(frame)
+}
+function updateResolution() {
+  if (!graph) return
+  const ratio = Math.min(3, Math.max(1, window.devicePixelRatio || 1))
+  graph.renderer().setPixelRatio(ratio)
+  graph.postProcessingComposer().setPixelRatio(ratio)
 }
 function fit() { holdOrbit(); releaseOrbit(); graph?.zoomToFit(props.reducedMotion ? 0 : 850, 85) }
 function reheat() { focused.value = ''; selectedEdge.value = undefined; fitted = false; graph?.d3ReheatSimulation(); updateGraph() }
@@ -168,7 +192,7 @@ function nextNode(direction: number) {
 }
 
 watch(() => [props.nodes.map(node => node.id).join('|'), props.edges.map(edge => edge.id).join('|')].join('::'), updateGraph)
-watch(() => props.selectedId, id => { focused.value = id; selectedEdge.value = undefined; flyTo(id); refreshAppearance() })
+watch(() => props.selectedId, id => { focused.value = id; selectedEdge.value = undefined; scheduleFocus(id); refreshAppearance() })
 watch([motion, () => props.reducedMotion], () => {
   if (props.reducedMotion) updateGraph()
   else if (motion.value) graph?.d3ReheatSimulation()
@@ -188,18 +212,21 @@ onMounted(async () => {
     type Constructor = new (el: HTMLElement, options?: ConfigOptions) => ForceGraph3DInstance<SpatialNode, SpatialLink>
     const Constructor = module.default as unknown as Constructor
     glowTexture = glow()
-    graph = new Constructor(viewport.value, { controlType: 'orbit', rendererConfig: { antialias: true, alpha: false } })
+    labelsRenderer = new CSS2DRenderer()
+    labelsRenderer.domElement.className = 'knowledge-label-layer'
+    graph = new Constructor(viewport.value, { controlType: 'orbit', extraRenderers: [labelsRenderer], rendererConfig: { antialias: true, alpha: false } })
     graph.backgroundColor('#050914').showNavInfo(false)
       .width(viewport.value.clientWidth).height(viewport.value.clientHeight)
       .nodeThreeObject(node => visualFor(node).group).nodeLabel(node => tooltip(title(node)))
       .linkOpacity(.65).linkDirectionalParticleWidth(1.2).linkDirectionalParticleSpeed(.004)
+      .linkCurvature(link => spatialLinkCurve(link.id).curvature).linkCurveRotation(link => spatialLinkCurve(link.id).rotation)
       .linkDirectionalParticleColor(() => '#99edff').linkLabel(link => tooltip(relationship(link.type)))
       .d3AlphaDecay(.018).d3VelocityDecay(.35).cooldownTime(12000)
-      .onNodeClick(node => { focused.value = node.id; selectedEdge.value = undefined; emit('select', node.id); flyTo(node.id); refreshAppearance() })
+      .onNodeClick(node => { focused.value = node.id; selectedEdge.value = undefined; emit('select', node.id); scheduleFocus(node.id); refreshAppearance() })
       .onNodeHover(node => { hovered.value = node?.id ?? ''; if (controls) controls.autoRotate = motion.value && !orbitHeld && !node })
       .onLinkClick(link => { selectedEdge.value = link; holdOrbit(); releaseOrbit() })
       .onBackgroundClick(() => { focused.value = ''; hovered.value = ''; selectedEdge.value = undefined; refreshAppearance() })
-    graph.renderer().setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+    updateResolution()
     renderCanvas = graph.renderer().domElement
     renderCanvas.addEventListener('webglcontextlost', contextLost)
     graph.d3Force('charge')?.strength(-85)
@@ -213,12 +240,13 @@ onMounted(async () => {
     resizeObserver = new ResizeObserver(() => {
       if (!graph || !viewport.value) return
       const { clientWidth, clientHeight } = viewport.value
-      if (clientWidth > 0 && clientHeight > 0) graph.width(clientWidth).height(clientHeight)
+      if (clientWidth > 0 && clientHeight > 0) { updateResolution(); graph.width(clientWidth).height(clientHeight) }
     })
     resizeObserver.observe(viewport.value)
     intersectionObserver = new IntersectionObserver(entries => { intersecting = entries[0]?.isIntersecting ?? false; visibilityChanged() })
     intersectionObserver.observe(host.value!)
     document.addEventListener('visibilitychange', visibilityChanged)
+    window.addEventListener('resize', updateResolution)
     visibilityChanged(); ready.value = true
   } catch {
     if (!destroyed) { failed.value = true; emit('unavailable') }
@@ -230,6 +258,8 @@ onBeforeUnmount(() => {
   if (fitTimer) clearTimeout(fitTimer)
   resizeObserver?.disconnect(); intersectionObserver?.disconnect()
   document.removeEventListener('visibilitychange', visibilityChanged)
+  window.removeEventListener('resize', updateResolution)
+  cancelAnimationFrame(focusFrame)
   renderCanvas?.removeEventListener('webglcontextlost', contextLost)
   controls?.removeEventListener('start', holdOrbit); controls?.removeEventListener('end', releaseOrbit)
   const renderer = graph?.renderer()
@@ -238,11 +268,11 @@ onBeforeUnmount(() => {
   for (const visual of visuals.values()) {
     visual.sphere.material.dispose()
     ;(visual.halo.material as SpriteMaterial).dispose()
-    const material = visual.caption.material as SpriteMaterial
-    material.map?.dispose(); material.dispose()
+    visual.caption.element.remove()
   }
   visuals.clear(); sphereGeometry.dispose(); glowTexture?.dispose()
   stars?.geometry.dispose(); (stars?.material as PointsMaterial | undefined)?.dispose()
+  labelsRenderer?.domElement.remove()
 })
 </script>
 
@@ -298,4 +328,11 @@ onBeforeUnmount(() => {
 .graph-3d__footer{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 20px;background:linear-gradient(0deg,#080e1de8,#080e1d80);border-top:1px solid #1c2a4080;color:#617b9e;font-size:10px}
 .graph-3d__footer button{flex-shrink:0;padding:3px 0;border:0;background:none;color:#91b8df;font:inherit;font-size:10px;cursor:pointer}.graph-3d__loading{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;color:#a6bad6;font-size:13px}
 @media(max-width:800px){.graph-3d__controls{top:67px;left:18px;right:auto}.graph-3d__legend{top:123px;gap:10px}.graph-3d__detail{bottom:72px}.graph-3d__footer{align-items:flex-start;font-size:8px}.graph-3d__footer>span{max-width:65%;line-height:1.5}}
+.graph-3d__viewport{z-index:0}.graph-3d__heading,.graph-3d__controls,.graph-3d__legend,.graph-3d__detail,.graph-3d__footer,.graph-3d__loading{z-index:2}
+.graph-3d :deep(.knowledge-node-label){width:max-content;max-width:220px;padding:4px 8px;border:1px solid #34506d;border-radius:5px;background:#07111fe8;color:#f2f7ff;font-size:14px;font-weight:500;line-height:1.35;text-align:center;overflow-wrap:anywhere;pointer-events:none;user-select:none}
+.graph-3d :deep(.knowledge-node-label--selected){border-color:#76cfff;color:#fff;font-size:16px;font-weight:600;background:#0a2338f2}
+.graph-3d__controls button{font-size:13px}.graph-3d__legend span,.graph-3d__counts{font-size:12px;color:#a9bbd4}
+.graph-3d__eyebrow,.graph-3d__footer,.graph-3d__footer button{font-size:12px;color:#a3b9d7}
+.graph-3d__detail p{font-size:14px;color:#c0d0e6}.graph-3d__detail h3{font-size:19px}.graph-3d__detail small,.graph-3d__detail button{font-size:13px}
+@media(max-width:800px){.graph-3d__controls{flex-wrap:wrap;max-width:calc(100% - 36px)}.graph-3d__legend{top:156px;flex-wrap:wrap}.graph-3d__footer{font-size:11px}.graph-3d__footer button{font-size:11px}}
 </style>
