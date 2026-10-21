@@ -9,13 +9,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "3d-force-graph": "1.80.1",
     "d3-force": "3.0.0",
+    "three": "0.186.1",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
     "@types/d3-force": "3.0.10",
     "@types/node": "^24.0.10",
+    "@types/three": "0.186.0",
     "@types/vue": "^1.0.31",
     "@vitejs/plugin-vue": "^6.0.0",
     "@vue/compiler-sfc": "^3.5.17",
