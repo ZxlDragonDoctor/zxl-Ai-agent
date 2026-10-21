@@ -9,10 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "d3-force": "3.0.0",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
+    "@types/d3-force": "3.0.10",
     "@types/node": "^24.0.10",
     "@types/vue": "^1.0.31",
     "@vitejs/plugin-vue": "^6.0.0",
