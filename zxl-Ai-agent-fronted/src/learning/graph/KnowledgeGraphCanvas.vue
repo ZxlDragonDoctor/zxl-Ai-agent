@@ -1,216 +1,270 @@
 <script setup lang="ts">
-import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from 'd3-force'
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation } from 'd3-force'
+import { computed, onBeforeUnmount, ref, shallowRef, triggerRef, useId, watch } from 'vue'
 import type { GraphEdge, GraphNode } from './model'
+import { captionLines, edgeGeometry } from './graphPresentation'
 import { locale, t } from '../../i18n'
 
-interface LayoutNode extends GraphNode { x?: number; y?: number; vx?: number; vy?: number; fx?: number | null; fy?: number | null }
-interface LayoutLink { id: string; source: string | LayoutNode; target: string | LayoutNode; type: GraphEdge['type']; reason: GraphEdge['reason'] }
-
+interface LayoutNode extends GraphNode { x: number; y: number; vx?: number; vy?: number; fx?: number | null; fy?: number | null }
+interface LayoutLink { source: string | LayoutNode; target: string | LayoutNode }
 const props = defineProps<{
-  nodes: GraphNode[]
-  edges: GraphEdge[]
-  selectedId: string
-  highlightedEdgeIds?: string[]
-  reducedMotion: boolean
+  nodes: GraphNode[]; edges: GraphEdge[]; selectedId: string; highlightedEdgeIds?: string[]
+  expandedNodeIds?: string[]; reducedMotion: boolean
 }>()
-const emit = defineEmits<{ select: [id: string] }>()
-
-const width = 1000
-const height = 700
-const stageRef = ref<SVGGElement>()
-const layoutNodes = ref<LayoutNode[]>([])
-const layoutLinks = ref<LayoutLink[]>([])
+const emit = defineEmits<{ select: [id: string]; expand: [id: string]; dismiss: [id: string]; read: [id: string]; reset: [] }>()
+const width = 1000, height = 700
+const host = ref<HTMLElement>(), svgRef = ref<SVGSVGElement>()
+// D3 mutates raw objects. A single explicit render per tick avoids proxying its physics engine.
+const layoutNodes = shallowRef<LayoutNode[]>([])
+const cache = new Map<string, LayoutNode>()
 const transform = ref({ x: 0, y: 0, scale: 1 })
-const transformText = computed(() => `translate(${transform.value.x} ${transform.value.y}) scale(${transform.value.scale})`)
-const nodeById = computed(() => new Map(layoutNodes.value.map(node => [node.id, node])))
-const localeKey = computed(() => locale.value)
+const camera = computed(() => `translate(${transform.value.x} ${transform.value.y}) scale(${transform.value.scale})`)
+const pinned = ref(new Set<string>())
+const menuId = ref(''), hoveredId = ref(''), selectedEdge = ref<GraphEdge>()
+const markerId = `graph-arrow-${useId().replace(/:/g, '')}`
+const zh = computed(() => locale.value === 'zh-CN')
+const tr = (cn: string, en: string) => zh.value ? cn : en
+const nodeMap = computed(() => new Map(layoutNodes.value.map(node => [node.id, node])))
+const activeId = computed(() => hoveredId.value || (menuId.value ? props.selectedId : ''))
+const adjacent = computed(() => new Set(props.edges.filter(edge => edge.from === activeId.value || edge.to === activeId.value).flatMap(edge => [edge.from, edge.to])))
+const activeNode = computed(() => nodeMap.value.get(props.selectedId))
+const kinds = ['lesson', 'topic', 'concept', 'evidence', 'source'] as const
 let simulation: ReturnType<typeof forceSimulation<LayoutNode>> | undefined
-let dragNode: LayoutNode | null = null
-let panStart: { x: number; y: number; transformX: number; transformY: number } | null = null
+let drag: { node: LayoutNode; start: { x: number; y: number }; moved: boolean } | undefined
+let pan: { x: number; y: number; tx: number; ty: number } | undefined
+let suppressClick = false, cameraFrame = 0, autoFitted = false
 
-watch(() => [props.nodes.map(node => node.id).join('|'), props.edges.map(edge => edge.id).join('|')].join('::'), () => {
-  simulation?.stop()
-  const current = new Map(layoutNodes.value.map(node => [node.id, node]))
-  layoutNodes.value = props.nodes.map((node, index) => {
-    const old = current.get(node.id)
-    return { ...node, x: old?.x ?? width / 2 + Math.cos(index * 2.4) * 190, y: old?.y ?? height / 2 + Math.sin(index * 2.4) * 150 }
+function radius(node: GraphNode) { return node.kind === 'topic' ? 38 : node.kind === 'lesson' ? 33 : 30 }
+function color(kind: GraphNode['kind']) { return ({ lesson: '#68bdf6', topic: '#ffc454', concept: '#a5abb6', evidence: '#fb95af', source: '#b6d982' })[kind] }
+function label(node: GraphNode) { return node.title[locale.value] || node.title['zh-CN'] }
+function relationLabel(type: GraphEdge['type']) { return t(`learning.relation.${type === 'documented-by' ? 'documentedBy' : type === 'informed-by' ? 'informedBy' : type}`) }
+const renderedEdges = computed(() => {
+  const groups = new Map<string, GraphEdge[]>()
+  for (const edge of props.edges) {
+    const key = [edge.from, edge.to].sort().join('|')
+    groups.set(key, [...(groups.get(key) ?? []), edge])
+  }
+  return props.edges.flatMap(edge => {
+    const source = nodeMap.value.get(edge.from), target = nodeMap.value.get(edge.to)
+    if (!source || !target) return []
+    const siblings = groups.get([edge.from, edge.to].sort().join('|'))!
+    const offset = (siblings.indexOf(edge) - (siblings.length - 1) / 2) * 52
+    const bend = edge.from < edge.to ? offset : -offset
+    return [{ ...edge, ...edgeGeometry(source, target, radius(source), radius(target), bend) }]
   })
-  layoutLinks.value = props.edges.map(edge => ({ id: edge.id, source: edge.from, target: edge.to, type: edge.type, reason: edge.reason }))
-  simulation = forceSimulation(layoutNodes.value)
-    .force('link', forceLink<LayoutNode, LayoutLink>(layoutLinks.value).id(node => node.id)
-      .distance(link => link.type === 'prerequisite' ? 112 : 145).strength(link => link.type === 'prerequisite' ? 0.72 : 0.38))
-    .force('charge', forceManyBody<LayoutNode>().strength(-230).distanceMax(420))
-    .force('center', forceCenter(width / 2, height / 2))
-    .force('x', forceX<LayoutNode>(width / 2).strength(0.012))
-    .force('y', forceY<LayoutNode>(height / 2).strength(0.012))
-    .force('collision', forceCollide<LayoutNode>(node => radius(node) + 15).iterations(2))
-    .alphaDecay(props.reducedMotion ? 0.13 : 0.025)
-  if (props.reducedMotion) simulation.stop().tick(180)
-}, { immediate: true })
-
-watch(() => props.reducedMotion, reduced => {
-  if (!simulation) return
-  if (reduced) simulation.stop().tick(180)
-  else simulation.alpha(0.35).restart()
 })
 
-function radius(node: GraphNode): number {
-  return node.kind === 'topic' ? 26 : node.kind === 'lesson' ? 18 : node.kind === 'source' ? 16 : node.kind === 'concept' ? 14 : 12
+watch(() => [props.nodes.map(n => n.id).join('|'), props.edges.map(e => e.id).join('|')].join('::'), () => {
+  simulation?.stop()
+  const center = cache.get(props.selectedId) ?? { x: width / 2, y: height / 2 }
+  layoutNodes.value = props.nodes.map((node, index) => {
+    let current = cache.get(node.id)
+    if (!current) {
+      current = { ...node, x: center.x + Math.cos(index * 2.4) * 100, y: center.y + Math.sin(index * 2.4) * 100 }
+      cache.set(node.id, current)
+    }
+    return current
+  })
+  const links: LayoutLink[] = props.edges.map(edge => ({ source: edge.from, target: edge.to }))
+  simulation = forceSimulation<LayoutNode>(layoutNodes.value)
+    .force('link', forceLink<LayoutNode, LayoutLink>(links).id(node => node.id).distance(185).strength(.32))
+    .force('charge', forceManyBody<LayoutNode>().strength(-1150).distanceMax(900))
+    .force('center', forceCenter(width / 2, height / 2).strength(.045))
+    .force('collision', forceCollide<LayoutNode>(node => radius(node) + 23).iterations(3))
+    .velocityDecay(.38).alphaDecay(.035)
+    .on('tick', () => triggerRef(layoutNodes))
+    .on('end', () => { if (!autoFitted) { fit(); autoFitted = true } })
+  if (props.reducedMotion) { simulation.stop().tick(200); triggerRef(layoutNodes); fit(); autoFitted = true }
+}, { immediate: true })
+watch(() => props.reducedMotion, reduced => {
+  if (reduced) { simulation?.stop().tick(200); triggerRef(layoutNodes) }
+  else simulation?.alpha(.5).restart()
+})
+watch(() => props.selectedId, () => { selectedEdge.value = undefined; if (menuId.value !== props.selectedId) menuId.value = '' })
+
+function point(event: { clientX: number; clientY: number }) {
+  const matrix = svgRef.value?.getScreenCTM()
+  return matrix ? new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse()) : { x: 0, y: 0 }
 }
-
-function color(kind: GraphNode['kind']): string {
-  return ({ lesson: '#75d6bd', topic: '#f3ba70', concept: '#89a8ff', evidence: '#d7a0ff', source: '#ff8b85' })[kind]
-}
-
-function label(node: GraphNode): string { return node.title[localeKey.value] || node.title['zh-CN'] }
-
-function linkPoint(link: LayoutLink, side: 'source' | 'target'): LayoutNode {
-  const value = link[side]
-  return typeof value === 'string' ? nodeById.value.get(value)! : value
-}
-
-function linkLabel(type: GraphEdge['type']): string {
-  const labels: Record<GraphEdge['type'], string> = {
-    contains: 'learning.relation.contains', prerequisite: 'learning.relation.prerequisite', related: 'learning.relation.related',
-    implements: 'learning.relation.implements', 'documented-by': 'learning.relation.documentedBy',
-    documents: 'learning.relation.documents', 'informed-by': 'learning.relation.informedBy',
+function animateCamera(target: typeof transform.value) {
+  cancelAnimationFrame(cameraFrame)
+  if (props.reducedMotion) { transform.value = target; return }
+  const from = { ...transform.value }, start = performance.now()
+  function frame(now: number) {
+    const p = Math.min(1, (now - start) / 240), eased = 1 - Math.pow(1 - p, 3)
+    transform.value = { x: from.x + (target.x - from.x) * eased, y: from.y + (target.y - from.y) * eased, scale: from.scale + (target.scale - from.scale) * eased }
+    if (p < 1) cameraFrame = requestAnimationFrame(frame)
   }
-  return t(labels[type])
+  cameraFrame = requestAnimationFrame(frame)
 }
-
-function selectNode(node: LayoutNode): void {
-  emit('select', node.id)
+function fit() {
+  if (!layoutNodes.value.length) return
+  const xs = layoutNodes.value.map(n => n.x), ys = layoutNodes.value.map(n => n.y)
+  const minX = Math.min(...xs) - 85, maxX = Math.max(...xs) + 85
+  const minY = Math.min(...ys) - 85, maxY = Math.max(...ys) + 85
+  const scale = Math.max(.08, Math.min(1.6, width / (maxX - minX), (height - 110) / (maxY - minY)))
+  animateCamera({ scale, x: width / 2 - (minX + maxX) / 2 * scale, y: (height - 50) / 2 - (minY + maxY) / 2 * scale })
 }
-
-function onNodePointerDown(event: PointerEvent, node: LayoutNode): void {
+function zoom(factor: number, center = { x: width / 2, y: height / 2 }) {
+  cancelAnimationFrame(cameraFrame)
+  const old = transform.value, scale = Math.max(.08, Math.min(4, old.scale * factor)), ratio = scale / old.scale
+  transform.value = { scale, x: center.x - (center.x - old.x) * ratio, y: center.y - (center.y - old.y) * ratio }
+}
+function wheel(event: WheelEvent) { event.preventDefault(); zoom(Math.exp(-event.deltaY * .0015), point(event)) }
+function downNode(event: PointerEvent, node: LayoutNode) {
   if (event.button !== 0) return
-  event.stopPropagation()
-  const svg = (event.currentTarget as SVGElement).ownerSVGElement
-  if (!svg) return
-  svg.setPointerCapture(event.pointerId)
-  dragNode = node
-  const p = localPoint(event, svg)
-  dragNode.fx = (p.x - transform.value.x) / transform.value.scale
-  dragNode.fy = (p.y - transform.value.y) / transform.value.scale
-  simulation?.alphaTarget(0.24).restart()
-  selectNode(node)
+  event.stopPropagation(); cancelAnimationFrame(cameraFrame)
+  ;(event.currentTarget as SVGElement).setPointerCapture(event.pointerId)
+  drag = { node, start: point(event), moved: false }
+  node.fx = node.x; node.fy = node.y
 }
-
-function localPoint(event: PointerEvent, svg: SVGSVGElement): { x: number; y: number } {
-  const rect = svg.getBoundingClientRect()
-  return { x: (event.clientX - rect.left) * width / rect.width, y: (event.clientY - rect.top) * height / rect.height }
+function downBackground(event: PointerEvent) {
+  if (event.button !== 0) return
+  cancelAnimationFrame(cameraFrame); menuId.value = ''; selectedEdge.value = undefined
+  svgRef.value?.setPointerCapture(event.pointerId)
+  const p = point(event)
+  pan = { x: p.x, y: p.y, tx: transform.value.x, ty: transform.value.y }
 }
-
-function onBackgroundPointerDown(event: PointerEvent): void {
-  if (event.button !== 0 || dragNode) return
-  const svg = event.currentTarget as SVGSVGElement
-  svg.setPointerCapture(event.pointerId)
-  const point = localPoint(event, svg)
-  panStart = { x: point.x, y: point.y, transformX: transform.value.x, transformY: transform.value.y }
+function move(event: PointerEvent) {
+  const p = point(event)
+  if (drag) {
+    if (!drag.moved && Math.hypot(p.x - drag.start.x, p.y - drag.start.y) < 4) return
+    drag.moved = true
+    drag.node.fx = (p.x - transform.value.x) / transform.value.scale
+    drag.node.fy = (p.y - transform.value.y) / transform.value.scale
+    if (props.reducedMotion) { drag.node.x = drag.node.fx; drag.node.y = drag.node.fy; triggerRef(layoutNodes) }
+    else simulation?.alphaTarget(.16).restart()
+  } else if (pan) transform.value = { ...transform.value, x: pan.tx + p.x - pan.x, y: pan.ty + p.y - pan.y }
 }
-
-function onPointerMove(event: PointerEvent): void {
-  const svg = event.currentTarget as SVGSVGElement
-  const point = localPoint(event, svg)
-  if (dragNode) {
-    dragNode.fx = (point.x - transform.value.x) / transform.value.scale
-    dragNode.fy = (point.y - transform.value.y) / transform.value.scale
-  } else if (panStart) {
-    transform.value = { ...transform.value, x: panStart.transformX + point.x - panStart.x, y: panStart.transformY + point.y - panStart.y }
+function up() {
+  if (drag) {
+    suppressClick = drag.moved
+    if (!pinned.value.has(drag.node.id)) { drag.node.fx = null; drag.node.fy = null }
+    if (props.reducedMotion) { simulation?.stop().tick(100); triggerRef(layoutNodes) }
+    else simulation?.alphaTarget(0)
   }
+  drag = undefined; pan = undefined
 }
-
-function onPointerUp(): void {
-  if (dragNode) { dragNode.fx = null; dragNode.fy = null; dragNode = null; simulation?.alphaTarget(0) }
-  panStart = null
+function select(node: LayoutNode) {
+  if (suppressClick) { suppressClick = false; return }
+  emit('select', node.id); menuId.value = node.id; selectedEdge.value = undefined
 }
-
-function onWheel(event: WheelEvent): void {
+function togglePin(node: LayoutNode) {
+  const next = new Set(pinned.value)
+  if (next.has(node.id)) { next.delete(node.id); node.fx = null; node.fy = null }
+  else { next.add(node.id); node.fx = node.x; node.fy = node.y }
+  pinned.value = next
+  if (!props.reducedMotion) simulation?.alpha(.25).restart()
+}
+function relayout() {
+  for (const node of cache.values()) { node.fx = null; node.fy = null }
+  pinned.value = new Set(); menuId.value = ''; emit('reset'); autoFitted = false
+  simulation?.alpha(.9)
+  if (props.reducedMotion) { simulation?.stop().tick(200); triggerRef(layoutNodes); fit() }
+  else simulation?.restart()
+}
+async function fullscreen() {
+  try {
+    if (document.fullscreenElement === host.value) await document.exitFullscreen()
+    else await host.value?.requestFullscreen()
+  } catch { /* Fullscreen may be disabled by the embedding browser. */ }
+}
+function sector(index: number) {
+  const a = (index * 120 - 90) * Math.PI / 180, b = a + 118 * Math.PI / 180
+  const p = (r: number, theta: number) => `${Math.cos(theta) * r} ${Math.sin(theta) * r}`
+  return `M ${p(43, a)} L ${p(65, a)} A 65 65 0 0 1 ${p(65, b)} L ${p(43, b)} A 43 43 0 0 0 ${p(43, a)} Z`
+}
+function menuAction(index: number, node: LayoutNode) {
+  if (index === 0) emit('expand', node.id)
+  else if (index === 1) togglePin(node)
+  else { emit('dismiss', node.id); menuId.value = '' }
+}
+function menuLabel(index: number, node: LayoutNode) {
+  if (index === 0) return props.expandedNodeIds?.includes(node.id) ? tr('收起邻居', 'Collapse neighbors') : tr('展开邻居', 'Expand neighbors')
+  if (index === 1) return pinned.value.has(node.id) ? tr('取消固定', 'Unpin node') : tr('固定节点', 'Pin node')
+  return tr('从画布隐藏', 'Dismiss node')
+}
+function keyMove(event: KeyboardEvent, node: LayoutNode) {
+  if (event.key === 'Escape') { menuId.value = ''; return }
+  if (!event.key.startsWith('Arrow')) return
   event.preventDefault()
-  const scale = Math.max(0.48, Math.min(2.4, transform.value.scale * (event.deltaY < 0 ? 1.1 : 0.9)))
-  transform.value = { ...transform.value, scale }
+  const edge = props.edges.find(e => e.from === node.id || e.to === node.id)
+  const id = edge && (edge.from === node.id ? edge.to : edge.from)
+  if (id) { emit('select', id); svgRef.value?.querySelector<SVGGElement>(`[data-node-id="${id}"]`)?.focus() }
 }
-
-function zoom(direction: -1 | 1): void {
-  const scale = Math.max(0.48, Math.min(2.4, transform.value.scale * (direction > 0 ? 1.16 : 0.86)))
-  transform.value = { ...transform.value, scale }
-}
-
-function moveSelection(event: KeyboardEvent, node: GraphNode): void {
-  if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) return
-  event.preventDefault()
-  const edges = props.edges.filter(edge => edge.from === node.id || edge.to === node.id)
-  const candidates = edges.map(edge => edge.from === node.id ? edge.to : edge.from)
-  const next = candidates.find(id => nodeById.value.has(id))
-  if (next) {
-    emit('select', next)
-    requestAnimationFrame(() => document.getElementById(`graph-node-${next}`)?.focus())
-  }
-}
-
-onBeforeUnmount(() => simulation?.stop())
+onBeforeUnmount(() => { simulation?.stop(); cancelAnimationFrame(cameraFrame) })
 </script>
 
 <template>
-  <section class="graph-canvas" :aria-label="t('learning.graphDescription')">
-    <div class="graph-canvas__controls">
-      <span class="graph-canvas__hint">{{ t('learning.dragHint') }}</span>
-      <button type="button" :aria-label="t('learning.zoomOut')" @click="zoom(-1)">−</button>
-      <span class="graph-canvas__zoom">{{ Math.round(transform.scale * 100) }}%</span>
-      <button type="button" :aria-label="t('learning.zoomIn')" @click="zoom(1)">+</button>
-      <button type="button" :aria-label="t('learning.resetView')" @click="transform = { x: 0, y: 0, scale: 1 }">{{ t('learning.reset') }}</button>
+  <section ref="host" class="graph-canvas" :aria-label="t('learning.graphDescription')">
+    <div class="graph-labels">
+      <span class="graph-labels__all">{{ tr('节点', 'Nodes') }} ({{ nodes.length }})</span>
+      <span v-for="kind in kinds.filter(k => nodes.some(n => n.kind === k))" :key="kind" class="graph-label-chip" :style="{ background: color(kind) }">{{ t(`learning.kind.${kind}`) }} ({{ nodes.filter(n => n.kind === kind).length }})</span>
+      <span class="graph-labels__relations">{{ tr('关系', 'Relationships') }} ({{ edges.length }})</span>
     </div>
-    <svg viewBox="0 0 1000 700" role="group" :aria-label="t('learning.graphDescription')"
-      @pointerdown.self="onBackgroundPointerDown" @pointermove="onPointerMove" @pointerup="onPointerUp" @pointercancel="onPointerUp" @wheel="onWheel">
-      <defs>
-        <pattern id="learning-grid" width="32" height="32" patternUnits="userSpaceOnUse">
-          <circle cx="1" cy="1" r="1" fill="#627084" fill-opacity=".26" />
-        </pattern>
-        <marker id="learning-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill="#68798d" />
-        </marker>
-      </defs>
-      <rect class="graph-canvas__background" width="1000" height="700" fill="url(#learning-grid)" @pointerdown="onBackgroundPointerDown" />
-      <g ref="stageRef" :transform="transformText" class="graph-canvas__stage">
-        <g v-for="edge in layoutLinks" :key="edge.id" class="graph-edge"
-          :class="[`graph-edge--${edge.type}`, { 'graph-edge--path': props.highlightedEdgeIds?.includes(edge.id) }]">
-          <line :x1="linkPoint(edge,'source').x ?? 0" :y1="linkPoint(edge,'source').y ?? 0"
-            :x2="linkPoint(edge,'target').x ?? 0" :y2="linkPoint(edge,'target').y ?? 0" marker-end="url(#learning-arrow)" />
-          <text :x="((linkPoint(edge,'source').x ?? 0) + (linkPoint(edge,'target').x ?? 0)) / 2"
-            :y="((linkPoint(edge,'source').y ?? 0) + (linkPoint(edge,'target').y ?? 0)) / 2 - 5">{{ linkLabel(edge.type) }}</text>
+    <svg ref="svgRef" viewBox="0 0 1000 700" :aria-label="t('learning.graphDescription')" role="group"
+      @pointerdown.self="downBackground" @pointermove="move" @pointerup="up" @pointercancel="up" @lostpointercapture="up" @wheel="wheel" @contextmenu.prevent>
+      <defs><marker :id="markerId" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a5abb6" /></marker></defs>
+      <rect width="1000" height="700" fill="white" @pointerdown="downBackground" />
+      <g :transform="camera">
+        <g v-for="edge in renderedEdges" :key="edge.id" class="graph-edge" :class="{ 'is-dim': activeId && !adjacent.has(edge.from) && !adjacent.has(edge.to), 'is-path': highlightedEdgeIds?.includes(edge.id), 'is-selected': selectedEdge?.id === edge.id }"
+          @pointerdown.stop @click.stop="selectedEdge = edge; menuId = ''">
+          <path class="graph-edge__hit" :d="edge.path" />
+          <path class="graph-edge__line" :d="edge.path" :marker-end="`url(#${markerId})`" />
+          <text :transform="`translate(${edge.x} ${edge.y}) rotate(${edge.angle})`" dy="-3">{{ relationLabel(edge.type) }}</text>
         </g>
-        <g v-for="node in layoutNodes" :key="node.id" :id="`graph-node-${node.id}`" class="graph-node"
-          :class="[`graph-node--${node.kind}`, { 'is-selected': node.id === selectedId }]" role="button" tabindex="0"
-          :aria-label="`${label(node)}. ${node.summary[localeKey] || node.summary['zh-CN']}`" :aria-pressed="node.id === selectedId"
-          :transform="`translate(${node.x ?? width / 2},${node.y ?? height / 2})`"
-          @pointerdown="onNodePointerDown($event, node)" @click.stop="selectNode(node)"
-          @keydown.enter.prevent="selectNode(node)" @keydown.space.prevent="selectNode(node)" @keydown="moveSelection($event, node)">
-          <circle :r="radius(node) + 6" class="graph-node__halo" />
-          <circle :r="radius(node)" :fill="color(node.kind)" class="graph-node__dot" />
-          <circle v-if="node.kind === 'lesson' && node.state === 'completed'" :r="radius(node) + 2" class="graph-node__completed" />
-          <text :y="radius(node) + 19">{{ node.number ? `${String(node.number).padStart(2, '0')} · ` : '' }}{{ label(node) }}</text>
+        <g v-for="node in layoutNodes" :key="node.id" :data-node-id="node.id" class="graph-node" :class="{ 'is-selected': node.id === selectedId, 'is-dim': activeId && node.id !== activeId && !adjacent.has(node.id) }"
+          :transform="`translate(${node.x} ${node.y})`" role="button" tabindex="0" :aria-label="label(node)" :aria-pressed="node.id === selectedId"
+          @pointerdown="downNode($event, node)" @click.stop="select(node)" @dblclick.stop.prevent="emit('expand', node.id)"
+          @contextmenu.stop.prevent="select(node)" @pointerenter="hoveredId = node.id" @pointerleave="hoveredId = ''"
+          @keydown.enter.prevent="select(node)" @keydown.space.prevent="select(node)" @keydown="keyMove($event, node)">
+          <circle class="graph-node__halo" :r="radius(node) + 5" :style="{ stroke: color(node.kind) }" />
+          <circle class="graph-node__circle" :r="radius(node)" :fill="color(node.kind)" />
+          <text class="graph-node__caption" :style="{ fontSize: zh ? '11px' : '10px' }">
+            <tspan v-for="(line, index) in captionLines(label(node), zh)" :key="index" x="0" :y="(index - (captionLines(label(node), zh).length - 1) / 2) * 13 + 4">{{ line }}</tspan>
+          </text>
+          <circle v-if="pinned.has(node.id)" class="graph-node__pin" :cx="radius(node) - 4" :cy="-radius(node) + 4" r="5" />
+          <g v-if="menuId === node.id" class="graph-menu" @pointerdown.stop @click.stop @dblclick.stop>
+            <g v-for="index in [0, 1, 2]" :key="index" role="button" tabindex="0" :aria-label="menuLabel(index, node)"
+              @click.stop="menuAction(index, node)" @keydown.enter.stop.prevent="menuAction(index, node)" @keydown.space.stop.prevent="menuAction(index, node)">
+              <title>{{ menuLabel(index, node) }}</title><path :d="sector(index)" />
+              <text :x="Math.cos((index * 120 - 31) * Math.PI / 180) * 54" :y="Math.sin((index * 120 - 31) * Math.PI / 180) * 54 + 4">{{ index === 0 ? (expandedNodeIds?.includes(node.id) ? '−' : '+') : index === 1 ? (pinned.has(node.id) ? '○' : '◆') : '×' }}</text>
+            </g>
+          </g>
         </g>
       </g>
     </svg>
-    <div class="graph-canvas__legend" aria-label="legend">
-      <span v-for="kind in (['lesson','topic','concept','evidence','source'] as const)" :key="kind">
-        <i :style="{ background: color(kind) }"></i>{{ t(`learning.kind.${kind}`) }}
-      </span>
+    <div class="graph-controls">
+      <button type="button" @click="relayout" :aria-label="tr('恢复隐藏节点并重新布局', 'Restore nodes and relayout')" :title="tr('恢复并重新布局', 'Restore and relayout')">↻</button>
+      <button type="button" @click="fullscreen" :aria-label="tr('切换全屏', 'Toggle fullscreen')" :title="tr('全屏', 'Fullscreen')">⛶</button>
+      <span></span><button type="button" @click="zoom(1.25)" :aria-label="t('learning.zoomIn')">+</button>
+      <button type="button" @click="fit" :aria-label="tr('适应画布', 'Fit to screen')" :title="tr('适应画布', 'Fit to screen')">⊡</button>
+      <button type="button" @click="zoom(.8)" :aria-label="t('learning.zoomOut')">−</button>
     </div>
+    <div class="graph-inspector" aria-live="polite">
+      <template v-if="selectedEdge"><b>{{ relationLabel(selectedEdge.type) }}</b><span>{{ selectedEdge.reason[locale] }}</span></template>
+      <template v-else-if="activeNode"><b class="graph-inspector__label" :style="{ background: color(activeNode.kind) }">{{ t(`learning.kind.${activeNode.kind}`) }}</b><strong>{{ label(activeNode) }}</strong><code>{{ activeNode.id }}</code><button type="button" @click="emit('read', activeNode.id)">{{ tr('阅读知识 →', 'Read knowledge →') }}</button></template>
+      <span v-else>{{ tr('选择节点或关系查看详情', 'Select a node or relationship') }}</span>
+    </div>
+    <div class="graph-hint">{{ tr('拖动节点 · 双击展开/收起 · 滚轮缩放 · 右键菜单', 'Drag nodes · double-click to expand/collapse · scroll to zoom · right-click menu') }}</div>
   </section>
 </template>
 
 <style scoped>
-.graph-canvas{position:relative;display:flex;flex-direction:column;min-height:540px;height:100%;overflow:hidden;border:1px solid #293544;border-radius:16px;background:#101821;color:#d9e3ed}
-.graph-canvas__controls{position:absolute;z-index:2;top:14px;right:14px;display:flex;align-items:center;gap:7px;padding:6px;border:1px solid #344253;border-radius:10px;background:#18222ddd;backdrop-filter:blur(10px)}
-.graph-canvas__controls button{width:30px;height:30px;border:1px solid #405063;border-radius:7px;background:#202c3a;color:#edf5fb;font-size:16px;cursor:pointer}
-.graph-canvas__controls button:hover{border-color:#75d6bd;color:#75d6bd}.graph-canvas__controls button:focus-visible,.graph-node:focus-visible{outline:3px solid #f3ba70;outline-offset:3px}
-.graph-canvas__zoom{min-width:38px;text-align:center;color:#adbdca;font-size:11px}.graph-canvas__hint{padding:0 8px;color:#93a2b2;font-size:11px}
-.graph-canvas svg{display:block;width:100%;height:100%;min-height:480px;touch-action:none;cursor:grab}.graph-canvas svg:active{cursor:grabbing}.graph-canvas__background{cursor:grab}
-.graph-edge line{stroke:#607084;stroke-width:1.3;stroke-opacity:.6}.graph-edge--prerequisite line{stroke:#f3ba70;stroke-width:1.7;stroke-opacity:.9}.graph-edge text{fill:#a5b2c0;font-size:9px;text-anchor:middle;paint-order:stroke;stroke:#101821;stroke-width:4px;stroke-linejoin:round;pointer-events:none}
-.graph-edge--path line{stroke:#ff8b85;stroke-width:3.3;stroke-opacity:1}.graph-edge--path text{fill:#ffe5c5;font-weight:700}
-.graph-node{cursor:pointer}.graph-node__halo{fill:transparent;stroke:transparent;stroke-width:1}.graph-node:hover .graph-node__halo,.graph-node.is-selected .graph-node__halo{fill:#ffffff0c;stroke:#b6cadb88}.graph-node.is-selected .graph-node__dot{stroke:#f7f6ee;stroke-width:3}.graph-node__dot{stroke:#101821;stroke-width:2}.graph-node__completed{fill:none;stroke:#75d6bd;stroke-width:1;stroke-dasharray:3 3}.graph-node text{fill:#e5edf4;font-size:11px;text-anchor:middle;paint-order:stroke;stroke:#101821;stroke-width:3px;stroke-linejoin:round;pointer-events:none}.graph-node--topic text{font-weight:700;font-size:12px}.graph-node--evidence text,.graph-node--source text{fill:#c7d0dc}
-.graph-canvas__legend{position:absolute;left:15px;bottom:13px;display:flex;flex-wrap:wrap;gap:13px;padding:8px 10px;border:1px solid #344253;border-radius:9px;background:#17212ddf;color:#c5d0dc;font-size:10px}.graph-canvas__legend span{display:flex;align-items:center;gap:6px}.graph-canvas__legend i{width:8px;height:8px;border-radius:50%}
-@media(max-width:700px){.graph-canvas{min-height:420px}.graph-canvas svg{min-height:360px}.graph-canvas__hint{display:none}.graph-canvas__legend{gap:8px;right:10px;left:10px;justify-content:center}}
+.graph-canvas{position:relative;display:flex;flex-direction:column;min-height:520px;height:100%;overflow:hidden;border:1px solid #d4d8dd;border-radius:4px;background:#fff;color:#454b53;font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+.graph-canvas:fullscreen{width:100vw;height:100vh;border:0;border-radius:0}
+.graph-labels{position:absolute;z-index:2;top:0;left:0;right:0;display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:13px 16px;background:#fffffff5;border-bottom:1px solid #f1f2f4;font-size:11px;pointer-events:none}
+.graph-labels__all{font-weight:600;color:#555d66}.graph-label-chip{padding:4px 9px;border-radius:14px;color:#26323e}.graph-labels__relations{margin-left:auto;color:#7b818a}
+.graph-canvas svg{display:block;flex:1;width:100%;height:100%;min-height:470px;touch-action:none;cursor:grab}.graph-canvas svg:active{cursor:grabbing}
+.graph-edge{cursor:pointer;transition:opacity .15s}.graph-edge__line{fill:none;stroke:#a5abb6;stroke-width:1.2}.graph-edge__hit{fill:none;stroke:transparent;stroke-width:14}.graph-edge text{fill:#5f6570;font-size:10px;text-anchor:middle;paint-order:stroke;stroke:white;stroke-width:5px;stroke-linejoin:round}
+.graph-edge.is-path .graph-edge__line{stroke:#d89f47;stroke-width:2}.graph-edge.is-selected .graph-edge__line,.graph-edge:hover .graph-edge__line{stroke:#4e6a88;stroke-width:2.5}
+.is-dim{opacity:.18}.graph-node{cursor:pointer;outline:none;transition:opacity .15s}.graph-node__circle{stroke:#00000020;stroke-width:1.5}.graph-node__halo{fill:none;stroke-width:7;opacity:0}.graph-node.is-selected .graph-node__halo{opacity:.3}.graph-node:hover .graph-node__halo,.graph-node:focus-visible .graph-node__halo{opacity:.5}
+.graph-node__caption{fill:#263342;text-anchor:middle;font-weight:500;pointer-events:none}.graph-node__pin{fill:#3b4654;stroke:white;stroke-width:2}
+.graph-menu path{fill:#eef0f3;stroke:white;stroke-width:1.5}.graph-menu g:hover path,.graph-menu g:focus-visible path{fill:#b8c7d8}.graph-menu g{outline:none;cursor:pointer}.graph-menu text{font-size:18px;fill:#526171;text-anchor:middle;pointer-events:none}
+.graph-controls{position:absolute;right:13px;bottom:78px;display:flex;flex-direction:column;gap:2px;padding:4px;border:1px solid #e0e3e7;border-radius:5px;background:white;box-shadow:0 2px 7px #17212c0b}.graph-controls button{width:30px;height:30px;border:0;border-radius:3px;background:white;color:#747e8d;font-size:22px;cursor:pointer}.graph-controls button:hover{background:#edf2f7;color:#335578}.graph-controls button:focus-visible{outline:2px solid #527ca3}.graph-controls>span{border-top:1px solid #e9ebef;margin:3px}
+.graph-inspector{position:absolute;left:0;bottom:25px;right:0;display:flex;align-items:center;flex-wrap:wrap;gap:9px;min-height:44px;padding:10px 15px;border-top:1px solid #e9ebee;background:#fafbfcf5;font-size:11px;pointer-events:none}.graph-inspector b{font-weight:600}.graph-inspector strong{font-weight:500}.graph-inspector code{color:#8d939b;font-size:10px}.graph-inspector__label{padding:4px 8px;border-radius:12px}.graph-inspector>span{max-width:85%;color:#69717c;line-height:1.6}
+.graph-hint{position:absolute;left:0;right:0;bottom:0;height:25px;padding:6px 14px;border-top:1px solid #f0f1f3;background:#fff;color:#9399a3;font-size:10px}
+.graph-inspector button{margin-left:auto;padding:5px 9px;border:1px solid #d8dfe7;border-radius:3px;background:white;color:#426d96;font:inherit;cursor:pointer;pointer-events:auto}.graph-inspector button:hover{background:#edf4fb}
+@media(max-width:700px){.graph-canvas{min-height:460px}.graph-labels{gap:4px;padding:9px;font-size:9px}.graph-label-chip{padding:3px 6px}.graph-hint{font-size:8px}.graph-labels__relations{margin-left:0}.graph-controls{right:8px}}
+@media(prefers-reduced-motion:reduce){.graph-node,.graph-edge{transition:none}}
 </style>

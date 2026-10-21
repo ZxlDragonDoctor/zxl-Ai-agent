@@ -59,8 +59,8 @@ export function edgeGeometry(source: Point, target: Point, sourceRadius: number,
 }
 
 export function captionLines(text: string, chinese: boolean): string[] {
-  const tokens = chinese ? Array.from(text) : text.split(/\s+/)
   const limit = chinese ? 6 : 12
+  const tokens = chinese ? Array.from(text) : text.split(/\s+/).flatMap(word => word.match(/.{1,12}/g) ?? [])
   const lines: string[] = []
   let line = ''
   for (const token of tokens) {

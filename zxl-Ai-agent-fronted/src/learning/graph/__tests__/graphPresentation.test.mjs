@@ -20,4 +20,5 @@ test('arrows stop at node borders and labels remain upright', () => {
 test('captions keep Chinese and English text within four visible lines', () => {
   assert.deepEqual(captionLines('真实工具调用', true), ['真实工具调用'])
   assert.ok(captionLines('An exceptionally long engineering learning caption with more words', false).length <= 4)
+  assert.ok(captionLines('FileChatBasedMemory', false).every(line => line.length <= 12))
 })
