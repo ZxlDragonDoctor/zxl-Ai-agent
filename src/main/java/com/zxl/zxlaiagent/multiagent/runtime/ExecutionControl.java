@@ -29,6 +29,7 @@ public final class ExecutionControl {
         stopped = error("RUN_CANCELLED", "用户已取消本次运行", "CANCELLED");
         return true;
     }
+    public synchronized void stop(WorkflowError reason) { if (stopReason() == null) stopped = reason; }
     public synchronized void check() {
         WorkflowError reason = stopReason();
         if (reason != null) throw new WorkflowException(reason);
