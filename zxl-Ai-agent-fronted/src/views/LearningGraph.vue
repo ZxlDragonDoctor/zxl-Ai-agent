@@ -2,7 +2,7 @@
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import KnowledgeGraphCanvas from '../learning/graph/KnowledgeGraphCanvas.vue'
-import { discoverScene } from '../learning/graph/graphPresentation'
+import { discoverScene, revealSelection } from '../learning/graph/graphPresentation'
 import {
   catalogue, createRecord, exportGraph, exportLearningProgress, filterNodes, findShortestPath,
   getNeighbors, importLearningProgress, loadProgress, nodeById, saveProgress,
@@ -120,7 +120,7 @@ const highlightedEdgeIds = computed(() => pathToNext.value.map(edge => edge.id))
 
 watch(progress, value => saveProgress(value), { deep: true })
 watch(() => route.query.node, value => {
-  if (typeof value === 'string' && nodeById.has(value)) chooseNode(value)
+  if (typeof value === 'string' && nodeById.has(value) && value !== selectedId.value) chooseNode(value)
 })
 watch(viewMode, () => { expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set() })
 watch(selectedId, async value => {
@@ -152,6 +152,8 @@ function chooseNode(id: string): void {
     expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set()
   }
   selectedId.value = id
+  const revealed = revealSelection(id, catalogue.edges, expandedIds.value, collapsedIds.value, dismissedIds.value)
+  expandedIds.value = revealed.expanded; collapsedIds.value = revealed.collapsed; dismissedIds.value = revealed.dismissed
 }
 function toggleExpansion(id: string): void {
   if (viewMode.value === 'all') { sceneRootId.value = id; viewMode.value = 'one'; selectedId.value = id; return }
@@ -436,4 +438,14 @@ onMounted(() => {
 .learning-map-column :deep(.graph-canvas){min-height:500px}
 @media(max-width:1000px){.learning-workspace.has-catalogue.has-reader{grid-template-columns:200px minmax(0,1fr)}.learning-workspace.has-catalogue.has-reader .learning-reader{grid-column:1/-1;min-height:500px}.learning-workspace.has-reader{grid-template-columns:minmax(0,1fr) 280px}.learning-workspace{height:auto}.learning-map-column{height:680px}.learning-sidebar{height:680px}}
 @media(max-width:620px){.learning-workspace{display:flex;min-height:0}.learning-workspace .learning-sidebar{height:420px}.learning-workspace .learning-map-column{height:600px}.learning-workspace .learning-reader{height:600px}.learning-map-column :deep(.graph-canvas){min-height:470px}}
+.learning-page .learning-action,.learning-page .learning-map-toolbar span,.learning-page .learning-map-footer{font-size:12px}
+.learning-page .learning-list-row__copy strong{font-size:13px}.learning-page .learning-list-row__copy small,.learning-page .learning-list-state{font-size:11px}
+.learning-page .learning-search span,.learning-page .learning-filter-grid label span,.learning-page .learning-list-heading{font-size:12px}
+.learning-page .learning-search input,.learning-page .learning-filter-grid select,.learning-page .learning-own-status select{font-size:14px;min-height:36px}
+.learning-page .learning-reader__summary,.learning-page .learning-article__section p,.learning-page .learning-article__section li{font-size:14px;line-height:1.8}
+.learning-page .learning-article__section h3,.learning-page .learning-section-title h3{font-size:15px}
+.learning-page .learning-note textarea,.learning-page .learning-note label,.learning-page .learning-own-status label{font-size:13px}
+.learning-page .source-path code,.learning-page .source-path span{font-size:12px}
+.learning-page .learning-relation-row strong{font-size:13px}.learning-page .learning-relation-row small,.learning-page .relation-type{font-size:12px}
+.learning-page .learning-view-switch button{font-size:12px}.learning-view-switch{flex-wrap:wrap}
 </style>

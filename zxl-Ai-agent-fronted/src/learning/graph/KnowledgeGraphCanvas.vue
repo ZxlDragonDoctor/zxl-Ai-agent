@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation } from 'd3-force'
-import { computed, onBeforeUnmount, ref, shallowRef, triggerRef, useId, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, shallowRef, triggerRef, useId, watch } from 'vue'
 import type { GraphEdge, GraphNode } from './model'
-import { captionLines, edgeGeometry } from './graphPresentation'
+import { captionLines, edgeGeometry, incidentSelection } from './graphPresentation'
 import { locale, t } from '../../i18n'
 
 interface LayoutNode extends GraphNode { x: number; y: number; vx?: number; vy?: number; fx?: number | null; fy?: number | null }
@@ -25,14 +25,15 @@ const markerId = `graph-arrow-${useId().replace(/:/g, '')}`
 const zh = computed(() => locale.value === 'zh-CN')
 const tr = (cn: string, en: string) => zh.value ? cn : en
 const nodeMap = computed(() => new Map(layoutNodes.value.map(node => [node.id, node])))
-const activeId = computed(() => hoveredId.value || (menuId.value ? props.selectedId : ''))
-const adjacent = computed(() => new Set(props.edges.filter(edge => edge.from === activeId.value || edge.to === activeId.value).flatMap(edge => [edge.from, edge.to])))
+const activeId = computed(() => hoveredId.value || props.selectedId)
+const selection = computed(() => incidentSelection(activeId.value, props.edges))
+const adjacent = computed(() => selection.value.nodeIds)
 const activeNode = computed(() => nodeMap.value.get(props.selectedId))
 const kinds = ['lesson', 'topic', 'concept', 'evidence', 'source'] as const
 let simulation: ReturnType<typeof forceSimulation<LayoutNode>> | undefined
 let drag: { node: LayoutNode; start: { x: number; y: number }; moved: boolean } | undefined
 let pan: { x: number; y: number; tx: number; ty: number } | undefined
-let suppressClick = false, cameraFrame = 0, autoFitted = false
+let suppressClick = false, cameraFrame = 0, autoFitted = false, pendingFocus = false
 
 function radius(node: GraphNode) { return node.kind === 'topic' ? 38 : node.kind === 'lesson' ? 33 : 30 }
 function color(kind: GraphNode['kind']) { return ({ lesson: '#68bdf6', topic: '#ffc454', concept: '#a5abb6', evidence: '#fb95af', source: '#b6d982' })[kind] }
@@ -73,14 +74,22 @@ watch(() => [props.nodes.map(n => n.id).join('|'), props.edges.map(e => e.id).jo
     .force('collision', forceCollide<LayoutNode>(node => radius(node) + 23).iterations(3))
     .velocityDecay(.38).alphaDecay(.035)
     .on('tick', () => triggerRef(layoutNodes))
-    .on('end', () => { if (!autoFitted) { fit(); autoFitted = true } })
+    .on('end', () => {
+      if (pendingFocus) { fitFocused(); pendingFocus = false }
+      else if (!autoFitted) { fit(); autoFitted = true }
+    })
   if (props.reducedMotion) { simulation.stop().tick(200); triggerRef(layoutNodes); fit(); autoFitted = true }
 }, { immediate: true })
 watch(() => props.reducedMotion, reduced => {
   if (reduced) { simulation?.stop().tick(200); triggerRef(layoutNodes) }
   else simulation?.alpha(.5).restart()
 })
-watch(() => props.selectedId, () => { selectedEdge.value = undefined; if (menuId.value !== props.selectedId) menuId.value = '' })
+watch(() => props.selectedId, () => {
+  selectedEdge.value = undefined
+  if (menuId.value !== props.selectedId) menuId.value = ''
+  pendingFocus = true
+  nextTick(fitFocused)
+})
 
 function point(event: { clientX: number; clientY: number }) {
   const matrix = svgRef.value?.getScreenCTM()
@@ -98,14 +107,23 @@ function animateCamera(target: typeof transform.value) {
   cameraFrame = requestAnimationFrame(frame)
 }
 function fit() {
-  if (!layoutNodes.value.length) return
-  const xs = layoutNodes.value.map(n => n.x), ys = layoutNodes.value.map(n => n.y)
-  const minX = Math.min(...xs) - 85, maxX = Math.max(...xs) + 85
-  const minY = Math.min(...ys) - 85, maxY = Math.max(...ys) + 85
-  const scale = Math.max(.08, Math.min(1.6, width / (maxX - minX), (height - 110) / (maxY - minY)))
+  pendingFocus = false
+  fitGroup(layoutNodes.value)
+}
+function fitFocused() {
+  const ids = incidentSelection(props.selectedId, props.edges).nodeIds
+  fitGroup(layoutNodes.value.filter(node => ids.has(node.id)), 115)
+}
+function fitGroup(nodes: LayoutNode[], padding = 85) {
+  if (!nodes.length) return
+  const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y)
+  const minX = Math.min(...xs) - padding, maxX = Math.max(...xs) + padding
+  const minY = Math.min(...ys) - padding, maxY = Math.max(...ys) + padding
+  const scale = Math.max(.08, Math.min(1.6, width / Math.max(500, maxX - minX), (height - 140) / Math.max(350, maxY - minY)))
   animateCamera({ scale, x: width / 2 - (minX + maxX) / 2 * scale, y: (height - 50) / 2 - (minY + maxY) / 2 * scale })
 }
 function zoom(factor: number, center = { x: width / 2, y: height / 2 }) {
+  pendingFocus = false
   cancelAnimationFrame(cameraFrame)
   const old = transform.value, scale = Math.max(.08, Math.min(4, old.scale * factor)), ratio = scale / old.scale
   transform.value = { scale, x: center.x - (center.x - old.x) * ratio, y: center.y - (center.y - old.y) * ratio }
@@ -114,6 +132,7 @@ function wheel(event: WheelEvent) { event.preventDefault(); zoom(Math.exp(-event
 function downNode(event: PointerEvent, node: LayoutNode) {
   if (event.button !== 0) return
   event.stopPropagation(); cancelAnimationFrame(cameraFrame)
+  pendingFocus = false
   ;(event.currentTarget as SVGElement).setPointerCapture(event.pointerId)
   drag = { node, start: point(event), moved: false }
   node.fx = node.x; node.fy = node.y
@@ -121,6 +140,7 @@ function downNode(event: PointerEvent, node: LayoutNode) {
 function downBackground(event: PointerEvent) {
   if (event.button !== 0) return
   cancelAnimationFrame(cameraFrame); menuId.value = ''; selectedEdge.value = undefined
+  pendingFocus = false
   svgRef.value?.setPointerCapture(event.pointerId)
   const p = point(event)
   pan = { x: p.x, y: p.y, tx: transform.value.x, ty: transform.value.y }
@@ -148,6 +168,7 @@ function up() {
 function select(node: LayoutNode) {
   if (suppressClick) { suppressClick = false; return }
   emit('select', node.id); menuId.value = node.id; selectedEdge.value = undefined
+  pendingFocus = true; nextTick(fitFocused)
 }
 function togglePin(node: LayoutNode) {
   const next = new Set(pinned.value)
@@ -207,7 +228,7 @@ onBeforeUnmount(() => { simulation?.stop(); cancelAnimationFrame(cameraFrame) })
       <defs><marker :id="markerId" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a5abb6" /></marker></defs>
       <rect width="1000" height="700" fill="white" @pointerdown="downBackground" />
       <g :transform="camera">
-        <g v-for="edge in renderedEdges" :key="edge.id" class="graph-edge" :class="{ 'is-dim': activeId && !adjacent.has(edge.from) && !adjacent.has(edge.to), 'is-path': highlightedEdgeIds?.includes(edge.id), 'is-selected': selectedEdge?.id === edge.id }"
+        <g v-for="edge in renderedEdges" :key="edge.id" class="graph-edge" :class="{ 'is-dim': activeId && !selection.edgeIds.has(edge.id), 'is-related': selection.edgeIds.has(edge.id), 'is-path': highlightedEdgeIds?.includes(edge.id), 'is-selected': selectedEdge?.id === edge.id }"
           @pointerdown.stop @click.stop="selectedEdge = edge; menuId = ''">
           <path class="graph-edge__hit" :d="edge.path" />
           <path class="graph-edge__line" :d="edge.path" :marker-end="`url(#${markerId})`" />
@@ -220,8 +241,8 @@ onBeforeUnmount(() => { simulation?.stop(); cancelAnimationFrame(cameraFrame) })
           @keydown.enter.prevent="select(node)" @keydown.space.prevent="select(node)" @keydown="keyMove($event, node)">
           <circle class="graph-node__halo" :r="radius(node) + 5" :style="{ stroke: color(node.kind) }" />
           <circle class="graph-node__circle" :r="radius(node)" :fill="color(node.kind)" />
-          <text class="graph-node__caption" :style="{ fontSize: zh ? '11px' : '10px' }">
-            <tspan v-for="(line, index) in captionLines(label(node), zh)" :key="index" x="0" :y="(index - (captionLines(label(node), zh).length - 1) / 2) * 13 + 4">{{ line }}</tspan>
+          <text class="graph-node__caption" :style="{ fontSize: zh ? '13px' : '11px' }">
+            <tspan v-for="(line, index) in captionLines(label(node), zh, zh ? 4 : 9)" :key="index" x="0" :y="(index - (captionLines(label(node), zh, zh ? 4 : 9).length - 1) / 2) * 14 + 4">{{ line }}</tspan>
           </text>
           <circle v-if="pinned.has(node.id)" class="graph-node__pin" :cx="radius(node) - 4" :cy="-radius(node) + 4" r="5" />
           <g v-if="menuId === node.id" class="graph-menu" @pointerdown.stop @click.stop @dblclick.stop>
@@ -267,4 +288,8 @@ onBeforeUnmount(() => { simulation?.stop(); cancelAnimationFrame(cameraFrame) })
 .graph-inspector button{margin-left:auto;padding:5px 9px;border:1px solid #d8dfe7;border-radius:3px;background:white;color:#426d96;font:inherit;cursor:pointer;pointer-events:auto}.graph-inspector button:hover{background:#edf4fb}
 @media(max-width:700px){.graph-canvas{min-height:460px}.graph-labels{gap:4px;padding:9px;font-size:9px}.graph-label-chip{padding:3px 6px}.graph-hint{font-size:8px}.graph-labels__relations{margin-left:0}.graph-controls{right:8px}}
 @media(prefers-reduced-motion:reduce){.graph-node,.graph-edge{transition:none}}
+.graph-edge.is-related .graph-edge__line{stroke:#377aaa;stroke-width:2.4}.graph-edge.is-related text{fill:#215476;font-weight:600}
+.graph-edge text{font-size:12px;stroke-width:3.5}.graph-node__caption{font-weight:600;text-rendering:geometricPrecision}
+.graph-node.is-dim .graph-node__caption{display:none}.graph-edge.is-dim{opacity:.12}
+.graph-labels,.graph-inspector{font-size:13px}.graph-hint{font-size:12px}.graph-inspector code{font-size:12px}
 </style>
