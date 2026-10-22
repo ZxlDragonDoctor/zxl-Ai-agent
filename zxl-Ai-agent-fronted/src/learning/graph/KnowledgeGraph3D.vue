@@ -8,6 +8,7 @@ import type { ConfigOptions, ForceGraph3DInstance } from '3d-force-graph'
 import type { GraphEdge, GraphNode } from './model'
 import { createSpatialGraph, neighborhoodDestination, spatialNodeRadius, spatialLinkCurve } from './graph3DModel'
 import { incidentSelection } from './graphPresentation'
+import { createSpatialMotion } from './graph3DMotion'
 import type { SpatialLink, SpatialNode } from './graph3DModel'
 import { locale, t } from '../../i18n'
 
@@ -40,6 +41,7 @@ let lastFrameUpdate = 0
 let lastAnchor = ''
 const projected = new Vector3()
 const white = new Color('#ffffff')
+const ambientMotion = createSpatialMotion()
 
 function relationship(type: GraphEdge['type']) { return t(`learning.relation.${type === 'documented-by' ? 'documentedBy' : type === 'informed-by' ? 'informedBy' : type}`) }
 function tooltip(text: string) {
@@ -133,6 +135,7 @@ function updateFrame() {
 function refreshAppearance() {
   if (!graph) return
   const active = activeId.value
+  ambientMotion.emphasize(active, neighborIds.value)
   for (const node of graph.graphData().nodes) {
     const visual = visuals.get(node.id)
     if (!visual) continue
@@ -159,7 +162,8 @@ function buildStars() {
 function updateGraph() {
   if (!graph) return
   const data = createSpatialGraph(props.nodes, props.edges, graph.graphData().nodes)
-  graph.warmupTicks(props.reducedMotion ? 180 : 60).cooldownTicks(motion.value && !props.reading ? Infinity : 0).graphData(data)
+  ambientMotion.setEnabled(motion.value)
+  graph.warmupTicks(motion.value ? (fitted ? 0 : 60) : 180).cooldownTicks(motion.value ? Infinity : 0).graphData(data)
   refreshAppearance()
   if (focused.value) scheduleFocus(focused.value)
   if (!fitted && props.nodes.length) {
@@ -173,7 +177,8 @@ function syncMotion() {
   if (props.reading) camera.setViewOffset(graph.width(), graph.height(), graph.width() >= 680 ? graph.width() * .18 : 0, graph.width() < 680 ? graph.height() * .16 : 0, graph.width(), graph.height())
   else camera.clearViewOffset()
   if (controls) controls.autoRotate = motion.value && !props.reading && !orbitHeld && !hovered.value
-  graph.cooldownTicks(motion.value && !props.reading ? Infinity : 0)
+  ambientMotion.setEnabled(motion.value)
+  graph.cooldownTicks(motion.value ? Infinity : 0)
   refreshAppearance()
 }
 function holdOrbit() {
@@ -211,6 +216,16 @@ function scheduleFocus(id: string) {
   }
   focusFrame = requestAnimationFrame(frame)
 }
+function activateNode(id: string) {
+  host.value?.focus({ preventScroll: true })
+  focused.value = id; selectedEdge.value = undefined
+  emit('select', id)
+  if (motion.value) {
+    ambientMotion.pulse(id, incidentSelection(id, props.edges).nodeIds)
+    graph?.d3ReheatSimulation()
+  }
+  scheduleFocus(id); refreshAppearance()
+}
 function updateResolution() {
   if (!graph) return
   const ratio = Math.min(3, Math.max(1, window.devicePixelRatio || 1))
@@ -237,7 +252,7 @@ async function fullscreen() {
 function nextNode(direction: number) {
   const index = props.nodes.findIndex(node => node.id === props.selectedId)
   const node = props.nodes[(index + direction + props.nodes.length) % props.nodes.length]
-  if (node) { focused.value = node.id; emit('select', node.id); flyTo(node.id); refreshAppearance() }
+  if (node) activateNode(node.id)
 }
 
 watch(() => [props.nodes.map(node => node.id).join('|'), props.edges.map(edge => edge.id).join('|')].join('::'), updateGraph)
@@ -273,8 +288,10 @@ onMounted(async () => {
       .linkOpacity(.65).linkDirectionalParticleWidth(1.2).linkDirectionalParticleSpeed(.004)
       .linkCurvature(link => spatialLinkCurve(link.id).curvature).linkCurveRotation(link => spatialLinkCurve(link.id).rotation)
       .linkDirectionalParticleColor(() => '#99edff').linkLabel(link => tooltip(relationship(link.type)))
-      .d3AlphaDecay(.018).d3VelocityDecay(.35).cooldownTime(12000)
-      .onNodeClick(node => { host.value?.focus({ preventScroll: true }); focused.value = node.id; selectedEdge.value = undefined; emit('select', node.id); scheduleFocus(node.id); refreshAppearance() })
+      .d3AlphaMin(0).d3AlphaDecay(.025).d3VelocityDecay(.3).cooldownTime(Infinity)
+      .onNodeClick(node => activateNode(node.id))
+      .onNodeDrag(() => holdOrbit())
+      .onNodeDragEnd(node => { ambientMotion.reanchor(node.id); if (motion.value) { ambientMotion.pulse(node.id, incidentSelection(node.id, props.edges).nodeIds); graph?.d3ReheatSimulation() }; releaseOrbit() })
       .onNodeHover(node => { hovered.value = node?.id ?? ''; if (controls) controls.autoRotate = motion.value && !props.reading && !orbitHeld && !node })
       .onLinkClick(link => { selectedEdge.value = link; emit('close'); holdOrbit(); releaseOrbit() })
       .onBackgroundClick(() => { focused.value = ''; hovered.value = ''; selectedEdge.value = undefined; emit('close'); refreshAppearance() })
@@ -283,6 +300,7 @@ onMounted(async () => {
     renderCanvas.addEventListener('webglcontextlost', contextLost)
     graph.d3Force('charge')?.strength(-85)
     graph.d3Force('link')?.distance(65).strength(.35)
+    graph.d3Force('ambient-motion', ambientMotion.force)
     stars = buildStars(); graph.scene().add(stars)
     controls = graph.controls() as OrbitControls
     controls.autoRotateSpeed = .4; controls.enableDamping = true; controls.dampingFactor = .065
@@ -352,7 +370,7 @@ onBeforeUnmount(() => {
       <small>{{ tr('知识关系', 'RELATIONSHIP') }}</small><h3>{{ relationship(selectedEdge.type) }}</h3><p>{{ selectedEdge.reason[locale] }}</p>
     </div>
     <div class="graph-3d__footer">
-      <span>{{ reading ? tr('已停住视角 · 点击其他星点继续探索 · 空白处关闭详情', 'View held · click another star to explore · click empty space to close') : tr('拖动旋转 · 滚轮缩放 · 点击星点阅读', 'Drag to orbit · scroll to zoom · click a star to read') }}</span>
+      <span>{{ reading ? tr('视角保持 · 关联星点持续摇曳 · 空白处关闭详情', 'Camera held · connected stars keep swaying · click empty space to close') : tr('拖动旋转 · 拖动星点牵动连线 · 点击探索', 'Drag to orbit · drag a star to move its links · click to explore') }}</span>
       <button type="button" @click="emit('browse')">{{ tr('打开知识列表', 'Open knowledge list') }} →</button>
     </div>
     <div v-if="ready && !nodes.length" class="graph-3d__loading">{{ t('learning.noResults') }}</div>

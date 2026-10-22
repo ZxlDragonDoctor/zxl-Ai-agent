@@ -30,6 +30,8 @@ const reader = ref<HTMLElement>()
 const graphStage = ref<HTMLElement>()
 const stageSize = ref({ width: 1000, height: 650 })
 const detailAnchor = ref<{ x: number; y: number; width: number; height: number; visible: boolean }>()
+const readerWindowAnchor = ref<{ x: number; y: number; visible: boolean }>()
+let readerAnchorStarted = performance.now()
 const readerPosition = ref<{ x: number; y: number }>()
 const readerDragging = ref(false)
 let readerDrag: { pointerId: number; clientX: number; clientY: number; x: number; y: number } | undefined
@@ -39,7 +41,7 @@ const readerPlacement = computed(() => {
   const compact = width < 680
   const cardWidth = Math.min(390, width - 24)
   const cardHeight = Math.min(compact ? height * .5 : 560, height - (compact ? 110 : 160))
-  const anchor = detailAnchor.value
+  const anchor = readerWindowAnchor.value
   const x = anchor?.visible ? anchor.x : width * .48
   const y = anchor?.visible ? anchor.y : height * .4
   const defaultLeft = compact ? 12 : Math.max(12, Math.min(width - cardWidth - 12, x + cardWidth + 36 < width ? x + 30 : x - cardWidth - 30))
@@ -48,6 +50,11 @@ const readerPlacement = computed(() => {
   const top = Math.max(8, Math.min(height - Math.max(200, cardHeight) - 8, readerPosition.value?.y ?? defaultTop))
   return { left: `${left}px`, top: `${top}px`, width: `${cardWidth}px`, height: `${Math.max(200, cardHeight)}px` }
 })
+function updateDetailAnchor(point: NonNullable<typeof detailAnchor.value>): void {
+  detailAnchor.value = point
+  // Let the initial camera flight finish, then hold the text window while its leader follows the star.
+  if (!readerWindowAnchor.value || performance.now() - readerAnchorStarted < 850) readerWindowAnchor.value = point
+}
 function beginReaderDrag(event: PointerEvent): void {
   if (event.button !== 0 || (event.target as Element).closest('button')) return
   event.preventDefault()
@@ -72,6 +79,10 @@ function endReaderDrag(event: PointerEvent): void {
 }
 function moveReaderWithKeyboard(x: number, y: number): void {
   readerPosition.value = { x: parseFloat(readerPlacement.value.left) + x, y: parseFloat(readerPlacement.value.top) + y }
+}
+function resetReaderPosition(): void {
+  readerPosition.value = undefined
+  readerWindowAnchor.value = detailAnchor.value
 }
 const detailConnector = computed(() => {
   const point = detailAnchor.value
@@ -180,11 +191,13 @@ watch(() => route.query.node, value => {
 watch(viewMode, () => { sceneRootId.value = selectedId.value; expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set() })
 watch(selectedId, async value => {
   readerPosition.value = undefined
+  readerWindowAnchor.value = undefined; readerAnchorStarted = performance.now()
   if (route.query.node !== value) router.replace({ query: { ...route.query, node: value } })
   await nextTick()
   if (reader.value) reader.value.scrollTop = progress.value.records[value]?.scrollTop ?? 0
 })
 watch(readerOpen, async open => {
+  readerWindowAnchor.value = undefined; readerAnchorStarted = performance.now()
   if (!open) { readerPosition.value = undefined; readerDrag = undefined; readerDragging.value = false; return }
   await nextTick()
   if (reader.value) reader.value.scrollTop = progress.value.records[selectedId.value]?.scrollTop ?? 0
@@ -305,7 +318,7 @@ function recommendationExplanation(): string {
 onMounted(() => {
   stageObserver = new ResizeObserver(entries => {
     const size = entries[0]?.contentRect
-    if (size) stageSize.value = { width: size.width, height: size.height }
+    if (size) { stageSize.value = { width: size.width, height: size.height }; readerWindowAnchor.value = undefined; readerAnchorStarted = performance.now() }
   })
   if (graphStage.value) stageObserver.observe(graphStage.value)
   const routeId = typeof route.query.node === 'string' && nodeById.has(route.query.node) ? route.query.node : selectedId.value
@@ -399,7 +412,7 @@ onMounted(() => {
         <div ref="graphStage" class="learning-graph-stage" @keydown.esc="readerOpen = false">
         <KnowledgeGraph3D v-if="graphDimension === '3d'" :nodes="visibleNodes" :edges="visibleEdges" :selected-id="selectedId"
           :highlighted-edge-ids="highlightedEdgeIds" :reduced-motion="reducedMotion" :reading="readerOpen"
-          @anchor="detailAnchor = $event" @close="readerOpen = false" @select="chooseNode" @read="openReader" @browse="catalogueOpen = true" @unavailable="fallBackTo2D" />
+          @anchor="updateDetailAnchor" @close="readerOpen = false" @select="chooseNode" @read="openReader" @browse="catalogueOpen = true" @unavailable="fallBackTo2D" />
         <KnowledgeGraphCanvas v-else :nodes="visibleNodes" :edges="visibleEdges" :selected-id="selectedId" :highlighted-edge-ids="highlightedEdgeIds"
           :expanded-node-ids="expandedNodeIds" :reduced-motion="reducedMotion" @select="chooseNode" @expand="toggleExpansion" @dismiss="dismissNode" @reset="restoreScene" @read="openReader" />
         <svg v-if="readerOpen && detailConnector" class="learning-detail-connector" :viewBox="`0 0 ${stageSize.width} ${stageSize.height}`" aria-hidden="true"><path :d="detailConnector"/><circle :cx="detailAnchor?.x" :cy="detailAnchor?.y" r="7"/></svg>
@@ -409,7 +422,7 @@ onMounted(() => {
           @keydown.left.self.prevent="moveReaderWithKeyboard(-20, 0)" @keydown.right.self.prevent="moveReaderWithKeyboard(20, 0)"
           @keydown.up.self.prevent="moveReaderWithKeyboard(0, -20)" @keydown.down.self.prevent="moveReaderWithKeyboard(0, 20)">
           <span>⠿ {{ locale === 'zh-CN' ? '拖动移动' : 'DRAG TO MOVE' }} · {{ kindLabel(selectedNode.kind) }}</span>
-          <div class="learning-reader__window-actions"><button v-if="readerPosition" type="button" :aria-label="locale === 'zh-CN' ? '回到节点旁' : 'Return beside the node'" :title="locale === 'zh-CN' ? '回到节点旁' : 'Return beside the node'" @click="readerPosition = undefined">↺</button><button type="button" :aria-label="locale === 'zh-CN' ? '关闭详情' : 'Close details'" @click="readerOpen = false">×</button></div>
+          <div class="learning-reader__window-actions"><button v-if="readerPosition" type="button" :aria-label="locale === 'zh-CN' ? '回到节点旁' : 'Return beside the node'" :title="locale === 'zh-CN' ? '回到节点旁' : 'Return beside the node'" @click="resetReaderPosition">↺</button><button type="button" :aria-label="locale === 'zh-CN' ? '关闭详情' : 'Close details'" @click="readerOpen = false">×</button></div>
         </div>
         <div ref="reader" class="learning-reader__scroll" @scroll.passive="onReadScroll">
           <div class="learning-reader__eyebrow"><span>{{ kindLabel(selectedNode.kind) }}</span><span v-if="selectedNode.number">{{ lessonNumber(selectedNode) }}</span></div>
@@ -488,7 +501,7 @@ onMounted(() => {
       </aside>
         </div>
         <div class="learning-map-footer">
-          <span>{{ graphDimension === '3d' ? (locale === 'zh-CN' ? '节点大小代表连接数 · 颜色区分知识类型' : 'Node size reflects connections · color represents knowledge type') : (locale === 'zh-CN' ? '颜色区分知识类型' : 'Color represents knowledge type') }}</span>
+          <span>{{ graphDimension === '3d' ? (locale === 'zh-CN' ? '大小表示连接数 · 颜色表示类型 · 连线交叉不代表连接' : 'Size: connections · color: type · crossing lines are not connections') : (locale === 'zh-CN' ? '颜色表示类型 · 连线交叉不代表连接' : 'Color: type · crossing lines are not connections') }}</span>
           <label class="learning-motion"><input v-model="reducedMotion" type="checkbox">{{ t('learning.reduceMotion') }}</label>
         </div>
       </section>
