@@ -102,9 +102,9 @@ Invoke-RestMethod -Uri "$base/$($run.id)"
 
 阅读顺序：先看 create 的原子接收，再看 claim 的竞争条件，随后读 complete 的同库提交，最后看 recoverable/worker 的有界恢复。观察 GET 的 attempts 和 events 即可理解，无需逐行断点。
 
-## 6. 本次实际证据
+## 6. 2026-10-22 首次实现的实际证据
 
-本次没有新增或运行自动测试。编译与业务演示分别记录：
+首次实现批次没有新增或运行自动测试。以下为该批次的编译与业务演示记录；2026-10-23 补充的自动化验收见下一节，不把事后回归描述为首次实现全程采用 TDD。
 
 - `mvn -q -DskipTests compile` 成功；不是自动测试通过。
 - 文件 H2 2.3.232，Flyway V1 实际迁移成功，重启后验证无待执行迁移。Flyway 提示该 H2 版本较其声明支持范围新；不把该提示描述为生产兼容认证。
@@ -119,3 +119,35 @@ Invoke-RestMethod -Uri "$base/$($run.id)"
 ### 尚未覆盖
 
 PostgreSQL 实跑、多实例高并发竞争、数据库断连/提交前故障注入、外部响应不确定、生产身份权限、容量/性能、数据保留和清理均未验收。没有调用真实模型、外部工单，也没有声称持久化 Neo4j 或 GraphRAG。学习掌握状态仍由你自己填写。
+
+## 7. 2026-10-23 自动化测试验收
+
+用户明确要求课程完成后默认添加并运行测试，本次补充真实数据库和接口回归。测试使用独立临时 H2，通过真实 Flyway V1 迁移和 JDBC 访问；没有读取原运行库、配置密钥或调用模型。首次运行新增 18 项全部通过，无需修改后端实现；随后运行相关回归，结果如下。
+
+| 测试类 | 用例数 | 本次覆盖 |
+| --- | --- | --- |
+| `PersistentWorkflowRepositoryTest` | 13 | 文件库重建仓储、真正两个子 JVM 写读同文件库；8 线程领取同一 run 只有一胜；6 线程同操作跨 run 只有一张工单；参数冲突回滚；取消后拒绝完成/续租；原 deadline 超时无 attempt；旧 token 拒绝且历史保留；五次上限；重复有界扫描；伪造 Claim 拒绝；晚期 SQL 错误原子回滚；非法预算/租期拒绝 |
+| `LearningPersistenceApiTest` | 3 | Standalone MockMvc 使用真实 Controller、仓储与禁用 worker；接收/查询/完成与结果重放、409 参数冲突、取消、禁用恢复、404 与 400 |
+| `PersistentWorkerTest` | 2 | 真实数据库预存 13 个任务后启动 worker，自动跨批完成且 attempt 不重复；禁用 worker 保留 backlog |
+| `TicketReliabilityTest` | 10 | 第八课重试、幂等与执行预算回归 |
+| `TicketApiTest` | 2 | 第八课工单接口回归 |
+| `ExecutionControlTest` | 4 | 共享截止、取消等执行控制回归 |
+| **合计** | **34** | **失败 0、错误 0、跳过 0，Maven exit 0** |
+
+执行命令：
+
+```powershell
+mvn -q '-Dtest=PersistentWorkflowRepositoryTest,LearningPersistenceApiTest,PersistentWorkerTest,TicketReliabilityTest,TicketApiTest,ExecutionControlTest' test
+```
+
+### 如何阅读这些验收
+
+- `PersistenceFixture` 为每例建立唯一临时内存 H2，显式保持连接间数据库存续并在结束时关闭。文件持久化和子进程用例使用 JUnit `@TempDir`，不依赖实际用户运行数据。
+- `PersistenceProcessProbe` 是仅位于测试源码中的子 JVM 入口：第一个进程提交成功运行和工单，进程退出后第二个进程读取，比较完整快照（含原 deadline、attempt、事件和 ticket）。子进程有 30 秒等待上限，失败保留在临时日志中供断言定位。
+- 领取与同操作并发通过启动屏障控制多个真实 JDBC 调用竞争，不用 mock 仓储代替锁和唯一约束。线程池和等待均有上限。这是少量功能并发验收，不是压力或多实例生产测试。
+- 旧租约和截止场景在专用测试库调整业务时间字段，避免依赖长 sleep。它们验证仓储按持久字段判断，不等价于真实停机时长/时钟漂移故障注入。
+- 事务原子性用例在 `run_event` 加入拒绝 `TICKET_RESULT` 的约束，制造工单已插入、操作已更新之后的 SQL 错误；验证 ticket 数量回到 0、operation 仍 PENDING、run/attempt 仍 RUNNING、事件未多写；移除约束后同 Claim 可以完成。此项覆盖事务回滚，不是数据库网络断连或提交响应丢失。
+- worker 恢复用例在 15 秒有界等待内观察 13 个任务完成，数量超过每批 10 个；验证的是 worker 启动扫描及跨批 drain，不是原应用完整 Spring 配置或外部工具恢复。
+- API 测试经 Spring MVC 请求分派与序列化、真实业务库执行，不开启网络端口；首次实现中的真实 HTTP 演示与本次 MockMvc 证据分别保留。
+
+尚未覆盖 PostgreSQL、多实例生产竞争、连接/提交不确定性、真实模型和企业外部工单、完整应用页面操作、压力容量、身份权限与数据保留。Flyway 对 H2 2.3.232 的支持范围提示仍存在；本次实际迁移与自动用例通过不替代生产兼容认证。知识掌握状态不因测试通过自动改变。
