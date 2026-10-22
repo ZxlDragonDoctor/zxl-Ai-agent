@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { AdditiveBlending, BufferGeometry, CanvasTexture, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial, Points, PointsMaterial, SphereGeometry, Sprite, SpriteMaterial, Vector3 } from 'three'
+import { AdditiveBlending, BufferGeometry, CanvasTexture, Color, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial, Points, PointsMaterial, SphereGeometry, Sprite, SpriteMaterial, Vector3 } from 'three'
 import type { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js'
 import type { PerspectiveCamera } from 'three'
@@ -20,15 +20,15 @@ const tr = (cn: string, en: string) => locale.value === 'zh-CN' ? cn : en
 const title = (node: GraphNode) => node.title[locale.value] || node.title['zh-CN']
 const currentNode = computed(() => props.nodes.find(node => node.id === props.selectedId))
 const motion = computed(() => !paused.value && !props.reducedMotion)
-const activeId = computed(() => focused.value || hovered.value)
+const activeId = computed(() => props.reading ? props.selectedId : hovered.value)
 const selection = computed(() => incidentSelection(activeId.value, props.edges))
 const neighborIds = computed(() => selection.value.nodeIds)
 const colors = { lesson: '#5bbdff', topic: '#ffcd7b', concept: '#ac98ff', evidence: '#51d9b5', source: '#ff91b9' }
-interface Visual { group: Group; sphere: Mesh<SphereGeometry, MeshBasicMaterial>; halo: Sprite; flare: Sprite; caption: CSS2DObject; captionLocale: string; radius: number; emphasis: number; phase: number }
+interface Visual { group: Group; sphere: Mesh<SphereGeometry, MeshBasicMaterial>; halo: Sprite; caption: CSS2DObject; captionLocale: string; emphasis: number; phase: number }
 const visuals = new Map<string, Visual>()
 const sphereGeometry = new SphereGeometry(1, 18, 12)
 let graph: ForceGraph3DInstance<SpatialNode, SpatialLink> | undefined
-let glowTexture: CanvasTexture | undefined, flareTexture: CanvasTexture | undefined, stars: Points | undefined
+let glowTexture: CanvasTexture | undefined, stars: Points | undefined
 let resizeObserver: ResizeObserver | undefined, intersectionObserver: IntersectionObserver | undefined
 let resumeTimer: ReturnType<typeof setTimeout> | undefined, fitTimer: ReturnType<typeof setTimeout> | undefined
 let destroyed = false, intersecting = true, orbitHeld = false, fitted = false
@@ -39,6 +39,7 @@ let focusFrame = 0
 let lastFrameUpdate = 0
 let lastAnchor = ''
 const projected = new Vector3()
+const white = new Color('#ffffff')
 
 function relationship(type: GraphEdge['type']) { return t(`learning.relation.${type === 'documented-by' ? 'documentedBy' : type === 'informed-by' ? 'informedBy' : type}`) }
 function tooltip(text: string) {
@@ -55,16 +56,6 @@ function glow() {
   ctx.fillStyle = gradient; ctx.fillRect(0, 0, 128, 128)
   return new CanvasTexture(canvas)
 }
-function starFlare() {
-  const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128
-  const ctx = canvas.getContext('2d')!
-  const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 62)
-  gradient.addColorStop(0, '#ffffffff'); gradient.addColorStop(.1, '#ffffffc0'); gradient.addColorStop(1, '#ffffff00')
-  ctx.fillStyle = gradient
-  ctx.beginPath(); ctx.moveTo(64, 2); ctx.quadraticCurveTo(68, 59, 126, 64); ctx.quadraticCurveTo(69, 68, 64, 126)
-  ctx.quadraticCurveTo(60, 69, 2, 64); ctx.quadraticCurveTo(59, 60, 64, 2); ctx.fill()
-  return new CanvasTexture(canvas)
-}
 function setCaption(visual: Visual, node: SpatialNode) {
   visual.caption.element.textContent = title(node)
   visual.captionLocale = locale.value
@@ -75,31 +66,29 @@ function visualFor(node: SpatialNode): Visual {
   const group = new Group()
   const sphere = new Mesh(sphereGeometry, new MeshBasicMaterial({ color: colors[node.kind], transparent: true }))
   const halo = new Sprite(new SpriteMaterial({ map: glowTexture, color: colors[node.kind], transparent: true, blending: AdditiveBlending, depthWrite: false }))
-  const flare = new Sprite(new SpriteMaterial({ map: flareTexture, color: '#e4f4ff', transparent: true, blending: AdditiveBlending, depthWrite: false }))
   const element = document.createElement('div')
   element.className = 'knowledge-node-label'
   const caption = new CSS2DObject(element)
   caption.center.set(.5, 1)
-  group.add(sphere, halo, flare, caption)
+  group.add(sphere, halo, caption)
   let hash = 0
   for (const char of node.id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0
-  const result = { group, sphere, halo, flare, caption, captionLocale: locale.value, radius: 1, emphasis: 1, phase: (hash % 628) / 100 }
+  const result = { group, sphere, halo, caption, captionLocale: locale.value, emphasis: 1, phase: (hash % 628) / 100 }
   visuals.set(node.id, result); setCaption(result, node); styleVisual(node, result)
   return result
 }
 function styleVisual(node: SpatialNode, visual: Visual) {
   const active = activeId.value, neighbors = neighborIds.value
-  const selected = node.id === focused.value, emphasized = node.id === active || selected
+  const emphasized = node.id === active
   const dimmed = !!active && !neighbors.has(node.id) && node.id !== active
-  const radius = spatialNodeRadius(node) * (emphasized ? 1.35 : 1)
-  visual.radius = radius; visual.emphasis = dimmed ? .18 : emphasized ? 1.5 : neighbors.has(node.id) ? 1.15 : .85
-  visual.sphere.scale.setScalar(radius * .55)
-  visual.sphere.material.color.set(dimmed ? colors[node.kind] : '#f0f8ff')
-  visual.sphere.material.opacity = dimmed ? .22 : 1
-  visual.halo.scale.setScalar(radius * 7)
-  visual.flare.scale.setScalar(radius * (emphasized ? 11 : 8))
-  ;(visual.halo.material as SpriteMaterial).opacity = visual.emphasis * .5
-  ;(visual.flare.material as SpriteMaterial).opacity = visual.emphasis * .5
+  const related = !!active && neighbors.has(node.id) && !emphasized
+  const radius = spatialNodeRadius(node) * (emphasized ? 1.5 : related ? 1.2 : 1)
+  visual.emphasis = dimmed ? .06 : emphasized ? .95 : related ? .72 : .4
+  visual.sphere.scale.setScalar(radius * (emphasized ? .65 : .45))
+  visual.sphere.material.color.set(emphasized ? '#ffffff' : colors[node.kind]).lerp(white, related ? .55 : .15)
+  visual.sphere.material.opacity = dimmed ? .1 : 1
+  visual.halo.scale.setScalar(radius * (emphasized ? 5 : 4))
+  ;(visual.halo.material as SpriteMaterial).opacity = visual.emphasis
   visual.caption.position.set(0, radius + 5, 0)
   visual.caption.visible = !dimmed && (showLabels.value || emphasized || neighbors.has(node.id) || node.kind === 'topic')
   visual.caption.element.classList.toggle('knowledge-node-label--selected', emphasized)
@@ -109,10 +98,8 @@ function updateFrame() {
   if (!graph || destroyed) return
   const now = performance.now(), seconds = now / 1000
   for (const visual of visuals.values()) {
-    const pulse = motion.value ? .78 + .22 * Math.sin(seconds * 1.4 + visual.phase) : 1
-    ;(visual.halo.material as SpriteMaterial).opacity = visual.emphasis * .46 * pulse
-    ;(visual.flare.material as SpriteMaterial).opacity = visual.emphasis * .52 * pulse
-    visual.flare.scale.setScalar(visual.radius * (visual.emphasis > 1.3 ? 11 : 8) * (.93 + pulse * .07))
+    const pulse = motion.value ? .92 + .05 * Math.sin(seconds * .7 + visual.phase) + .03 * Math.sin(seconds * 1.37 + visual.phase * 2) : 1
+    ;(visual.halo.material as SpriteMaterial).opacity = visual.emphasis * pulse
   }
   if (now - lastFrameUpdate < 80) return
   lastFrameUpdate = now
@@ -153,9 +140,9 @@ function refreshAppearance() {
   }
   graph.linkColor(link => {
     if (active && (link.from === active || link.to === active)) return '#83e8ff'
-    if (props.highlightedEdgeIds?.includes(link.id)) return '#cbaa70'
-    return active ? '#142039' : '#38516d'
-  }).linkWidth(link => active && (link.from === active || link.to === active) ? .45 : 0)
+    if (!active && props.highlightedEdgeIds?.includes(link.id)) return '#cbaa70'
+    return active ? '#0d1523' : '#30445d'
+  }).linkOpacity(active ? .8 : .38).linkWidth(link => active && (link.from === active || link.to === active) ? .7 : 0)
     .linkDirectionalParticles(link => !motion.value ? 0 : active && (link.from === active || link.to === active) ? 2 : 0)
 }
 function buildStars() {
@@ -167,7 +154,7 @@ function buildStars() {
     positions.set([Math.cos(theta) * ring * radius, Math.sin(theta) * ring * radius, z * radius], i * 3)
   }
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
-  return new Points(geometry, new PointsMaterial({ color: '#7893b8', size: .65, transparent: true, opacity: .24, depthWrite: false }))
+  return new Points(geometry, new PointsMaterial({ map: glowTexture, color: '#b1c8e4', size: 2.2, transparent: true, opacity: .35, depthWrite: false }))
 }
 function updateGraph() {
   if (!graph) return
@@ -274,7 +261,7 @@ onMounted(async () => {
     if (destroyed || !viewport.value) return
     type Constructor = new (el: HTMLElement, options?: ConfigOptions) => ForceGraph3DInstance<SpatialNode, SpatialLink>
     const Constructor = module.default as unknown as Constructor
-    glowTexture = glow(); flareTexture = starFlare()
+    glowTexture = glow()
     labelsRenderer = new CSS2DRenderer()
     labelsRenderer.domElement.className = 'knowledge-label-layer'
     const renderLabels = labelsRenderer.render.bind(labelsRenderer)
@@ -332,10 +319,10 @@ onBeforeUnmount(() => {
   renderer?.forceContextLoss()
   for (const visual of visuals.values()) {
     visual.sphere.material.dispose()
-    ;(visual.halo.material as SpriteMaterial).dispose(); (visual.flare.material as SpriteMaterial).dispose()
+    ;(visual.halo.material as SpriteMaterial).dispose()
     visual.caption.element.remove()
   }
-  visuals.clear(); sphereGeometry.dispose(); glowTexture?.dispose(); flareTexture?.dispose()
+  visuals.clear(); sphereGeometry.dispose(); glowTexture?.dispose()
   stars?.geometry.dispose(); (stars?.material as PointsMaterial | undefined)?.dispose()
   labelsRenderer?.domElement.remove()
 })

@@ -147,7 +147,7 @@ watch(progress, value => saveProgress(value), { deep: true })
 watch(() => route.query.node, value => {
   if (typeof value === 'string' && nodeById.has(value) && value !== selectedId.value) chooseNode(value)
 })
-watch(viewMode, () => { expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set() })
+watch(viewMode, () => { sceneRootId.value = selectedId.value; expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set() })
 watch(selectedId, async value => {
   if (route.query.node !== value) router.replace({ query: { ...route.query, node: value } })
   await nextTick()
@@ -178,7 +178,7 @@ function onReadScroll(event: Event): void {
 function chooseNode(id: string): void {
   if (!nodeById.has(id)) return
   if (id !== selectedId.value) detailAnchor.value = undefined
-  if (!visibleIds.value.has(id)) {
+  if (!visibleIds.value.has(id) || (viewMode.value !== 'all' && sceneRootId.value !== id)) {
     sceneRootId.value = id
     expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set()
   }
@@ -203,6 +203,11 @@ function focusSelected(): void {
   sceneRootId.value = selectedId.value
   expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set()
   if (viewMode.value === 'all') viewMode.value = 'one'
+}
+function setViewRange(mode: 'all' | 'one' | 'two'): void {
+  sceneRootId.value = selectedId.value
+  expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set()
+  viewMode.value = mode
 }
 function fallBackTo2D(): void {
   graphDimension.value = '2d'
@@ -355,9 +360,9 @@ onMounted(() => {
             <button type="button" :class="{ active: graphDimension === '3d' }" @click="graphDimension = '3d'">3D {{ locale === 'zh-CN' ? '星图' : 'space' }}</button>
             <button type="button" :class="{ active: graphDimension === '2d' }" @click="graphDimension = '2d'">2D</button>
             <button type="button" @click="focusSelected">{{ locale === 'zh-CN' ? '以所选为中心' : 'Focus selected' }}</button>
-            <button type="button" :class="{ active: viewMode === 'one' }" @click="viewMode = 'one'">1{{ t('learning.hop') }}</button>
-            <button type="button" :class="{ active: viewMode === 'two' }" @click="viewMode = 'two'">2{{ t('learning.hop') }}</button>
-            <button type="button" :class="{ active: viewMode === 'all' }" @click="viewMode = 'all'">{{ t('learning.fullGraph') }}</button>
+            <button type="button" :class="{ active: viewMode === 'one' }" @click="setViewRange('one')">1{{ t('learning.hop') }}</button>
+            <button type="button" :class="{ active: viewMode === 'two' }" @click="setViewRange('two')">2{{ t('learning.hop') }}</button>
+            <button type="button" :class="{ active: viewMode === 'all' }" @click="setViewRange('all')">{{ t('learning.fullGraph') }}</button>
           </div>
         </div>
         <div ref="graphStage" class="learning-graph-stage" @keydown.esc="readerOpen = false">
