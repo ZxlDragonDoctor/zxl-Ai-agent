@@ -67,7 +67,7 @@ Workflow 中不直接使用 JDBC、HTTP、模型 SDK、线程池或 `Thread.slee
 | Activity 永久错误 | 是否停止重试，错误是否适合返回用户？ |
 | 实现修改后重放旧历史 | 是否保持确定性？不兼容改动怎样版本化？ |
 
-实现阶段经用户要求后，使用 `TestWorkflowEnvironment` 做时间跳跃与受控集成检查，并补真实本地服务/Worker 重启记录。不能把内存测试服务当成真实持久化重启证据。依据：[Java 测试指南](https://docs.temporal.io/develop/java/best-practices/testing-suite)、[Workflow 版本化](https://docs.temporal.io/develop/java/workflows/versioning)。本次只发布任务，不运行这些检查。
+实现阶段默认使用 `TestWorkflowEnvironment` 做时间跳跃与受控集成检查，并补真实本地服务/Worker 重启记录；用户已于 2026-10-23 授权每课默认测试验收。不能把内存测试服务当成真实持久化重启证据。依据：[Java 测试指南](https://docs.temporal.io/develop/java/best-practices/testing-suite)、[Workflow 版本化](https://docs.temporal.io/develop/java/workflows/versioning)。本课当前只发布任务，尚未实现 Temporal，因此没有这些检查的通过证据。
 
 ### 任务六：写一份架构选择记录
 
