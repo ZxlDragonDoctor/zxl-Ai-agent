@@ -1,6 +1,6 @@
 # 第九课：任务持久化与故障恢复
 
-发布日期：2026-10-22。前置：[第八课有限重试与幂等](08-retries-and-idempotency.md)。**本文件是可学习、可实现的任务包；本课尚未实现数据库、恢复 worker 或重启验收。**
+发布日期：2026-10-22。前置：[第八课有限重试与幂等](08-retries-and-idempotency.md)。**本文件保留完整学习任务；本课已实现文件型 H2/JDBC 持久工单实验，当前证据和边界见 [实现记录](09-implementation.md)。**
 
 本课目标：应用重启后仍能查询原运行和操作结果；通过数据库版本与租约控制任务领取及迟到提交；将第八课的本地工单去重迁入真实事务。围绕一个完整功能单元集中验收，可按以下六个单元逐次学习。
 
@@ -16,7 +16,7 @@ Spring Boot 类比：订单状态写入数据库，定时工作者查出待处�
 
 先读 `multiagent/runtime/RunRegistry.java` 的登记、查询和清理；读 `multiagent/execution/WorkflowRun.java` 与 `multiagent/model/TaskLifecycle.java` 的状态不变量；读 `ticket/OperationLedger.java` 的成功重放、参数冲突和不确定结果。以上路径以 `src/main/java/com/zxl/zxlaiagent/` 为根。
 
-当前数据库仓储尚未建立。建议先用本地 PostgreSQL，通过迁移文件管理表结构；业务代码沿用现有 Java 17 / Spring Boot 3.4，使用 JDBC 实现几条关键 SQL，更容易看清事务与条件更新。选用 JPA 也可以，但要实际理解生成的 SQL。数据库配置从环境或不提交的本地文件注入。
+当前使用 Java 17 / Spring Boot 3.4、文件型 H2、Flyway 和 JDBC 短事务实现六张表。默认无需 Docker；可配置 PostgreSQL URL，但 PostgreSQL 方言和多实例行为尚未验收。数据库只在 `lesson9-demo` profile 中初始化，不改变原多 Agent 编排。数据库配置从环境或不提交的本地文件注入。
 
 ## 3. 六个关联工程任务
 
@@ -33,11 +33,13 @@ Spring Boot 类比：订单状态写入数据库，定时工作者查出待处�
 
 表中的 scope 当前可使用固定演示用户作用域，明确不是生产认证。未来来自第 17 课的可信身份。事件 payload 不保存密钥、完整模型隐含推理或无界工具输出。
 
+上表是通用建模任务。当前单工单实现将输入直接保存为 `title/description` 列，操作结果通过 `ticket_id` 关联，事件为 `payload_json`；没有额外的 `input_json/result_json` 列。实际字段以 V1 迁移为准，扩展任意任务时再设计输入/结果版本。
+
 产出：一份 ER 图、一份迁移脚本、一份状态转换表；说明运行状态由数据库负责，内存只做执行资源管理。先保留现有状态机终态保护。
 
 ### 任务二：实现仓储和短事务
 
-建立 `RunRepository`、`TaskRepository`、`OperationRepository` 的接口和 JDBC 实现。创建运行时将 run、初始 task 和“已接收”事件在一个短事务中提交。状态更新使用 `WHERE id=? AND version=? AND status IN (...)`，受影响行数为 0 必须显式识别竞争或终态冲突，不能静默当成功。
+当前使用 `PersistentWorkflowRepository` 聚合一个本地工单运行的事务，避免把同库原子提交拆成独立调用。未来扩大业务后可再拆分只读仓储。创建运行时将 run、初始 task 和“已接收”事件在一个短事务中提交。状态更新使用 `WHERE id=? AND version=? AND status IN (...)`，受影响行数为 0 必须显式识别竞争或终态冲突，不能静默当成功。
 
 读取 API 返回数据库中的结果；JVM 中未找到句柄不能直接断言“运行不存在”。调用模型、远程工具或等待退避在事务外执行。结果回来后，再用带版本/租约令牌的短事务提交。
 
@@ -99,7 +101,7 @@ WHERE id = :task AND version = :expected_version
 | 停机时间耗尽原 deadline | 恢复为超时，不重新给足预算 |
 | 写入结果无法确认 | 明确不确定/需核对，禁止无依据重写 |
 
-验收报告注明数据库版本、迁移版本、模型/工具替身、故障点、期望、实际记录和未覆盖范围。当前这张表是下一课的验收要求，尚未执行。
+验收报告注明数据库版本、迁移版本、模型/工具替身、故障点、期望、实际记录和未覆盖范围。以上是完整验收要求；实际执行部分与未覆盖部分见 [实现记录](09-implementation.md)，不能把代码存在等同于全部验收。
 
 ## 4. 完成后你应能独立解释
 
@@ -110,4 +112,4 @@ WHERE id = :task AND version = :expected_version
 5. 如何避免重启后每个任务都重新领取完整 90 秒预算？
 6. 第九课自建恢复与第十课 Temporal 的价值、代价和幂等责任如何比较？
 
-建议先独立完成任务一的数据模型和状态转换表，再阅读后面的实现提示。工程状态在 `/learning?node=lesson-09` 仍标记“待实现”；你的掌握状态与笔记由自己记录。
+建议先独立完成任务一的数据模型和状态转换表，再阅读实现记录。工程状态在 `/learning?node=lesson-09` 为本地实验已实现；你的掌握状态与笔记由自己记录。下一课是 Temporal 工作流编排。
