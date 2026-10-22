@@ -30,6 +30,9 @@ const reader = ref<HTMLElement>()
 const graphStage = ref<HTMLElement>()
 const stageSize = ref({ width: 1000, height: 650 })
 const detailAnchor = ref<{ x: number; y: number; width: number; height: number; visible: boolean }>()
+const readerPosition = ref<{ x: number; y: number }>()
+const readerDragging = ref(false)
+let readerDrag: { pointerId: number; clientX: number; clientY: number; x: number; y: number } | undefined
 let stageObserver: ResizeObserver | undefined
 const readerPlacement = computed(() => {
   const { width, height } = stageSize.value
@@ -39,10 +42,37 @@ const readerPlacement = computed(() => {
   const anchor = detailAnchor.value
   const x = anchor?.visible ? anchor.x : width * .48
   const y = anchor?.visible ? anchor.y : height * .4
-  const left = compact ? 12 : Math.max(12, Math.min(width - cardWidth - 12, x + cardWidth + 36 < width ? x + 30 : x - cardWidth - 30))
-  const top = compact ? height - cardHeight - 48 : Math.max(100, Math.min(height - cardHeight - 48, y - 72))
+  const defaultLeft = compact ? 12 : Math.max(12, Math.min(width - cardWidth - 12, x + cardWidth + 36 < width ? x + 30 : x - cardWidth - 30))
+  const defaultTop = compact ? height - cardHeight - 48 : Math.max(100, Math.min(height - cardHeight - 48, y - 72))
+  const left = Math.max(8, Math.min(width - cardWidth - 8, readerPosition.value?.x ?? defaultLeft))
+  const top = Math.max(8, Math.min(height - Math.max(200, cardHeight) - 8, readerPosition.value?.y ?? defaultTop))
   return { left: `${left}px`, top: `${top}px`, width: `${cardWidth}px`, height: `${Math.max(200, cardHeight)}px` }
 })
+function beginReaderDrag(event: PointerEvent): void {
+  if (event.button !== 0 || (event.target as Element).closest('button')) return
+  event.preventDefault()
+  readerDrag = { pointerId: event.pointerId, clientX: event.clientX, clientY: event.clientY,
+    x: parseFloat(readerPlacement.value.left), y: parseFloat(readerPlacement.value.top) }
+  readerPosition.value = { x: readerDrag.x, y: readerDrag.y }
+  readerDragging.value = true
+  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+}
+function moveReader(event: PointerEvent): void {
+  if (!readerDrag || readerDrag.pointerId !== event.pointerId) return
+  readerPosition.value = {
+    x: Math.max(8, Math.min(stageSize.value.width - parseFloat(readerPlacement.value.width) - 8, readerDrag.x + event.clientX - readerDrag.clientX)),
+    y: Math.max(8, Math.min(stageSize.value.height - parseFloat(readerPlacement.value.height) - 8, readerDrag.y + event.clientY - readerDrag.clientY)),
+  }
+}
+function endReaderDrag(event: PointerEvent): void {
+  if (readerDrag?.pointerId !== event.pointerId) return
+  readerDrag = undefined; readerDragging.value = false
+  const bar = event.currentTarget as HTMLElement
+  if (bar.hasPointerCapture(event.pointerId)) bar.releasePointerCapture(event.pointerId)
+}
+function moveReaderWithKeyboard(x: number, y: number): void {
+  readerPosition.value = { x: parseFloat(readerPlacement.value.left) + x, y: parseFloat(readerPlacement.value.top) + y }
+}
 const detailConnector = computed(() => {
   const point = detailAnchor.value
   if (!point?.visible || stageSize.value.width < 680 || graphDimension.value !== '3d') return ''
@@ -149,12 +179,13 @@ watch(() => route.query.node, value => {
 })
 watch(viewMode, () => { sceneRootId.value = selectedId.value; expandedIds.value = new Set(); collapsedIds.value = new Set(); dismissedIds.value = new Set() })
 watch(selectedId, async value => {
+  readerPosition.value = undefined
   if (route.query.node !== value) router.replace({ query: { ...route.query, node: value } })
   await nextTick()
   if (reader.value) reader.value.scrollTop = progress.value.records[value]?.scrollTop ?? 0
 })
 watch(readerOpen, async open => {
-  if (!open) return
+  if (!open) { readerPosition.value = undefined; readerDrag = undefined; readerDragging.value = false; return }
   await nextTick()
   if (reader.value) reader.value.scrollTop = progress.value.records[selectedId.value]?.scrollTop ?? 0
 })
@@ -372,8 +403,14 @@ onMounted(() => {
         <KnowledgeGraphCanvas v-else :nodes="visibleNodes" :edges="visibleEdges" :selected-id="selectedId" :highlighted-edge-ids="highlightedEdgeIds"
           :expanded-node-ids="expandedNodeIds" :reduced-motion="reducedMotion" @select="chooseNode" @expand="toggleExpansion" @dismiss="dismissNode" @reset="restoreScene" @read="openReader" />
         <svg v-if="readerOpen && detailConnector" class="learning-detail-connector" :viewBox="`0 0 ${stageSize.width} ${stageSize.height}`" aria-hidden="true"><path :d="detailConnector"/><circle :cx="detailAnchor?.x" :cy="detailAnchor?.y" r="7"/></svg>
-      <aside v-if="readerOpen" class="learning-reader learning-reader--floating" :style="readerPlacement" role="region" :aria-label="t('learning.reader')" @pointerdown.stop @wheel.stop>
-        <div class="learning-reader__bar"><span>✦ {{ locale === 'zh-CN' ? '正在探索' : 'EXPLORING' }} · {{ kindLabel(selectedNode.kind) }}</span><button type="button" :aria-label="locale === 'zh-CN' ? '关闭详情' : 'Close details'" @click="readerOpen = false">×</button></div>
+      <aside v-if="readerOpen" class="learning-reader learning-reader--floating" :class="{ 'learning-reader--dragging': readerDragging }" :style="readerPlacement" role="region" :aria-label="t('learning.reader')" @pointerdown.stop @wheel.stop>
+        <div class="learning-reader__bar" tabindex="0" :aria-label="locale === 'zh-CN' ? '拖动标题栏移动窗口，也可使用方向键' : 'Drag the title bar or use arrow keys to move this window'"
+          @pointerdown="beginReaderDrag" @pointermove="moveReader" @pointerup="endReaderDrag" @pointercancel="endReaderDrag" @lostpointercapture="endReaderDrag"
+          @keydown.left.self.prevent="moveReaderWithKeyboard(-20, 0)" @keydown.right.self.prevent="moveReaderWithKeyboard(20, 0)"
+          @keydown.up.self.prevent="moveReaderWithKeyboard(0, -20)" @keydown.down.self.prevent="moveReaderWithKeyboard(0, 20)">
+          <span>⠿ {{ locale === 'zh-CN' ? '拖动移动' : 'DRAG TO MOVE' }} · {{ kindLabel(selectedNode.kind) }}</span>
+          <div class="learning-reader__window-actions"><button v-if="readerPosition" type="button" :aria-label="locale === 'zh-CN' ? '回到节点旁' : 'Return beside the node'" :title="locale === 'zh-CN' ? '回到节点旁' : 'Return beside the node'" @click="readerPosition = undefined">↺</button><button type="button" :aria-label="locale === 'zh-CN' ? '关闭详情' : 'Close details'" @click="readerOpen = false">×</button></div>
+        </div>
         <div ref="reader" class="learning-reader__scroll" @scroll.passive="onReadScroll">
           <div class="learning-reader__eyebrow"><span>{{ kindLabel(selectedNode.kind) }}</span><span v-if="selectedNode.number">{{ lessonNumber(selectedNode) }}</span></div>
           <h2>{{ title(selectedNode) }}</h2>
@@ -499,6 +536,7 @@ onMounted(() => {
 .learning-detail-connector path{fill:none;stroke:#a1d9ff;stroke-width:1;opacity:.7}.learning-detail-connector circle{fill:none;stroke:#a1d9ff;stroke-width:1;opacity:.6}
 .learning-page .learning-reader--floating{position:absolute;z-index:8;min-height:0;max-height:none;grid-column:auto;display:flex;flex-direction:column;overflow:hidden;border:1px solid #a4c5df88;border-radius:14px;background:#f7f9fc;box-shadow:0 24px 70px #0007,0 0 0 1px #ffffff18;animation:reader-appear .18s ease-out}
 .learning-reader__bar{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;padding:10px 14px;border-bottom:1px solid #dbe5ee;background:#eaf0f7;color:#47657e;font-size:11px;font-weight:600;letter-spacing:.05em}
+.learning-reader__bar{cursor:grab;touch-action:none;user-select:none}.learning-reader--dragging .learning-reader__bar{cursor:grabbing}.learning-reader__bar:focus-visible{outline:2px solid #287dc3;outline-offset:-3px}.learning-reader__window-actions{display:flex;gap:5px}
 .learning-reader__bar button{display:grid;place-items:center;width:28px;height:28px;border:1px solid #cad9e7;border-radius:7px;background:#f9fcff;color:#37566e;font-size:20px;cursor:pointer}
 .learning-reader__bar button:hover{background:#dce9f5}.learning-reader__bar button:focus-visible{outline:2px solid #287dc3;outline-offset:2px}
 .learning-reader--floating .learning-reader__scroll{height:auto;min-height:0;flex:1;overscroll-behavior:contain;padding:17px 20px 24px}
