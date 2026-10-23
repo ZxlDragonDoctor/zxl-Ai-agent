@@ -1,6 +1,8 @@
 package com.zxl.zxlaiagent.conversation.service;
 
 import com.zxl.zxlaiagent.agent.model.*;
+import com.zxl.zxlaiagent.agent.ToolCallAgent;
+import com.zxl.zxlaiagent.conversation.context.ContextAssembler;
 import com.zxl.zxlaiagent.conversation.model.*;
 import com.zxl.zxlaiagent.conversation.repository.ConversationRepository;
 import com.zxl.zxlaiagent.conversation.agent.ConversationAgentRegistry;
@@ -37,6 +39,16 @@ public class AgentConversationService {
             throw ConversationService.badRequest("消息不能为空且不能超过 12000 个字符");
         }
         String prompt = message.strip();
+        ToolCallAgent preparedAgent = null;
+        ContextAssembler.Plan preparedContext = null;
+        if (conversationId == null) {
+            // Validate against the actual provider before creating any stored conversation.
+            // The ephemeral metadata is never saved and contains no prior messages.
+            preparedAgent = agents.require("manus").create();
+            Instant at = Instant.now();
+            var empty = new Conversation(UUID.randomUUID(), "新会话", at, at, 0, List.of(), List.of(), "manus");
+            preparedContext = window.prepare(empty, preparedAgent, prompt);
+        }
         UUID id = conversationId == null ? conversations.create(null).id() : ConversationService.parseId(conversationId);
         conversations.get(id); // 懒恢复重启遗留的任务；不把它们当作仍在运行。
         var lease = guard.acquire(id);
@@ -44,8 +56,9 @@ public class AgentConversationService {
         boolean started = false;
         try {
             Conversation previous = conversations.require(id);
-            var history = window.restore(previous);
-            var agent = agents.require(previous.agentType()).create();
+            var agent = preparedAgent == null ? agents.require(previous.agentType()).create() : preparedAgent;
+            var context = preparedContext == null ? window.prepare(previous, agent, prompt) : preparedContext;
+            var history = context.history();
             agent.restoreMessages(history);
             agent.setConversationId(id.toString());
             agent.setRunId(runId.toString());
@@ -85,6 +98,15 @@ public class AgentConversationService {
             lease.close();
             throw error;
         }
+    }
+
+    /** Read-only run-start projection; the summary is generated from stored messages, never accepted from the request. */
+    public com.zxl.zxlaiagent.conversation.context.ContextAssembler.Plan previewContext(String conversationId, String prompt) {
+        if (prompt == null || prompt.isBlank() || prompt.length() > 12000)
+            throw ConversationService.badRequest("消息不能为空且不能超过 12000 个字符");
+        var conversation = conversations.require(ConversationService.parseId(conversationId));
+        var agent = agents.require(conversation.agentType()).create();
+        return window.prepare(conversation, agent, prompt.strip());
     }
 
     private void finish(UUID id, RunRecord run, MessageRecord user, int historySize,
