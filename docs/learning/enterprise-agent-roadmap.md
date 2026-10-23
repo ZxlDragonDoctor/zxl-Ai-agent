@@ -86,7 +86,7 @@ flowchart TB
 
 | 课次 | 主题 | 工程实践 | 完成标准与面试追问 | 参考 |
 | --- | --- | --- | --- | --- |
-| 9，独立持久化实验已实现 | 数据建模与任务恢复 | [六项任务](09-persistence-and-recovery.md)与[实现证据](09-implementation.md)：六表、Flyway/JDBC、文件 H2、条件领取、租约/fencing、同库工单去重和有界恢复 | 单 run 单 CREATE_TICKET；原多 Agent DAG 未迁移，PostgreSQL/生产容量证据以实现记录为准 | 自定实践 |
+| 9，独立实验已实现并补齐自动验收 | 数据建模与任务恢复 | [六项任务](09-persistence-and-recovery.md)与[实现证据](09-implementation.md)：六表、Flyway/JDBC、文件 H2、条件领取、租约/fencing、同库工单去重和有界恢复 | 34项定向测试通过（本课18+相关16）；单 CREATE_TICKET，原多 Agent DAG 未迁移；PostgreSQL/生产容量未验收 | 自定实践 |
 | 10，任务包已发布、工程待实现 | 持久化工作流 | [六项完整任务](10-durable-workflows-with-temporal.md)：边界、Workflow/Activity、预算、等待与取消、故障对照、选型 ADR | 待验收：Worker 重启与历史回放；解释 Activity 重试和业务幂等各自责任 | S1、S2 |
 
 第 9 课将第 8 课的操作记录持久化，补上重启后的去重与恢复，用于理解状态与并发问题；第 10 课用于比较和选型。主项目在完成架构决策后选定一种协调方式，明确状态的权威来源，避免两套调度器同时驱动同一任务。
