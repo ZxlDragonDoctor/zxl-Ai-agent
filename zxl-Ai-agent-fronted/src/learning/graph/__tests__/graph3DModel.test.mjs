@@ -2,6 +2,44 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createSpatialGraph, focusDestination, spatialNodeRadius, neighborhoodDestination, spatialLinkCurve } from '../graph3DModel.ts'
 
+test('repeated graph updates retain live physics identity without mutating catalogue records', () => {
+  const catalogue = [Object.freeze({id:'A',kind:'lesson'}), Object.freeze({id:'B',kind:'concept'})]
+  const first = createSpatialGraph(catalogue, [])
+  first.nodes[0].x = 15
+  for (let i = 0; i < 12; i++) {
+    const next = createSpatialGraph(catalogue, [], first.nodes)
+    assert.equal(next.nodes[0], first.nodes[0], 'stable IDs must retain their scene-bound physics objects')
+    assert.equal(next.nodes[0].x, 15)
+    assert.notEqual(next.nodes[0], catalogue[0])
+  }
+})
+
+test('real Three scene retains cached node meshes across neighborhood and full-graph updates', async () => {
+  // Only the scene/physics layer: no browser, WebGL context, network, or local page access.
+  const { Group, Mesh, SphereGeometry, MeshBasicMaterial } = await import('three')
+  globalThis.window ??= {}
+  const { default: ThreeForceGraph } = await import('three-forcegraph')
+  const visuals = new Map()
+  const scene = new ThreeForceGraph().nodeThreeObject(node => {
+    if (!visuals.has(node.id)) visuals.set(node.id, new Group().add(new Mesh(new SphereGeometry(1), new MeshBasicMaterial())))
+    return visuals.get(node.id)
+  })
+  const catalogue = [{id:'A',kind:'lesson'},{id:'B',kind:'concept'}]
+  let data = createSpatialGraph(catalogue, [])
+  const update = data => new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('scene update did not finish')), 2000)
+    scene.onFinishUpdate(() => { clearTimeout(timer); resolve() }).graphData(data)
+  })
+  try {
+    await update(data)
+    for (let i = 0; i < 6; i++) {
+      data = createSpatialGraph(i % 2 ? catalogue : catalogue.slice(0, 1), [], data.nodes)
+      await update(data)
+      for (const node of data.nodes) assert.equal(visuals.get(node.id).parent, scene, `star ${node.id} was detached on update ${i}`)
+    }
+  } finally { await update({nodes:[],links:[]}) }
+})
+
 test('physics mutates copies and degrees count unique valid neighbors', () => {
   const nodes = [Object.freeze({ id:'A', kind:'lesson' }), Object.freeze({ id:'B', kind:'concept' })]
   const edges = [Object.freeze({id:'ab',from:'A',to:'B'}), Object.freeze({id:'ba',from:'B',to:'A'}), Object.freeze({id:'missing',from:'B',to:'C'})]

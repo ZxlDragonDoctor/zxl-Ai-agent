@@ -26,9 +26,15 @@ export function createSpatialGraph(nodes: GraphNode[], edges: GraphEdge[], previ
     nodes: nodes.map(node => {
       const copy: SpatialNode = { ...node, degree: degree.get(node.id)?.size ?? 0 }
       const old = oldNodes.get(node.id)
-      if (old) for (const key of positionKeys) {
-        const value = old[key]
-        if (typeof value === 'number' && Number.isFinite(value)) copy[key] = value
+      if (old) {
+        for (const key of positionKeys) {
+          const value = old[key]
+          if (typeof value === 'number' && Number.isFinite(value)) copy[key] = value
+          else delete old[key]
+        }
+        // The scene mapper keys by object identity, not node.id. Replacing a live
+        // node while reusing its cached Group lets old-node cleanup detach the new star.
+        return Object.assign(old, copy)
       }
       return copy
     }),
