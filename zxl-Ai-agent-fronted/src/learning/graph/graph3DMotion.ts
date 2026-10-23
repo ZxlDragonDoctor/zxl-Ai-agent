@@ -2,6 +2,11 @@ import type { SpatialNode } from './graph3DModel'
 
 interface RestPoint { x: number; y: number; z: number; phase: number }
 
+/** Keep reading/camera behavior separate from animation lifetime. */
+export function spatialMotionPolicy(animate: boolean, reading: boolean) {
+  return { cooldownTicks: animate ? Infinity : 0, cooldownTime: Infinity, alphaMin: 0, autoOrbit: animate && !reading }
+}
+
 /** A bounded, low-energy force over physics copies; links follow the same coordinates. */
 export function createSpatialMotion(clock = () => performance.now()) {
   let nodes: SpatialNode[] = [], enabled = true, selected = ''

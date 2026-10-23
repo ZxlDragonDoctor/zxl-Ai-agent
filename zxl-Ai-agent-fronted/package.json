@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test:graph": "node --experimental-strip-types --test src/learning/graph/__tests__/graphPresentation.test.mjs src/learning/graph/__tests__/graph3DModel.test.mjs src/learning/graph/__tests__/graph3DMotion.test.mjs",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview"
   },

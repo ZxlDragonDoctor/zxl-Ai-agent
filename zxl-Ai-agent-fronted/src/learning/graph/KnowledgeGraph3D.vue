@@ -8,7 +8,7 @@ import type { ConfigOptions, ForceGraph3DInstance } from '3d-force-graph'
 import type { GraphEdge, GraphNode } from './model'
 import { createSpatialGraph, neighborhoodDestination, spatialNodeRadius, spatialLinkCurve } from './graph3DModel'
 import { incidentSelection } from './graphPresentation'
-import { createSpatialMotion } from './graph3DMotion'
+import { createSpatialMotion, spatialMotionPolicy } from './graph3DMotion'
 import type { SpatialLink, SpatialNode } from './graph3DModel'
 import { locale, t } from '../../i18n'
 
@@ -21,6 +21,7 @@ const tr = (cn: string, en: string) => locale.value === 'zh-CN' ? cn : en
 const title = (node: GraphNode) => node.title[locale.value] || node.title['zh-CN']
 const currentNode = computed(() => props.nodes.find(node => node.id === props.selectedId))
 const motion = computed(() => !paused.value && !props.reducedMotion)
+const motionPolicy = computed(() => spatialMotionPolicy(motion.value, !!props.reading))
 const activeId = computed(() => props.reading ? props.selectedId : hovered.value)
 const selection = computed(() => incidentSelection(activeId.value, props.edges))
 const neighborIds = computed(() => selection.value.nodeIds)
@@ -163,7 +164,7 @@ function updateGraph() {
   if (!graph) return
   const data = createSpatialGraph(props.nodes, props.edges, graph.graphData().nodes)
   ambientMotion.setEnabled(motion.value)
-  graph.warmupTicks(motion.value ? (fitted ? 0 : 60) : 180).cooldownTicks(motion.value ? Infinity : 0).graphData(data)
+  graph.warmupTicks(motion.value ? (fitted ? 0 : 60) : 180).cooldownTicks(motionPolicy.value.cooldownTicks).graphData(data)
   refreshAppearance()
   if (focused.value) scheduleFocus(focused.value)
   if (!fitted && props.nodes.length) {
@@ -176,9 +177,9 @@ function syncMotion() {
   const camera = graph.camera() as PerspectiveCamera
   if (props.reading) camera.setViewOffset(graph.width(), graph.height(), graph.width() >= 680 ? graph.width() * .18 : 0, graph.width() < 680 ? graph.height() * .16 : 0, graph.width(), graph.height())
   else camera.clearViewOffset()
-  if (controls) controls.autoRotate = motion.value && !props.reading && !orbitHeld && !hovered.value
+  if (controls) controls.autoRotate = motionPolicy.value.autoOrbit && !orbitHeld && !hovered.value
   ambientMotion.setEnabled(motion.value)
-  graph.cooldownTicks(motion.value ? Infinity : 0)
+  graph.cooldownTicks(motionPolicy.value.cooldownTicks).cooldownTime(motionPolicy.value.cooldownTime).d3AlphaMin(motionPolicy.value.alphaMin)
   refreshAppearance()
 }
 function holdOrbit() {
@@ -288,11 +289,11 @@ onMounted(async () => {
       .linkOpacity(.65).linkDirectionalParticleWidth(1.2).linkDirectionalParticleSpeed(.004)
       .linkCurvature(link => spatialLinkCurve(link.id).curvature).linkCurveRotation(link => spatialLinkCurve(link.id).rotation)
       .linkDirectionalParticleColor(() => '#99edff').linkLabel(link => tooltip(relationship(link.type)))
-      .d3AlphaMin(0).d3AlphaDecay(.025).d3VelocityDecay(.3).cooldownTime(Infinity)
+      .d3AlphaMin(motionPolicy.value.alphaMin).d3AlphaDecay(.025).d3VelocityDecay(.3).cooldownTime(motionPolicy.value.cooldownTime)
       .onNodeClick(node => activateNode(node.id))
       .onNodeDrag(() => holdOrbit())
       .onNodeDragEnd(node => { ambientMotion.reanchor(node.id); if (motion.value) { ambientMotion.pulse(node.id, incidentSelection(node.id, props.edges).nodeIds); graph?.d3ReheatSimulation() }; releaseOrbit() })
-      .onNodeHover(node => { hovered.value = node?.id ?? ''; if (controls) controls.autoRotate = motion.value && !props.reading && !orbitHeld && !node })
+      .onNodeHover(node => { hovered.value = node?.id ?? ''; if (controls) controls.autoRotate = motionPolicy.value.autoOrbit && !orbitHeld && !node })
       .onLinkClick(link => { selectedEdge.value = link; emit('close'); holdOrbit(); releaseOrbit() })
       .onBackgroundClick(() => { focused.value = ''; hovered.value = ''; selectedEdge.value = undefined; emit('close'); refreshAppearance() })
     updateResolution()

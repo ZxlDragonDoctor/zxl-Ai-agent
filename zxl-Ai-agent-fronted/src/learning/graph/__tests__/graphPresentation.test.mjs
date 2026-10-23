@@ -3,6 +3,20 @@ import assert from 'node:assert/strict'
 import { discoverScene, edgeGeometry, captionLines, revealSelection, incidentSelection } from '../graphPresentation.ts'
 
 const edges = [{ from: 'A', to: 'B' }, { from: 'A', to: 'C' }, { from: 'B', to: 'D' }, { from: 'C', to: 'D' }, { from: 'D', to: 'E' }]
+test('hop neighborhoods use shortest distance and deduplicate cyclic and shared paths', () => {
+  const cyclic = [...edges, {from:'B',to:'C'}, {from:'D',to:'A'}]
+  assert.deepEqual([...discoverScene('A',1,cyclic,new Set(),new Set())].sort(), ['A','B','C','D'])
+  assert.deepEqual([...discoverScene('A',2,cyclic,new Set(),new Set())].sort(), ['A','B','C','D','E'])
+})
+test('incoming relationships count as neighbors and disconnected nodes stay hidden', () => {
+  const relationships = [{from:'B',to:'A'},{from:'C',to:'B'},{from:'X',to:'Y'}]
+  assert.deepEqual([...discoverScene('A',1,relationships,new Set(),new Set())].sort(), ['A','B'])
+  assert.deepEqual([...discoverScene('A',2,relationships,new Set(),new Set())].sort(), ['A','B','C'])
+})
+test('expanded cycles terminate without duplicating node identity', () => {
+  const cycle = [{from:'A',to:'B'},{from:'B',to:'C'},{from:'C',to:'A'}]
+  assert.deepEqual([...discoverScene('A',1,cycle,new Set(['A','B','C']),new Set())].sort(), ['A','B','C'])
+})
 test('collapse preserves shared neighbors and removes unreachable expanded branches', () => {
   assert.deepEqual([...discoverScene('A', 1, edges, new Set(['B', 'C', 'D']), new Set(['B']))].sort(), ['A','B','C','D','E'])
   assert.deepEqual([...discoverScene('A', 1, edges, new Set(['B','D']), new Set(['B']))].sort(), ['A','B','C'])
