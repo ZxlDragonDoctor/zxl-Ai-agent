@@ -304,7 +304,7 @@ npm run build
 - [第六课：生命周期与失败传播](docs/learning/06-lifecycle-and-failure-propagation.md)：六项任务已完成；[48 个专项与相关回归、真实模型及故障页面证据](docs/learning/06-implementation.md)。
 - [第七课：截止时间、取消与并发容量](docs/learning/07-deadlines-cancellation-and-capacity.md)：任务包已发布，覆盖统一预算、协作取消、资源清理和有界排队。
 - [第十一课：上下文工程、裁剪与摘要](docs/learning/11-context-engineering.md)：统一会话初始预算、完整工具组与可追溯摘录已实现；[测试及边界](docs/learning/11-implementation.md)分别记录自动验收与未覆盖范围。
-- [第十二课：知识接入与增量索引](docs/learning/12-knowledge-ingestion-and-indexing.md)：完整任务包已发布，工程待实现；通过前端 `/learning?node=lesson-12` 查看关联知识。第十课 Temporal 仍独立待实现。
+- [第十二课：知识接入与增量索引](docs/learning/12-knowledge-ingestion-and-indexing.md)：正式教学改用 **PostgreSQL + pgvector**，保留 SimpleVectorStore 作内存对照与离线单元测试。任务包括真实数据库迁移、维度/检索索引、文档增量与删除、短事务并发和重启恢复；课程仍待实现，尚未部署或验收 PG。通过前端 `/learning?node=lesson-12` 查看关联知识。第十课 Temporal 仍独立待实现。
 
 ![真实工具结果与结束原因](docs/images/lesson3-acceptance.jpg)
 

@@ -132,7 +132,7 @@ Agent Hub 提交目标
 
 第十一课：[上下文工程、裁剪与摘要](11-context-engineering.md)，从第四课会话恢复扩展到预算分配、完整工具组和可追溯摘录；操作、验证与限制见[实现记录](11-implementation.md)。第十课不作为本课的硬先修，仍独立保持待实现。
 
-第十二课：[知识接入、分块与增量索引](12-knowledge-ingestion-and-indexing.md)，完整学习任务覆盖文档身份、版本、切块、Embedding、去重、更新与删除；本批只发布任务包，不标记工程完成。
+第十二课：[知识接入、分块与增量索引](12-knowledge-ingestion-and-indexing.md)，2026-10-24 调整为 **PostgreSQL + pgvector 正式主线，SimpleVectorStore 保留作内存对照与离线单元测试**。任务覆盖真实数据库迁移、维度与检索索引、文档身份、分块、Embedding、增量发布、去重删除、事务并发与重启恢复；必须独立完成真实 PG 集成验收。当前仍是任务包，数据库和课程工程尚未实现，内存测试不能代替 PG 通过。
 
 ## 参考资料
 
