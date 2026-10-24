@@ -9,6 +9,7 @@ import type { GraphEdge, GraphNode } from './model'
 import { createSpatialGraph, neighborhoodDestination, spatialNodeRadius, spatialLinkCurve } from './graph3DModel'
 import { incidentSelection } from './graphPresentation'
 import { createSpatialMotion, spatialMotionPolicy } from './graph3DMotion'
+import { createFocusSettler } from './graph3DFocus'
 import type { SpatialLink, SpatialNode } from './graph3DModel'
 import { locale, t } from '../../i18n'
 
@@ -16,7 +17,7 @@ const props = defineProps<{ nodes: GraphNode[]; edges: GraphEdge[]; selectedId: 
 const emit = defineEmits<{ select: [id: string]; read: [id: string]; browse: []; unavailable: []; close: []; anchor: [point: { x: number; y: number; width: number; height: number; visible: boolean }] }>()
 const host = ref<HTMLElement>(), viewport = ref<HTMLElement>()
 const ready = ref(false), failed = ref(false), paused = ref(false), showLabels = ref(false)
-const hovered = ref(''), focused = ref(''), selectedEdge = ref<GraphEdge>()
+const hovered = ref(''), focused = ref(props.reading ? props.selectedId : ''), selectedEdge = ref<GraphEdge>()
 const tr = (cn: string, en: string) => locale.value === 'zh-CN' ? cn : en
 const title = (node: GraphNode) => node.title[locale.value] || node.title['zh-CN']
 const currentNode = computed(() => props.nodes.find(node => node.id === props.selectedId))
@@ -206,13 +207,13 @@ function flyTo(id: string) {
 }
 function scheduleFocus(id: string) {
   cancelAnimationFrame(focusFrame)
-  let attempts = 0
+  if (!id || !props.nodes.some(node => node.id === id)) return
+  const visibleIds = new Set(props.nodes.map(node => node.id))
+  const expectedIds = [...incidentSelection(id, props.edges).nodeIds].filter(nodeId => visibleIds.has(nodeId))
+  const settled = createFocusSettler(id, expectedIds, performance.now())
   const frame = () => {
-    if (destroyed || !graph) return
-    const ids = incidentSelection(id, props.edges).nodeIds
-    const positioned = graph.graphData().nodes.filter(node => ids.has(node.id))
-      .every(node => [node.x, node.y, node.z].every(Number.isFinite))
-    if (!positioned && attempts++ < 12) { focusFrame = requestAnimationFrame(frame); return }
+    if (destroyed || !graph || focused.value !== id) return
+    if (!settled(graph.graphData().nodes, performance.now())) { focusFrame = requestAnimationFrame(frame); return }
     flyTo(id)
   }
   focusFrame = requestAnimationFrame(frame)

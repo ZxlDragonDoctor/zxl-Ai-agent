@@ -89,7 +89,7 @@ watch(() => props.selectedId, () => {
   if (menuId.value !== props.selectedId) menuId.value = ''
   pendingFocus = true
   nextTick(fitFocused)
-})
+}, { immediate: true })
 
 function point(event: { clientX: number; clientY: number }) {
   const matrix = svgRef.value?.getScreenCTM()
