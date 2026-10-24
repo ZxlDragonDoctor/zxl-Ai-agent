@@ -30,6 +30,7 @@ export function applyAgentEvent(reply: AgentChatMessage, event: AgentStreamEvent
   const flow = reply.flow!
   if (event.runId) reply.runId = event.runId
   if (event.type === 'RUN_STARTED') { flow.phase = 'thinking'; return }
+  if (event.type === 'KNOWLEDGE_RESULT') { reply.knowledgePayload = event.content || ''; return }
   if (event.type === 'RUN_COMPLETED' || event.type === 'RUN_FAILED') {
     flow.endReason = event.endReason || undefined
     const status = event.status === 'limit' ? 'limit' : event.status === 'terminated' ? 'terminated'

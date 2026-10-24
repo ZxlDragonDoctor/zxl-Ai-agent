@@ -61,4 +61,5 @@ export interface AgentChatMessage {
   flow?: AgentFlow
   runId?: string
   answerStep?: number
+  knowledgePayload?: string
 }
