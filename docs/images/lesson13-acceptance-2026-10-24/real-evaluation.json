@@ -1,0 +1,6012 @@
+{
+  "datasetVersion": "synthetic-helpdesk-v1",
+  "snapshotId": "a4f38a784b7cd0c0cfc8b9b4cc5c96f0d5a60c6c0c1871206105f3622e5dabe8",
+  "modelIdentity": "http:text-embedding-v3:acceptance-20261024:1024:9dca9469a42d",
+  "realSemantic": true,
+  "queryCount": 22,
+  "complete": true,
+  "boundary": "固定合成22问；真实PostgreSQL；demo向量仅验证管线，不证明中文语义；单次串行、同问题embedding缓存共享，不是冷暖缓存或并发性能基准；Recall/nDCG排除无答案，MRR包含无答案0分；阈值预设：禁止块=0、错误=0，其余质量指标只观察，不预设混合必胜。 本次重排配置：http-rerank:qwen3-rerank:acceptance-20261024；真实重排成功执行：true；逐题降级与错误见结果。",
+  "config": {
+    "topK": 3,
+    "split": "all",
+    "budgetMs": 120000,
+    "concurrency": 1
+  },
+  "embeddingCalls": 22,
+  "embeddingCacheHits": 44,
+  "elapsedMs": 66474,
+  "strategies": [
+    {
+      "mode": "keyword",
+      "split": "tuning",
+      "metrics": {
+        "recall": 0.875,
+        "mrr": 0.6666666666666666,
+        "ndcg": 0.7437985485104227,
+        "noAnswerCount": 1,
+        "noAnswerEmptyRate": 1,
+        "forbiddenCount": 0,
+        "p50Ms": 496,
+        "p95Ms": 604,
+        "errorCount": 0,
+        "evaluatedCount": 9,
+        "stageLatency": {
+          "index-profile": {
+            "p50Ms": 123,
+            "p95Ms": 150,
+            "samples": 9
+          },
+          "final-visibility": {
+            "p50Ms": 120,
+            "p95Ms": 139,
+            "samples": 9
+          },
+          "keyword": {
+            "p50Ms": 125,
+            "p95Ms": 158,
+            "samples": 9
+          },
+          "rewrite": {
+            "p50Ms": 0,
+            "p95Ms": 0,
+            "samples": 9
+          },
+          "authorization-before-rerank": {
+            "p50Ms": 132,
+            "p95Ms": 188,
+            "samples": 9
+          }
+        }
+      },
+      "queries": [
+        {
+          "queryId": "helpdesk-01",
+          "question": "VPN 提示 809，先排查哪里？",
+          "split": "tuning",
+          "ranking": [
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 0.5,
+            "ndcg": 0.6309297535714574,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 604,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 133,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 158,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 188,
+              "candidateCount": 3
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 118,
+              "candidateCount": 3
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-02",
+          "question": "vpn报错809咋办",
+          "split": "tuning",
+          "ranking": [
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 0.5,
+            "ndcg": 0.6309297535714574,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 518,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 123,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 3
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 139,
+              "candidateCount": 3
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-05",
+          "question": "691 用户名密码不正确怎么办",
+          "split": "tuning",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 537,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 150,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 123,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 148,
+              "candidateCount": 2
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 114,
+              "candidateCount": 2
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-08",
+          "question": "账户锁住了等多久",
+          "split": "tuning",
+          "ranking": [],
+          "score": {
+            "recall": 0,
+            "mrr": 0,
+            "ndcg": 0,
+            "noAnswer": false,
+            "empty": true,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 257,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 121,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 135,
+              "candidateCount": 0
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-11",
+          "question": "密码忘了如何重置",
+          "split": "tuning",
+          "ranking": [
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 495,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 118,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 132,
+              "candidateCount": 2
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 120,
+              "candidateCount": 2
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-13",
+          "question": "MFA 动态码不对",
+          "split": "tuning",
+          "ranking": [
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 496,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 123,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 112,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 133,
+              "candidateCount": 2
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 2
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-16",
+          "question": "打印机离线提交工单要什么信息",
+          "split": "tuning",
+          "ranking": [
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 530,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 143,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 129,
+              "candidateCount": 4
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 132,
+              "candidateCount": 4
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 4
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-19",
+          "question": "VPN691锁定了还忘记密码",
+          "split": "tuning",
+          "ranking": [
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 0.6885288809404667,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 466,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 114,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 112,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 116,
+              "candidateCount": 3
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 3
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-21",
+          "question": "报销发票抬头是什么",
+          "split": "tuning",
+          "ranking": [],
+          "score": {
+            "recall": null,
+            "mrr": 0,
+            "ndcg": null,
+            "noAnswer": true,
+            "empty": true,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 251,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 126,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 0
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "keyword",
+      "split": "holdout",
+      "metrics": {
+        "recall": 0.9090909090909091,
+        "mrr": 0.8461538461538461,
+        "ndcg": 0.9183314735913406,
+        "noAnswerCount": 2,
+        "noAnswerEmptyRate": 0.5,
+        "forbiddenCount": 0,
+        "p50Ms": 525,
+        "p95Ms": 636,
+        "errorCount": 0,
+        "evaluatedCount": 13,
+        "stageLatency": {
+          "index-profile": {
+            "p50Ms": 131,
+            "p95Ms": 233,
+            "samples": 13
+          },
+          "final-visibility": {
+            "p50Ms": 128,
+            "p95Ms": 164,
+            "samples": 13
+          },
+          "keyword": {
+            "p50Ms": 128,
+            "p95Ms": 162,
+            "samples": 13
+          },
+          "rewrite": {
+            "p50Ms": 0,
+            "p95Ms": 0,
+            "samples": 13
+          },
+          "authorization-before-rerank": {
+            "p50Ms": 127,
+            "p95Ms": 176,
+            "samples": 13
+          }
+        }
+      },
+      "queries": [
+        {
+          "queryId": "helpdesk-03",
+          "question": "VPN error 809 UDP 哪些端口",
+          "split": "holdout",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 549,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 131,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 176,
+              "candidateCount": 3
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 113,
+              "candidateCount": 3
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-04",
+          "question": "连接服务器一直没响应，虚拟专网进不去",
+          "split": "holdout",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 535,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 123,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 1
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 134,
+              "candidateCount": 1
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 148,
+              "candidateCount": 1
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-06",
+          "question": "vpn账号密码被拒绝啦",
+          "split": "holdout",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 487,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 131,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 111,
+              "candidateCount": 5
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 114,
+              "candidateCount": 5
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 5
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-07",
+          "question": "VPN 691 能一直重试密码吗",
+          "split": "holdout",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a"
+          ],
+          "score": {
+            "recall": 0.5,
+            "mrr": 1,
+            "ndcg": 0.82623465712856,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 524,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 115,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 4
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 4
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 152,
+              "candidateCount": 4
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-09",
+          "question": "输错五次进不去了",
+          "split": "holdout",
+          "ranking": [
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 458,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 118,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 112,
+              "candidateCount": 1
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 107,
+              "candidateCount": 1
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 119,
+              "candidateCount": 1
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-10",
+          "question": "账号锁定很着急咋找人解开",
+          "split": "holdout",
+          "ranking": [
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 531,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 145,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 148,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 2
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 113,
+              "candidateCount": 2
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-12",
+          "question": "忘记口令，自助门户怎么验证身份",
+          "split": "holdout",
+          "ranking": [
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 619,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 169,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 150,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 136,
+              "candidateCount": 3
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 164,
+              "candidateCount": 3
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-14",
+          "question": "多因素认证换手机咋整",
+          "split": "holdout",
+          "ranking": [
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 507,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 135,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 110,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 118,
+              "candidateCount": 3
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 142,
+              "candidateCount": 3
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-15",
+          "question": "验证器口令过期要校时间吗",
+          "split": "holdout",
+          "ranking": [
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 636,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 167,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 162,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 162,
+              "candidateCount": 2
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 142,
+              "candidateCount": 2
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-17",
+          "question": "打印不了先检查啥",
+          "split": "holdout",
+          "ranking": [
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 526,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 129,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 131,
+              "candidateCount": 4
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 133,
+              "candidateCount": 4
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 131,
+              "candidateCount": 4
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-18",
+          "question": "VPN809还有打印机离线都要处理",
+          "split": "holdout",
+          "ranking": [
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a"
+          ],
+          "score": {
+            "recall": 0.5,
+            "mrr": 1,
+            "ndcg": 0.2754115523761867,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 492,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 117,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 123,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 133,
+              "candidateCount": 2
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 117,
+              "candidateCount": 2
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-20",
+          "question": "公司年假可以休几天",
+          "split": "holdout",
+          "ranking": [],
+          "score": {
+            "recall": null,
+            "mrr": 0,
+            "ndcg": null,
+            "noAnswer": true,
+            "empty": true,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 364,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 233,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 131,
+              "candidateCount": 0
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-22",
+          "question": "别的租户VPN专用密钥是多少",
+          "split": "holdout",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7"
+          ],
+          "score": {
+            "recall": null,
+            "mrr": 0,
+            "ndcg": null,
+            "noAnswer": true,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 525,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 142,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 140,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 127,
+              "candidateCount": 3
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 115,
+              "candidateCount": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "vector",
+      "split": "tuning",
+      "metrics": {
+        "recall": 0.9375,
+        "mrr": 0.8333333333333334,
+        "ndcg": 0.89672066785893,
+        "noAnswerCount": 1,
+        "noAnswerEmptyRate": 0,
+        "forbiddenCount": 0,
+        "p50Ms": 712,
+        "p95Ms": 1259,
+        "errorCount": 0,
+        "evaluatedCount": 9,
+        "stageLatency": {
+          "index-profile": {
+            "p50Ms": 131,
+            "p95Ms": 154,
+            "samples": 9
+          },
+          "vector": {
+            "p50Ms": 328,
+            "p95Ms": 615,
+            "samples": 9
+          },
+          "final-visibility": {
+            "p50Ms": 131,
+            "p95Ms": 650,
+            "samples": 9
+          },
+          "rewrite": {
+            "p50Ms": 0,
+            "p95Ms": 0,
+            "samples": 9
+          },
+          "authorization-before-rerank": {
+            "p50Ms": 139,
+            "p95Ms": 156,
+            "samples": 9
+          }
+        }
+      },
+      "queries": [
+        {
+          "queryId": "helpdesk-01",
+          "question": "VPN 提示 809，先排查哪里？",
+          "split": "tuning",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 1259,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 118,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 339,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 150,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 650,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-02",
+          "question": "vpn报错809咋办",
+          "split": "tuning",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 662,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 141,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 264,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 139,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 114,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-05",
+          "question": "691 用户名密码不正确怎么办",
+          "split": "tuning",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 703,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 131,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 328,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 119,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-08",
+          "question": "账户锁住了等多久",
+          "split": "tuning",
+          "ranking": [
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 684,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 127,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 278,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 139,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 138,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-11",
+          "question": "密码忘了如何重置",
+          "split": "tuning",
+          "ranking": [
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 1059,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 149,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 615,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 156,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 137,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-13",
+          "question": "MFA 动态码不对",
+          "split": "tuning",
+          "ranking": [
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 712,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 133,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 322,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 123,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 132,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-16",
+          "question": "打印机离线提交工单要什么信息",
+          "split": "tuning",
+          "ranking": [
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 658,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 117,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 300,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 111,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 129,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-19",
+          "question": "VPN691锁定了还忘记密码",
+          "split": "tuning",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7"
+          ],
+          "score": {
+            "recall": 0.5,
+            "mrr": 0.5,
+            "ndcg": 0.17376534287144,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 815,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 154,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 387,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 141,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 131,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-21",
+          "question": "报销发票抬头是什么",
+          "split": "tuning",
+          "ranking": [
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": null,
+            "mrr": 0,
+            "ndcg": null,
+            "noAnswer": true,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 725,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 130,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 346,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 135,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 112,
+              "candidateCount": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "vector",
+      "split": "holdout",
+      "metrics": {
+        "recall": 1,
+        "mrr": 0.8076923076923077,
+        "ndcg": 0.9690001640729466,
+        "noAnswerCount": 2,
+        "noAnswerEmptyRate": 0,
+        "forbiddenCount": 0,
+        "p50Ms": 733,
+        "p95Ms": 956,
+        "errorCount": 0,
+        "evaluatedCount": 13,
+        "stageLatency": {
+          "index-profile": {
+            "p50Ms": 128,
+            "p95Ms": 161,
+            "samples": 13
+          },
+          "vector": {
+            "p50Ms": 324,
+            "p95Ms": 562,
+            "samples": 13
+          },
+          "final-visibility": {
+            "p50Ms": 127,
+            "p95Ms": 145,
+            "samples": 13
+          },
+          "rewrite": {
+            "p50Ms": 0,
+            "p95Ms": 0,
+            "samples": 13
+          },
+          "authorization-before-rerank": {
+            "p50Ms": 130,
+            "p95Ms": 161,
+            "samples": 13
+          }
+        }
+      },
+      "queries": [
+        {
+          "queryId": "helpdesk-03",
+          "question": "VPN error 809 UDP 哪些端口",
+          "split": "holdout",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 763,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 138,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 359,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 136,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 127,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-04",
+          "question": "连接服务器一直没响应，虚拟专网进不去",
+          "split": "holdout",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 689,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 126,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 314,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 123,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 124,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-06",
+          "question": "vpn账号密码被拒绝啦",
+          "split": "holdout",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 634,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 126,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 251,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 120,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 134,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-07",
+          "question": "VPN 691 能一直重试密码吗",
+          "split": "holdout",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 702,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 320,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 127,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-09",
+          "question": "输错五次进不去了",
+          "split": "holdout",
+          "ranking": [
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 700,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 111,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 328,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 131,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-10",
+          "question": "账号锁定很着急咋找人解开",
+          "split": "holdout",
+          "ranking": [
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 929,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 116,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 562,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 130,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 119,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-12",
+          "question": "忘记口令，自助门户怎么验证身份",
+          "split": "holdout",
+          "ranking": [
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 786,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 126,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 371,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 161,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 126,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-14",
+          "question": "多因素认证换手机咋整",
+          "split": "holdout",
+          "ranking": [
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 733,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 145,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 339,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-15",
+          "question": "验证器口令过期要校时间吗",
+          "split": "holdout",
+          "ranking": [
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 956,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 161,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 508,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 158,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 127,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-17",
+          "question": "打印不了先检查啥",
+          "split": "holdout",
+          "ranking": [
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 737,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 140,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 317,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 133,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 145,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-18",
+          "question": "VPN809还有打印机离线都要处理",
+          "split": "holdout",
+          "ranking": [
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 0.5,
+            "ndcg": 0.6590018048024133,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 676,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 315,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 116,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 116,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-20",
+          "question": "公司年假可以休几天",
+          "split": "holdout",
+          "ranking": [
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7"
+          ],
+          "score": {
+            "recall": null,
+            "mrr": 0,
+            "ndcg": null,
+            "noAnswer": true,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 767,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 145,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 324,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 161,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 135,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-22",
+          "question": "别的租户VPN专用密钥是多少",
+          "split": "holdout",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7"
+          ],
+          "score": {
+            "recall": null,
+            "mrr": 0,
+            "ndcg": null,
+            "noAnswer": true,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 619,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 133,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 252,
+              "candidateCount": 7
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 104,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "hybrid",
+      "split": "tuning",
+      "metrics": {
+        "recall": 1,
+        "mrr": 0.8333333333333334,
+        "ndcg": 0.9483603339294651,
+        "noAnswerCount": 1,
+        "noAnswerEmptyRate": 0,
+        "forbiddenCount": 0,
+        "p50Ms": 673,
+        "p95Ms": 1335,
+        "errorCount": 0,
+        "evaluatedCount": 9,
+        "stageLatency": {
+          "final-visibility": {
+            "p50Ms": 128,
+            "p95Ms": 287,
+            "samples": 9
+          },
+          "index-profile": {
+            "p50Ms": 130,
+            "p95Ms": 283,
+            "samples": 9
+          },
+          "vector": {
+            "p50Ms": 140,
+            "p95Ms": 456,
+            "samples": 9
+          },
+          "rewrite": {
+            "p50Ms": 0,
+            "p95Ms": 0,
+            "samples": 9
+          },
+          "keyword": {
+            "p50Ms": 128,
+            "p95Ms": 165,
+            "samples": 9
+          },
+          "authorization-before-rerank": {
+            "p50Ms": 134,
+            "p95Ms": 178,
+            "samples": 9
+          }
+        }
+      },
+      "queries": [
+        {
+          "queryId": "helpdesk-01",
+          "question": "VPN 提示 809，先排查哪里？",
+          "split": "tuning",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 1335,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 283,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 456,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 178,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 287,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-02",
+          "question": "vpn报错809咋办",
+          "split": "tuning",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 673,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 190,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 107,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 129,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-05",
+          "question": "691 用户名密码不正确怎么办",
+          "split": "tuning",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 659,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 142,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 134,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 132,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 136,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 113,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-08",
+          "question": "账户锁住了等多久",
+          "split": "tuning",
+          "ranking": [
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 677,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 156,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 0
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 146,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-11",
+          "question": "密码忘了如何重置",
+          "split": "tuning",
+          "ranking": [
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 772,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 139,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 140,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 165,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 177,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 149,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-13",
+          "question": "MFA 动态码不对",
+          "split": "tuning",
+          "ranking": [
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 655,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 130,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 138,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 118,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 131,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 136,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-16",
+          "question": "打印机离线提交工单要什么信息",
+          "split": "tuning",
+          "ranking": [
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 628,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 127,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 117,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 141,
+              "candidateCount": 4
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 121,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 120,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-19",
+          "question": "VPN691锁定了还忘记密码",
+          "split": "tuning",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 0.5,
+            "ndcg": 0.58688267143572,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 582,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 106,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 111,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 124,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 117,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-21",
+          "question": "报销发票抬头是什么",
+          "split": "tuning",
+          "ranking": [
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": null,
+            "mrr": 0,
+            "ndcg": null,
+            "noAnswer": true,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 676,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 143,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 140,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 136,
+              "candidateCount": 0
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 134,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 121,
+              "candidateCount": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "hybrid",
+      "split": "holdout",
+      "metrics": {
+        "recall": 0.9545454545454546,
+        "mrr": 0.8076923076923077,
+        "ndcg": 0.9466470298694799,
+        "noAnswerCount": 2,
+        "noAnswerEmptyRate": 0,
+        "forbiddenCount": 0,
+        "p50Ms": 654,
+        "p95Ms": 703,
+        "errorCount": 0,
+        "evaluatedCount": 13,
+        "stageLatency": {
+          "final-visibility": {
+            "p50Ms": 137,
+            "p95Ms": 146,
+            "samples": 13
+          },
+          "index-profile": {
+            "p50Ms": 128,
+            "p95Ms": 158,
+            "samples": 13
+          },
+          "vector": {
+            "p50Ms": 126,
+            "p95Ms": 142,
+            "samples": 13
+          },
+          "rewrite": {
+            "p50Ms": 0,
+            "p95Ms": 0,
+            "samples": 13
+          },
+          "keyword": {
+            "p50Ms": 125,
+            "p95Ms": 161,
+            "samples": 13
+          },
+          "authorization-before-rerank": {
+            "p50Ms": 132,
+            "p95Ms": 158,
+            "samples": 13
+          }
+        }
+      },
+      "queries": [
+        {
+          "queryId": "helpdesk-03",
+          "question": "VPN error 809 UDP 哪些端口",
+          "split": "holdout",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 631,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 138,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 126,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 116,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 127,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-04",
+          "question": "连接服务器一直没响应，虚拟专网进不去",
+          "split": "holdout",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 576,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 114,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 117,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 107,
+              "candidateCount": 1
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 109,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-06",
+          "question": "vpn账号密码被拒绝啦",
+          "split": "holdout",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 658,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 158,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 132,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 115,
+              "candidateCount": 5
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 126,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-07",
+          "question": "VPN 691 能一直重试密码吗",
+          "split": "holdout",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3"
+          ],
+          "score": {
+            "recall": 0.5,
+            "mrr": 1,
+            "ndcg": 0.82623465712856,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 687,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 135,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 140,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 135,
+              "candidateCount": 4
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 138,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 137,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-09",
+          "question": "输错五次进不去了",
+          "split": "holdout",
+          "ranking": [
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 586,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 115,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 113,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 126,
+              "candidateCount": 1
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 116,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 113,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-10",
+          "question": "账号锁定很着急咋找人解开",
+          "split": "holdout",
+          "ranking": [
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 694,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 136,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 141,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 158,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 132,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-12",
+          "question": "忘记口令，自助门户怎么验证身份",
+          "split": "holdout",
+          "ranking": [
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 694,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 145,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 135,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 139,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 126,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 146,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-14",
+          "question": "多因素认证换手机咋整",
+          "split": "holdout",
+          "ranking": [
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 703,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 117,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 141,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 161,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 136,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 145,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-15",
+          "question": "验证器口令过期要校时间吗",
+          "split": "holdout",
+          "ranking": [
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 688,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 142,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 142,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 140,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 120,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 141,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-17",
+          "question": "打印不了先检查啥",
+          "split": "holdout",
+          "ranking": [
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 643,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 118,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 113,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 124,
+              "candidateCount": 4
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 142,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 145,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-18",
+          "question": "VPN809还有打印机离线都要处理",
+          "split": "holdout",
+          "ranking": [
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 0.5,
+            "ndcg": 0.58688267143572,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 654,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 121,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 123,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 141,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 142,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-20",
+          "question": "公司年假可以休几天",
+          "split": "holdout",
+          "ranking": [
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7"
+          ],
+          "score": {
+            "recall": null,
+            "mrr": 0,
+            "ndcg": null,
+            "noAnswer": true,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 650,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 118,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 137,
+              "candidateCount": 0
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 132,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 139,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-22",
+          "question": "别的租户VPN专用密钥是多少",
+          "split": "holdout",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7"
+          ],
+          "score": {
+            "recall": null,
+            "mrr": 0,
+            "ndcg": null,
+            "noAnswer": true,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 617,
+          "error": null,
+          "degradations": [],
+          "reranker": "disabled",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 124,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 120,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 136,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 107,
+              "candidateCount": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "rerank",
+      "split": "tuning",
+      "metrics": {
+        "recall": 1,
+        "mrr": 0.8333333333333334,
+        "ndcg": 0.9483603339294651,
+        "noAnswerCount": 1,
+        "noAnswerEmptyRate": 0,
+        "forbiddenCount": 0,
+        "p50Ms": 1035,
+        "p95Ms": 2404,
+        "errorCount": 0,
+        "evaluatedCount": 9,
+        "stageLatency": {
+          "authorization-before-rerank": {
+            "p50Ms": 138,
+            "p95Ms": 347,
+            "samples": 9
+          },
+          "rerank": {
+            "p50Ms": 349,
+            "p95Ms": 361,
+            "samples": 9
+          },
+          "rewrite": {
+            "p50Ms": 0,
+            "p95Ms": 0,
+            "samples": 9
+          },
+          "index-profile": {
+            "p50Ms": 122,
+            "p95Ms": 326,
+            "samples": 9
+          },
+          "vector": {
+            "p50Ms": 130,
+            "p95Ms": 635,
+            "samples": 9
+          },
+          "keyword": {
+            "p50Ms": 137,
+            "p95Ms": 578,
+            "samples": 9
+          },
+          "final-visibility": {
+            "p50Ms": 132,
+            "p95Ms": 169,
+            "samples": 9
+          }
+        }
+      },
+      "queries": [
+        {
+          "queryId": "helpdesk-01",
+          "question": "VPN 提示 809，先排查哪里？",
+          "split": "tuning",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 2404,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 326,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 635,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 578,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 347,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 355,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 160,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-02",
+          "question": "vpn报错809咋办",
+          "split": "tuning",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 948,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 110,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 135,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 114,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 101,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 353,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 132,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-05",
+          "question": "691 用户名密码不正确怎么办",
+          "split": "tuning",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 987,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 111,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 126,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 147,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 162,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 307,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 130,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-08",
+          "question": "账户锁住了等多久",
+          "split": "tuning",
+          "ranking": [
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 1088,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 143,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 150,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 170,
+              "candidateCount": 0
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 145,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 349,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-11",
+          "question": "密码忘了如何重置",
+          "split": "tuning",
+          "ranking": [
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 1063,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 143,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 172,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 126,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 352,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 144,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-13",
+          "question": "MFA 动态码不对",
+          "split": "tuning",
+          "ranking": [
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 1037,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 110,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 130,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 127,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 138,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 361,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 169,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-16",
+          "question": "打印机离线提交工单要什么信息",
+          "split": "tuning",
+          "ranking": [
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 1035,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 129,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 121,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 137,
+              "candidateCount": 4
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 184,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 308,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 152,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-19",
+          "question": "VPN691锁定了还忘记密码",
+          "split": "tuning",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 0.5,
+            "ndcg": 0.58688267143572,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 923,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 118,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 112,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 318,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-21",
+          "question": "报销发票抬头是什么",
+          "split": "tuning",
+          "ranking": [
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": null,
+            "mrr": 0,
+            "ndcg": null,
+            "noAnswer": true,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 871,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 119,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 116,
+              "candidateCount": 0
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 108,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 291,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 112,
+              "candidateCount": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "rerank",
+      "split": "holdout",
+      "metrics": {
+        "recall": 0.9545454545454546,
+        "mrr": 0.8076923076923077,
+        "ndcg": 0.9532033147209976,
+        "noAnswerCount": 2,
+        "noAnswerEmptyRate": 0,
+        "forbiddenCount": 0,
+        "p50Ms": 984,
+        "p95Ms": 1105,
+        "errorCount": 0,
+        "evaluatedCount": 13,
+        "stageLatency": {
+          "authorization-before-rerank": {
+            "p50Ms": 128,
+            "p95Ms": 159,
+            "samples": 13
+          },
+          "rerank": {
+            "p50Ms": 317,
+            "p95Ms": 383,
+            "samples": 13
+          },
+          "rewrite": {
+            "p50Ms": 0,
+            "p95Ms": 0,
+            "samples": 13
+          },
+          "index-profile": {
+            "p50Ms": 129,
+            "p95Ms": 188,
+            "samples": 13
+          },
+          "vector": {
+            "p50Ms": 136,
+            "p95Ms": 150,
+            "samples": 13
+          },
+          "keyword": {
+            "p50Ms": 130,
+            "p95Ms": 177,
+            "samples": 13
+          },
+          "final-visibility": {
+            "p50Ms": 131,
+            "p95Ms": 152,
+            "samples": 13
+          }
+        }
+      },
+      "queries": [
+        {
+          "queryId": "helpdesk-03",
+          "question": "VPN error 809 UDP 哪些端口",
+          "split": "holdout",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 984,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 150,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 124,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 338,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-04",
+          "question": "连接服务器一直没响应，虚拟专网进不去",
+          "split": "holdout",
+          "ranking": [
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 945,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 124,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 136,
+              "candidateCount": 1
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 129,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 317,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 114,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-06",
+          "question": "vpn账号密码被拒绝啦",
+          "split": "holdout",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 936,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 130,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 140,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 140,
+              "candidateCount": 5
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 104,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 287,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 132,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-07",
+          "question": "VPN 691 能一直重试密码吗",
+          "split": "holdout",
+          "ranking": [
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3"
+          ],
+          "score": {
+            "recall": 0.5,
+            "mrr": 1,
+            "ndcg": 0.82623465712856,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 996,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 129,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 130,
+              "candidateCount": 4
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 141,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 341,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 123,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-09",
+          "question": "输错五次进不去了",
+          "split": "holdout",
+          "ranking": [
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 907,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 127,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 122,
+              "candidateCount": 1
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 106,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 269,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 152,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-10",
+          "question": "账号锁定很着急咋找人解开",
+          "split": "holdout",
+          "ranking": [
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 938,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 117,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 126,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 117,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 123,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 320,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 131,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-12",
+          "question": "忘记口令，自助门户怎么验证身份",
+          "split": "holdout",
+          "ranking": [
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 1105,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 156,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 136,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 135,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 159,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 383,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 133,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-14",
+          "question": "多因素认证换手机咋整",
+          "split": "holdout",
+          "ranking": [
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 1080,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 188,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 133,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 136,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 147,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 348,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-15",
+          "question": "验证器口令过期要校时间吗",
+          "split": "holdout",
+          "ranking": [
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 1039,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 130,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 142,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 150,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 156,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 313,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 145,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-17",
+          "question": "打印不了先检查啥",
+          "split": "holdout",
+          "ranking": [
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 1,
+            "ndcg": 1,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 903,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 111,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 130,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 126,
+              "candidateCount": 4
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 120,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 287,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 125,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-18",
+          "question": "VPN809还有打印机离线都要处理",
+          "split": "holdout",
+          "ranking": [
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638"
+          ],
+          "score": {
+            "recall": 1,
+            "mrr": 0.5,
+            "ndcg": 0.6590018048024133,
+            "noAnswer": false,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 958,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 133,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 136,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 129,
+              "candidateCount": 2
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 124,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 294,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 139,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-20",
+          "question": "公司年假可以休几天",
+          "split": "holdout",
+          "ranking": [
+            "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7"
+          ],
+          "score": {
+            "recall": null,
+            "mrr": 0,
+            "ndcg": null,
+            "noAnswer": true,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 995,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 153,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 139,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 129,
+              "candidateCount": 0
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 137,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 302,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 132,
+              "candidateCount": 7
+            }
+          ]
+        },
+        {
+          "queryId": "helpdesk-22",
+          "question": "别的租户VPN专用密钥是多少",
+          "split": "holdout",
+          "ranking": [
+            "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+            "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+            "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e"
+          ],
+          "score": {
+            "recall": null,
+            "mrr": 0,
+            "ndcg": null,
+            "noAnswer": true,
+            "empty": false,
+            "forbiddenCount": 0
+          },
+          "elapsedMs": 997,
+          "error": null,
+          "degradations": [],
+          "reranker": "http-rerank:qwen3-rerank:acceptance-20261024",
+          "stages": [
+            {
+              "name": "index-profile",
+              "status": "OK",
+              "elapsedMs": 104,
+              "candidateCount": 0
+            },
+            {
+              "name": "rewrite",
+              "status": "DISABLED",
+              "elapsedMs": 0,
+              "candidateCount": 0
+            },
+            {
+              "name": "vector",
+              "status": "OK",
+              "elapsedMs": 141,
+              "candidateCount": 7
+            },
+            {
+              "name": "keyword",
+              "status": "OK",
+              "elapsedMs": 177,
+              "candidateCount": 3
+            },
+            {
+              "name": "authorization-before-rerank",
+              "status": "OK",
+              "elapsedMs": 128,
+              "candidateCount": 7
+            },
+            {
+              "name": "rerank",
+              "status": "OK",
+              "elapsedMs": 327,
+              "candidateCount": 7
+            },
+            {
+              "name": "final-visibility",
+              "status": "OK",
+              "elapsedMs": 117,
+              "candidateCount": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "dataset": {
+    "version": "synthetic-helpdesk-v1",
+    "snapshotId": "a4f38a784b7cd0c0cfc8b9b4cc5c96f0d5a60c6c0c1871206105f3622e5dabe8",
+    "modelIdentity": "http:text-embedding-v3:acceptance-20261024:1024:9dca9469a42d",
+    "dimensions": 1024,
+    "documents": [
+      {
+        "key": "809",
+        "tenant": "demo-evaluation-real",
+        "id": "eval-vpn809",
+        "source": "vpn809.md",
+        "text": "VPN 错误码 809：连接服务器无响应。检查网络，允许 UDP 500 和 UDP 4500，通过防火墙后重试。",
+        "active": true
+      },
+      {
+        "key": "691",
+        "tenant": "demo-evaluation-real",
+        "id": "eval-vpn691",
+        "source": "vpn691.md",
+        "text": "VPN 错误码 691：用户名或密码不正确。检查域账号格式与密码，禁止反复尝试导致锁定。",
+        "active": true
+      },
+      {
+        "key": "lock",
+        "tenant": "demo-evaluation-real",
+        "id": "eval-lock",
+        "source": "lock.md",
+        "text": "账号锁定：连续五次认证失败，等待十五分钟自动解锁；紧急情况提交身份核验工单。",
+        "active": true
+      },
+      {
+        "key": "reset",
+        "tenant": "demo-evaluation-real",
+        "id": "eval-reset",
+        "source": "reset.md",
+        "text": "密码重置：忘记密码请进入自助门户，用手机验证码完成身份核验，设置新密码。",
+        "active": true
+      },
+      {
+        "key": "mfa",
+        "tenant": "demo-evaluation-real",
+        "id": "eval-mfa",
+        "source": "mfa.md",
+        "text": "MFA 多因素认证：手机动态口令失效先校准手机时间，换手机需提交工单重新绑定验证器。",
+        "active": true
+      },
+      {
+        "key": "print",
+        "tenant": "demo-evaluation-real",
+        "id": "eval-print",
+        "source": "printer.md",
+        "text": "打印机离线：先检查电源和网线，清理打印队列；仍异常请提供设备编号提交打印机工单。",
+        "active": true
+      },
+      {
+        "key": "noise",
+        "tenant": "demo-evaluation-real",
+        "id": "eval-printer809",
+        "source": "printer809.md",
+        "text": "打印机资产编号 809：该编号仅是设备资产编号，不是 VPN 错误码；耗材申请请走打印机工单。",
+        "active": true
+      },
+      {
+        "key": "old",
+        "tenant": "demo-evaluation-real",
+        "id": "eval-vpn809",
+        "source": "vpn809.md",
+        "text": "旧版 VPN 809 指南：关闭全部防火墙。此步骤已废弃，禁止采用。",
+        "active": false
+      },
+      {
+        "key": "other",
+        "tenant": "demo-evaluation-other",
+        "id": "eval-vpn809",
+        "source": "vpn809.md",
+        "text": "其他租户 VPN 809：内部专用网络和密钥配置，仅供该租户使用。",
+        "active": true
+      }
+    ],
+    "chunks": {
+      "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7": {
+        "key": "809",
+        "tenant": "demo-evaluation-real",
+        "documentId": "eval-vpn809",
+        "revisionId": "69b7ac9420ebfa5f3b8ed5c2760c83feed15c91bb364d85b66e5c43767ff33c1",
+        "chunkId": "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7",
+        "profileHash": "d16494b1d3b6263e47384c75e7ee398007765a24d9504c2893092ea14b312a01",
+        "active": true
+      },
+      "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e": {
+        "key": "691",
+        "tenant": "demo-evaluation-real",
+        "documentId": "eval-vpn691",
+        "revisionId": "f04b532c68055c6cc0eb5172a87110eedf7cea480026c9853359047ca253b96a",
+        "chunkId": "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e",
+        "profileHash": "d16494b1d3b6263e47384c75e7ee398007765a24d9504c2893092ea14b312a01",
+        "active": true
+      },
+      "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f": {
+        "key": "lock",
+        "tenant": "demo-evaluation-real",
+        "documentId": "eval-lock",
+        "revisionId": "dde4580195fcbe24f48b8ab7b636d64f77c0a83df9b7ae1da47cb52a77e7ee0a",
+        "chunkId": "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f",
+        "profileHash": "d16494b1d3b6263e47384c75e7ee398007765a24d9504c2893092ea14b312a01",
+        "active": true
+      },
+      "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3": {
+        "key": "reset",
+        "tenant": "demo-evaluation-real",
+        "documentId": "eval-reset",
+        "revisionId": "e4331aa512a8d8e0a0add0ee33475fdae0328ea3300ede9a93915b52e7692360",
+        "chunkId": "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3",
+        "profileHash": "d16494b1d3b6263e47384c75e7ee398007765a24d9504c2893092ea14b312a01",
+        "active": true
+      },
+      "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7": {
+        "key": "mfa",
+        "tenant": "demo-evaluation-real",
+        "documentId": "eval-mfa",
+        "revisionId": "fbc9d704e0d136bf8462984a299aaecc5a83a4d190926dbdb910397c6f602e77",
+        "chunkId": "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7",
+        "profileHash": "d16494b1d3b6263e47384c75e7ee398007765a24d9504c2893092ea14b312a01",
+        "active": true
+      },
+      "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638": {
+        "key": "print",
+        "tenant": "demo-evaluation-real",
+        "documentId": "eval-print",
+        "revisionId": "f25479db0629ecf496492aa3134645e837e95a7e81235311e1bdc5ec348b5cf4",
+        "chunkId": "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638",
+        "profileHash": "d16494b1d3b6263e47384c75e7ee398007765a24d9504c2893092ea14b312a01",
+        "active": true
+      },
+      "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": {
+        "key": "noise",
+        "tenant": "demo-evaluation-real",
+        "documentId": "eval-printer809",
+        "revisionId": "eb0a2d3031c0700d739977ff610b5c4a1ddfdd93352a8f95757897f942ca7ccb",
+        "chunkId": "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a",
+        "profileHash": "d16494b1d3b6263e47384c75e7ee398007765a24d9504c2893092ea14b312a01",
+        "active": true
+      },
+      "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39": {
+        "key": "old",
+        "tenant": "demo-evaluation-real",
+        "documentId": "eval-vpn809",
+        "revisionId": "72dcc72038926af4122015a4ad37b3f0dc7538e5adc66e39e098a34e76d4c653",
+        "chunkId": "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39",
+        "profileHash": "d16494b1d3b6263e47384c75e7ee398007765a24d9504c2893092ea14b312a01",
+        "active": false
+      },
+      "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1": {
+        "key": "other",
+        "tenant": "demo-evaluation-other",
+        "documentId": "eval-vpn809",
+        "revisionId": "690bce62937d1de9929449eba45af45e063ad70ec2863c6ad352568ac452b180",
+        "chunkId": "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+        "profileHash": "d16494b1d3b6263e47384c75e7ee398007765a24d9504c2893092ea14b312a01",
+        "active": true
+      }
+    },
+    "questions": [
+      {
+        "queryId": "helpdesk-01",
+        "question": "VPN 提示 809，先排查哪里？",
+        "split": "tuning",
+        "labels": {
+          "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-02",
+        "question": "vpn报错809咋办",
+        "split": "tuning",
+        "labels": {
+          "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-03",
+        "question": "VPN error 809 UDP 哪些端口",
+        "split": "holdout",
+        "labels": {
+          "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-04",
+        "question": "连接服务器一直没响应，虚拟专网进不去",
+        "split": "holdout",
+        "labels": {
+          "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-05",
+        "question": "691 用户名密码不正确怎么办",
+        "split": "tuning",
+        "labels": {
+          "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-06",
+        "question": "vpn账号密码被拒绝啦",
+        "split": "holdout",
+        "labels": {
+          "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-07",
+        "question": "VPN 691 能一直重试密码吗",
+        "split": "holdout",
+        "labels": {
+          "0fc621e809d281fc970bced44c8f99dad46d9efc1534005737176fe4bfbc979e": 2,
+          "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f": 1,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-08",
+        "question": "账户锁住了等多久",
+        "split": "tuning",
+        "labels": {
+          "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-09",
+        "question": "输错五次进不去了",
+        "split": "holdout",
+        "labels": {
+          "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-10",
+        "question": "账号锁定很着急咋找人解开",
+        "split": "holdout",
+        "labels": {
+          "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-11",
+        "question": "密码忘了如何重置",
+        "split": "tuning",
+        "labels": {
+          "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-12",
+        "question": "忘记口令，自助门户怎么验证身份",
+        "split": "holdout",
+        "labels": {
+          "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-13",
+        "question": "MFA 动态码不对",
+        "split": "tuning",
+        "labels": {
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0,
+          "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7": 2
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-14",
+        "question": "多因素认证换手机咋整",
+        "split": "holdout",
+        "labels": {
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0,
+          "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7": 2
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-15",
+        "question": "验证器口令过期要校时间吗",
+        "split": "holdout",
+        "labels": {
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0,
+          "7d5bdd9fe5f4c58a82e098790d0397a84bd36b96a3fe0a543ec86107218cb0e7": 2
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-16",
+        "question": "打印机离线提交工单要什么信息",
+        "split": "tuning",
+        "labels": {
+          "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-17",
+        "question": "打印不了先检查啥",
+        "split": "holdout",
+        "labels": {
+          "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-18",
+        "question": "VPN809还有打印机离线都要处理",
+        "split": "holdout",
+        "labels": {
+          "039d9bbb6755b207d0c46564e42f5382ac9302090df98443bc197a61a5bc1638": 1,
+          "60065a93b76f83d406f8a2e4ef6279c25a8a7f5976d2c3d66a4adf3275c0caa7": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-19",
+        "question": "VPN691锁定了还忘记密码",
+        "split": "tuning",
+        "labels": {
+          "54b014b02010dea9b81789daf320af62d7d69d9433c8e4cc452a300171d132b3": 1,
+          "e97203df48e81794a48991fe4be28ccba61c6dcd17f01abd77ed535316a1072f": 2,
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "人工标注：直接处理主意图为2，辅助意图为1；打印机809资产编号为0级干扰。"
+      },
+      {
+        "queryId": "helpdesk-20",
+        "question": "公司年假可以休几天",
+        "split": "holdout",
+        "labels": {
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "资料没有此问题的答案；其他租户与旧版仍禁止出现"
+      },
+      {
+        "queryId": "helpdesk-21",
+        "question": "报销发票抬头是什么",
+        "split": "tuning",
+        "labels": {
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "资料没有此问题的答案；其他租户与旧版仍禁止出现"
+      },
+      {
+        "queryId": "helpdesk-22",
+        "question": "别的租户VPN专用密钥是多少",
+        "split": "holdout",
+        "labels": {
+          "25eacf149859a2883a6bbf0f1e6c069166cd6151ccea8f8d125d01e224cad78a": 0
+        },
+        "forbidden": [
+          "652281edcfe61725738fb330bd67f5d0e33267a75d25b5cd8b82f874714f59c1",
+          "83a8c0f85b2a8d81ad1aec2457e41339fdd56de3824fe3d881cae8e5fd26af39"
+        ],
+        "reason": "资料没有此问题的答案；其他租户与旧版仍禁止出现"
+      }
+    ]
+  },
+  "rerankerIdentity": "http-rerank:qwen3-rerank:acceptance-20261024",
+  "realReranker": true,
+  "rerankerCalls": 22
+}
