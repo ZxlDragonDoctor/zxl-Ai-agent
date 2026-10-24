@@ -40,6 +40,25 @@ public final class Lesson12Demo {
         @Bean com.zxl.zxlaiagent.knowledge.evaluation.EvaluationController evaluationController(com.zxl.zxlaiagent.knowledge.evaluation.EvaluationService service) {
             return new com.zxl.zxlaiagent.knowledge.evaluation.EvaluationController(service);
         }
+        @Bean com.zxl.zxlaiagent.knowledge.memory.MemoryController memoryController(KnowledgeDatabase db) {
+            return new com.zxl.zxlaiagent.knowledge.memory.MemoryController(db);
+        }
+        @Bean com.zxl.zxlaiagent.knowledge.answer.MemoryContext memoryContext(KnowledgeDatabase db) {
+            return new com.zxl.zxlaiagent.knowledge.memory.MemoryAnswerContext(db, java.time.Clock.systemUTC());
+        }
+        @Bean com.zxl.zxlaiagent.knowledge.answer.AnswerService answerService(KnowledgeDatabase db,
+                com.zxl.zxlaiagent.knowledge.retrieval.RetrievalService retrieval,
+                com.zxl.zxlaiagent.knowledge.answer.MemoryContext memory) {
+            com.zxl.zxlaiagent.knowledge.answer.AnswerModel model = null;
+            String endpoint = System.getenv("LESSON14_CHAT_ENDPOINT");
+            if (endpoint != null && !endpoint.isBlank()) model = new com.zxl.zxlaiagent.knowledge.answer.HttpAnswerModel(
+                    endpoint, System.getenv("LESSON14_CHAT_API_KEY"),
+                    System.getenv("LESSON14_CHAT_MODEL"), System.getenv("LESSON14_JUDGE_MODEL"), System.getenv("LESSON14_CHAT_REVISION"));
+            return new com.zxl.zxlaiagent.knowledge.answer.AnswerService(db, "demo-enterprise", retrieval, model, memory);
+        }
+        @Bean com.zxl.zxlaiagent.knowledge.answer.AnswerController answerController(com.zxl.zxlaiagent.knowledge.answer.AnswerService service) {
+            return new com.zxl.zxlaiagent.knowledge.answer.AnswerController(service);
+        }
     }
     public static void main(String[] args){
         var context=new AnnotationConfigWebApplicationContext();context.getEnvironment().setActiveProfiles("lesson12-demo");context.register(DemoConfiguration.class);
