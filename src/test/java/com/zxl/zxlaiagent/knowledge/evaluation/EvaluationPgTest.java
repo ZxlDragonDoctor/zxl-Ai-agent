@@ -12,7 +12,9 @@ class EvaluationPgTest {
         var db=new KnowledgeDatabase(System.getenv("LESSON12_DB_URL"),System.getenv("LESSON12_DB_USER"),System.getenv("LESSON12_DB_PASSWORD"));
         var embedding=new DemoKnowledgeEmbedding();var service=new EvaluationService(db,embedding);
         var status=service.seed(false);assertTrue(status.snapshots().demoReady());assertFalse(status.realAvailable());
-        var report=service.run(new EvaluationService.Input("all",3,false));
+        // Full-set correctness is not a 60s latency benchmark. Use the supported explicit
+        // batch budget; the separate 1s case below still verifies honest partial results.
+        var report=service.run(new EvaluationService.Input("all",3,false,120000L));
         assertTrue(report.complete(),"A partial run must never count as a complete fixed-set evaluation");
         assertEquals(22,report.queryCount());assertEquals(8,report.strategies().size());assertEquals(22,report.embeddingCalls());assertEquals(44,report.embeddingCacheHits());
         assertEquals(88,report.strategies().stream().mapToInt(s->s.queries().size()).sum());
