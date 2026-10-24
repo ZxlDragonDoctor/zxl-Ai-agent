@@ -14,7 +14,7 @@ const { input, messages, error, running, loading, busy, selectedId, selectedType
 const title = computed(() => conversations.value.find(item => item.id === selectedId.value)?.title || t('conversation.newTitle'))
 const activeType = computed(() => selectedId.value ? selectedType.value : newType.value)
 const examplePrompt = computed(() => activeType.value === 'enterprise-knowledge'
-  ? (locale.value === 'zh-CN' ? 'VPN报错809，先检查什么？' : 'What should I check first for VPN error 809?')
+  ? (locale.value === 'zh-CN' ? 'VPN报错401，应该如何处理？' : 'How should I handle VPN error 401?')
   : t(activeType.value === 'love-assistant' ? 'conversation.exampleLove' : 'conversation.exampleMemory'))
 </script>
 
@@ -37,7 +37,7 @@ const examplePrompt = computed(() => activeType.value === 'enterprise-knowledge'
       <p v-if="error" class="chat-error" role="alert">{{ error }}</p>
       <p v-if="loading" class="session-notice" role="status">{{ t('conversation.loading') }}</p>
       <p v-else-if="busy && !running" class="session-notice" role="status">{{ t('conversation.busyNote') }}</p>
-      <FactMemoryPanel v-if="activeType === 'enterprise-knowledge'" :conversation-id="selectedId" />
+      <FactMemoryPanel v-if="activeType === 'enterprise-knowledge'" :key="selectedId || 'draft'" :conversation-id="selectedId" />
       <ChatRoom :key="selectedId || 'draft'" v-model="input" :messages="messages" :on-send="sendMessage" :disabled="working || busy || !agents.length">
         <template #empty>
           <div class="conversation-welcome">

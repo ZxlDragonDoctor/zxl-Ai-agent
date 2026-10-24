@@ -8,7 +8,7 @@ const props = defineProps<{ conversationId: string | null }>()
 const tr = (zh: string, en: string) => locale.value === 'zh-CN' ? zh : en
 const profile = ref<DemoProfile>('alice'), facts = ref<Fact[]>([]), text = ref('我偏好中文回复'), ttl = ref(3600)
 const busy = ref(false), error = ref(''), notice = ref(''), editing = ref<Fact | null>(null), correction = ref('')
-const recalled = ref<Awaited<ReturnType<typeof recallFacts>> | null>(null), preview = ref(''), previewQuestion = ref('VPN报错809，先检查什么？')
+const recalled = ref<Awaited<ReturnType<typeof recallFacts>> | null>(null), preview = ref(''), previewQuestion = ref('VPN报错401，应该如何处理？')
 const mode = ref<'demo' | 'real'>('demo'), now = ref(Date.now())
 const timer = setInterval(() => { now.value = Date.now() }, 1000)
 onUnmounted(() => clearInterval(timer))
@@ -34,6 +34,7 @@ async function saveCorrection() {
 async function recall() { await run(async () => { recalled.value = await recallFacts(profile.value) }) }
 async function testContext() { await run(async () => { preview.value = JSON.stringify(await askKnowledge({ question: previewQuestion.value, conversationId: props.conversationId || 'memory-preview', mode: mode.value, budgetMs: 30000, profile: profile.value })) }) }
 watch(profile, () => { editing.value = null; void run(load) })
+watch([mode, previewQuestion], () => { preview.value = ''; error.value = '' })
 onMounted(() => { void run(load) })
 </script>
 <template>
