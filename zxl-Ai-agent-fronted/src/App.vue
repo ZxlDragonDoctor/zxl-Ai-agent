@@ -43,6 +43,9 @@ onMounted(() => {
         >
           {{ t(item.labelKey) }}
         </router-link>
+        <router-link to="/knowledge" class="nav-link" active-class="nav-link--active">
+          {{ locale === 'zh-CN' ? '企业知识库' : 'Knowledge library' }}
+        </router-link>
         <button
           class="language-toggle"
           type="button"

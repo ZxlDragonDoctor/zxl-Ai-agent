@@ -22,6 +22,11 @@ const routes = [
     component: () => import('../views/AgentChat.vue')
   },
   {
+    path: '/knowledge',
+    name: 'KnowledgeLibrary',
+    component: () => import('../views/KnowledgeLibrary.vue')
+  },
+  {
     path: '/learning',
     name: 'LearningGraph',
     component: () => import('../views/LearningGraph.vue')

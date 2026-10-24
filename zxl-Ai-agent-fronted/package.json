@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test:graph": "node --experimental-strip-types --test src/learning/graph/__tests__/graphPresentation.test.mjs src/learning/graph/__tests__/graph3DModel.test.mjs src/learning/graph/__tests__/graph3DMotion.test.mjs",
+    "test:graph": "node --experimental-strip-types --test src/learning/graph/__tests__/graphPresentation.test.mjs src/learning/graph/__tests__/graph3DModel.test.mjs src/learning/graph/__tests__/graph3DMotion.test.mjs src/learning/graph/__tests__/graph3DFocus.test.mjs",
+    "test:knowledge": "node --experimental-strip-types --test src/api/__tests__/knowledge.test.mjs src/api/__tests__/knowledgePresentation.test.mjs",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview"
   },
