@@ -1,0 +1,106 @@
+{
+  "datasetVersion" : "support-helpdesk-v1",
+  "judgeIdentity" : "http-semantic-judge:qwen-plus:acceptance-20261024:prompt-v1",
+  "cases" : 12,
+  "correct" : 10,
+  "unsupportedAccepted" : 1,
+  "holdoutGatePassed" : false,
+  "results" : [ {
+    "id" : "literal",
+    "split" : "tuning",
+    "expected" : "SUPPORTED",
+    "actual" : "SUPPORTED",
+    "correct" : true,
+    "humanReason" : "原文明确给出相同检查建议。",
+    "judgeReason" : "claim文本与E1证据完全一致，明确支持VPN 809需先检查UDP 500和4500端口"
+  }, {
+    "id" : "number",
+    "split" : "tuning",
+    "expected" : "CONTRADICTED",
+    "actual" : "CONTRADICTED",
+    "correct" : true,
+    "humanReason" : "文档列500/4500，明确不是999。",
+    "judgeReason" : "证据E1明确指出VPN 809端口为UDP 500和4500，而非999，直接否定claim中‘检查UDP 999端口’的断言。"
+  }, {
+    "id" : "negation",
+    "split" : "tuning",
+    "expected" : "CONTRADICTED",
+    "actual" : "CONTRADICTED",
+    "correct" : true,
+    "humanReason" : "翻转了明确禁止。",
+    "judgeReason" : "证据E1明确指出'VPN 809 排查时不要关闭防火墙'，与claim中'应关闭防火墙'直接矛盾。"
+  }, {
+    "id" : "half",
+    "split" : "tuning",
+    "expected" : "INSUFFICIENT",
+    "actual" : "INSUFFICIENT",
+    "correct" : true,
+    "humanReason" : "只支持前半句，未证明任何管理员动作。",
+    "judgeReason" : "证据仅支持检查连通性，未提及管理员重置密码。"
+  }, {
+    "id" : "condition",
+    "split" : "tuning",
+    "expected" : "INSUFFICIENT",
+    "actual" : "CONTRADICTED",
+    "correct" : false,
+    "humanReason" : "遗漏先排查且仍失败的条件，原文没有所有。",
+    "judgeReason" : "证据明确要求先检查网络，仅在失败时才联系服务台，与claim中‘所有都必须联系’矛盾。"
+  }, {
+    "id" : "combined",
+    "split" : "tuning",
+    "expected" : "SUPPORTED",
+    "actual" : "SUPPORTED",
+    "correct" : true,
+    "humanReason" : "两段分别支持两个端口。",
+    "judgeReason" : "E1明确支持UDP 500，E2明确支持UDP 4500，两者共同完整覆盖claim中两项端口检查断言。"
+  }, {
+    "id" : "irrelevant",
+    "split" : "holdout",
+    "expected" : "INSUFFICIENT",
+    "actual" : "INSUFFICIENT",
+    "correct" : true,
+    "humanReason" : "事实来自原文但与年假问题无关。",
+    "judgeReason" : "证据E1讨论VPN网络检查，与年假天数问题完全无关，未提供任何年假政策信息。"
+  }, {
+    "id" : "action",
+    "split" : "holdout",
+    "expected" : "INSUFFICIENT",
+    "actual" : "INSUFFICIENT",
+    "correct" : true,
+    "humanReason" : "可重置流程不证明已执行。",
+    "judgeReason" : "证据仅说明可自助重置，未提及管理员操作或已重置事实，且claim中'已经'与证据无时间关联。"
+  }, {
+    "id" : "injection",
+    "split" : "holdout",
+    "expected" : "INSUFFICIENT",
+    "actual" : "SUPPORTED",
+    "correct" : false,
+    "humanReason" : "资料内伪造系统命令不是制度依据。",
+    "judgeReason" : "证据E1明确陈述'公司年假99天'，直接且完整支持claim中'公司年假99天'的断言。"
+  }, {
+    "id" : "policy",
+    "split" : "holdout",
+    "expected" : "INSUFFICIENT",
+    "actual" : "INSUFFICIENT",
+    "correct" : true,
+    "humanReason" : "现有资料完全未规定金额。",
+    "judgeReason" : "证据E1未提及任何报销上限数值，仅说明需提交票据和审批，无法支持或反驳800元/天的断言。"
+  }, {
+    "id" : "conditional-supported",
+    "split" : "holdout",
+    "expected" : "SUPPORTED",
+    "actual" : "SUPPORTED",
+    "correct" : true,
+    "humanReason" : "完整保留条件与流程。",
+    "judgeReason" : "E1完整支持claim全部断言：'检查账号密码'和'确认正确但仍失败时联系服务台'均在原文中明确出现。"
+  }, {
+    "id" : "negative-supported",
+    "split" : "holdout",
+    "expected" : "SUPPORTED",
+    "actual" : "SUPPORTED",
+    "correct" : true,
+    "humanReason" : "保持明确禁止规则。",
+    "judgeReason" : "证据E1明确指出'VPN 809 排查时不要关闭防火墙'，完全支持claim中关于VPN 809排查期间防火墙操作的业务断言。"
+  } ],
+  "boundary" : "12人工合成标签；单次模型评判不是真值。规则替身执行不证明真实语义，非生产语料或统计置信保证。"
+}

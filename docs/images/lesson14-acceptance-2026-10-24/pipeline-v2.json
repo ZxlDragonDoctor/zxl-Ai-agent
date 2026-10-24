@@ -1,0 +1,232 @@
+{
+  "judgeCalls" : 3,
+  "results" : [ {
+    "response" : {
+      "traceId" : "40a36529-e6ba-4882-89f4-a028b0797ff9",
+      "snapshotId" : "3a9f3442-a2eb-4abd-8304-739634bb2a2c",
+      "status" : "ANSWERED",
+      "answer" : "VPN 809 排查时需检查 UDP 500 和 UDP 4500 端口的网络连通性。 [E1]",
+      "claims" : [ {
+        "text" : "VPN 809 排查时需检查 UDP 500 和 UDP 4500 端口的网络连通性。",
+        "evidenceIds" : [ "E1" ],
+        "support" : "SUPPORTED",
+        "reason" : "证据E1明确指出'检查 UDP 500 和 UDP 4500 端口的网络连通性'，完全支持claim中关于端口检查的断言。"
+      } ],
+      "evidence" : [ {
+        "id" : "E1",
+        "snapshotId" : "3a9f3442-a2eb-4abd-8304-739634bb2a2c",
+        "documentId" : "lesson14-vpn-809-20261025",
+        "revisionId" : "d647c6d43599f70c42e305320c077c02aaf514399d051d921a97b2726641b56c",
+        "chunkId" : "298c4be1490ce3ace83c40f4b5d9e07864631128f00cfa8ffdf06e023a3acc31",
+        "sourceName" : "第十四课合成VPN809手册.md",
+        "startUtf16" : 44,
+        "endUtf16" : 150,
+        "startLine" : 5,
+        "endLine" : 7,
+        "text" : "## VPN 809 排查\nVPN 错误码 809 表示连接服务器未响应。先检查本地网络连通性，再检查 VPN 客户端版本。检查 UDP 500 和 UDP 4500 端口的网络连通性。排查时不要关闭防火墙。\n\n",
+        "sha256" : "c535c4da783cc8720ee465b9f7227b356c47f6ffc305d2a332c435d19976533f",
+        "truncated" : false,
+        "generation" : 1
+      } ],
+      "reason" : "SUPPORTED_CURRENT_EVIDENCE",
+      "missingInformation" : [ ],
+      "generatorIdentity" : "http-generation:qwen-plus:acceptance-20261024:prompt-v2",
+      "judgeIdentity" : "http-semantic-judge:qwen-plus:acceptance-20261024:prompt-v1",
+      "elapsedMs" : 6860,
+      "removedClaims" : 0,
+      "memory" : {
+        "facts" : [ {
+          "id" : "de3f015c-37a1-41dc-88d7-c8c8d518ce2b",
+          "key" : "reply_language",
+          "value" : "zh",
+          "version" : 6
+        } ],
+        "identity" : "demo-enterprise/demo-user-a",
+        "usedChars" : 18,
+        "droppedCount" : 0
+      }
+    },
+    "input" : {
+      "expected" : "ANSWERED_OR_PARTIAL",
+      "id" : "answer-809",
+      "question" : "用中文简短回答：VPN809先检查哪些端口？"
+    },
+    "generationCalls" : 1,
+    "judgeCalls" : 1
+  }, {
+    "response" : {
+      "traceId" : "263c3d05-1753-4554-9657-68efa07ca68a",
+      "snapshotId" : "7201e660-e7fd-4cfd-9b58-5860861fc5ad",
+      "status" : "ANSWERED",
+      "answer" : "错误码 VPN-401 表示登录凭据过期，应通过企业统一身份平台重新登录。 [E1]",
+      "claims" : [ {
+        "text" : "错误码 VPN-401 表示登录凭据过期，应通过企业统一身份平台重新登录。",
+        "evidenceIds" : [ "E1" ],
+        "support" : "SUPPORTED",
+        "reason" : "E1明确指出VPN-401表示登录凭据过期，且要求通过企业统一身份平台重新登录，完全匹配claim的两项断言。"
+      } ],
+      "evidence" : [ {
+        "id" : "E1",
+        "snapshotId" : "7201e660-e7fd-4cfd-9b58-5860861fc5ad",
+        "documentId" : "vpn-guide",
+        "revisionId" : "2575dcee3085dea36f72a33a41098f2263c74c57d02e4a9d10ea1c4e3ba37b96",
+        "chunkId" : "04900374017daca8094eefb23f243547fdf92f46b30cdef815cc5570b1152028",
+        "sourceName" : "企业 VPN 故障处理手册.md",
+        "startUtf16" : 57,
+        "endUtf16" : 132,
+        "startLine" : 6,
+        "endLine" : 8,
+        "text" : "## VPN 连接失败\n先确认本地网络可用，再检查 VPN 客户端版本。错误码 VPN-401 表示登录凭据过期，请通过企业统一身份平台重新登录。\n\n",
+        "sha256" : "a4a099d848bddb024283752246828a617e52a992acd65a0885a371349443464f",
+        "truncated" : false,
+        "generation" : 2
+      } ],
+      "reason" : "SUPPORTED_CURRENT_EVIDENCE",
+      "missingInformation" : [ ],
+      "generatorIdentity" : "http-generation:qwen-plus:acceptance-20261024:prompt-v2",
+      "judgeIdentity" : "http-semantic-judge:qwen-plus:acceptance-20261024:prompt-v1",
+      "elapsedMs" : 6505,
+      "removedClaims" : 0,
+      "memory" : {
+        "facts" : [ {
+          "id" : "de3f015c-37a1-41dc-88d7-c8c8d518ce2b",
+          "key" : "reply_language",
+          "value" : "zh",
+          "version" : 6
+        } ],
+        "identity" : "demo-enterprise/demo-user-a",
+        "usedChars" : 18,
+        "droppedCount" : 0
+      }
+    },
+    "input" : {
+      "expected" : "ANSWERED_OR_PARTIAL",
+      "id" : "answer-401",
+      "question" : "VPN401登录凭据过期，应如何处理？"
+    },
+    "generationCalls" : 1,
+    "judgeCalls" : 1
+  }, {
+    "response" : {
+      "traceId" : "5f574601-c3af-46b4-b9f2-7e3501ee5e1a",
+      "snapshotId" : "6bb4034f-1d76-4b0d-a2fd-b055b4f44863",
+      "status" : "NEEDS_CLARIFICATION",
+      "answer" : "请提供错误码或产品版本，以便查找对应资料。",
+      "claims" : [ ],
+      "evidence" : [ ],
+      "reason" : "MISSING_ERROR_CODE",
+      "missingInformation" : [ "请提供错误码或产品版本，例如 VPN 809。" ],
+      "generatorIdentity" : "http-generation:qwen-plus:acceptance-20261024:prompt-v2",
+      "judgeIdentity" : "http-semantic-judge:qwen-plus:acceptance-20261024:prompt-v1",
+      "elapsedMs" : 199,
+      "removedClaims" : 0,
+      "memory" : {
+        "facts" : [ {
+          "id" : "de3f015c-37a1-41dc-88d7-c8c8d518ce2b",
+          "key" : "reply_language",
+          "value" : "zh",
+          "version" : 6
+        } ],
+        "identity" : "demo-enterprise/demo-user-a",
+        "usedChars" : 18,
+        "droppedCount" : 0
+      }
+    },
+    "input" : {
+      "expected" : "NEEDS_CLARIFICATION",
+      "id" : "clarify",
+      "question" : "VPN连不上怎么办？"
+    },
+    "generationCalls" : 0,
+    "judgeCalls" : 0
+  }, {
+    "response" : {
+      "traceId" : "b5be91eb-2331-4461-8eb5-7e48bc3f175d",
+      "snapshotId" : "69160049-bc06-48a0-bf1c-8fd19b1f3ee4",
+      "status" : "INSUFFICIENT_EVIDENCE",
+      "answer" : "当前有效资料不足以支持回答。",
+      "claims" : [ ],
+      "evidence" : [ ],
+      "reason" : "NO_SUPPORTED_CLAIMS",
+      "missingInformation" : [ "公司带薪年假天数未在提供的VPN故障处理手册或教学手册中提及。" ],
+      "generatorIdentity" : "http-generation:qwen-plus:acceptance-20261024:prompt-v2",
+      "judgeIdentity" : "http-semantic-judge:qwen-plus:acceptance-20261024:prompt-v1",
+      "elapsedMs" : 3965,
+      "removedClaims" : 0,
+      "memory" : {
+        "facts" : [ {
+          "id" : "de3f015c-37a1-41dc-88d7-c8c8d518ce2b",
+          "key" : "reply_language",
+          "value" : "zh",
+          "version" : 6
+        } ],
+        "identity" : "demo-enterprise/demo-user-a",
+        "usedChars" : 18,
+        "droppedCount" : 0
+      }
+    },
+    "input" : {
+      "expected" : "INSUFFICIENT_EVIDENCE",
+      "id" : "no-answer",
+      "question" : "公司带薪年假有多少天？"
+    },
+    "generationCalls" : 1,
+    "judgeCalls" : 0
+  }, {
+    "response" : {
+      "traceId" : "564cea7e-9f05-4527-8e13-ba15b805bf62",
+      "snapshotId" : "e1caf3c1-49f9-4ee9-b7ed-b72d26a6bdf9",
+      "status" : "PARTIAL",
+      "answer" : "VPN 809 需检查 UDP 500 和 UDP 4500 端口的网络连通性。 [E1]",
+      "claims" : [ {
+        "text" : "VPN 809 需检查 UDP 500 和 UDP 4500 端口的网络连通性。",
+        "evidenceIds" : [ "E1" ],
+        "support" : "SUPPORTED",
+        "reason" : "证据E1明确指出'检查 UDP 500 和 UDP 4500 端口的网络连通性'，完全支持claim中关于VPN 809需检查的端口断言；问题后半句'公司年假有多少天'与claim无关，无需验证。"
+      } ],
+      "evidence" : [ {
+        "id" : "E1",
+        "snapshotId" : "e1caf3c1-49f9-4ee9-b7ed-b72d26a6bdf9",
+        "documentId" : "lesson14-vpn-809-20261025",
+        "revisionId" : "d647c6d43599f70c42e305320c077c02aaf514399d051d921a97b2726641b56c",
+        "chunkId" : "298c4be1490ce3ace83c40f4b5d9e07864631128f00cfa8ffdf06e023a3acc31",
+        "sourceName" : "第十四课合成VPN809手册.md",
+        "startUtf16" : 44,
+        "endUtf16" : 150,
+        "startLine" : 5,
+        "endLine" : 7,
+        "text" : "## VPN 809 排查\nVPN 错误码 809 表示连接服务器未响应。先检查本地网络连通性，再检查 VPN 客户端版本。检查 UDP 500 和 UDP 4500 端口的网络连通性。排查时不要关闭防火墙。\n\n",
+        "sha256" : "c535c4da783cc8720ee465b9f7227b356c47f6ffc305d2a332c435d19976533f",
+        "truncated" : false,
+        "generation" : 1
+      } ],
+      "reason" : "MISSING_SUBQUESTION_EVIDENCE",
+      "missingInformation" : [ "未提供公司年假天数的相关资料", "所有证据均未提及年假政策、天数或适用条件" ],
+      "generatorIdentity" : "http-generation:qwen-plus:acceptance-20261024:prompt-v2",
+      "judgeIdentity" : "http-semantic-judge:qwen-plus:acceptance-20261024:prompt-v1",
+      "elapsedMs" : 8339,
+      "removedClaims" : 0,
+      "memory" : {
+        "facts" : [ {
+          "id" : "de3f015c-37a1-41dc-88d7-c8c8d518ce2b",
+          "key" : "reply_language",
+          "value" : "zh",
+          "version" : 6
+        } ],
+        "identity" : "demo-enterprise/demo-user-a",
+        "usedChars" : 18,
+        "droppedCount" : 0
+      }
+    },
+    "input" : {
+      "expected" : "PARTIAL",
+      "id" : "partial",
+      "question" : "用中文回答：VPN809检查哪些端口？公司年假有多少天？"
+    },
+    "generationCalls" : 1,
+    "judgeCalls" : 1
+  } ],
+  "generationCalls" : 4,
+  "datasetVersion" : "lesson14-pipeline-v2-known-regressions",
+  "boundary" : "Five synthetic development cases, not an unbiased holdout. Manual claim/source review recorded separately."
+}
