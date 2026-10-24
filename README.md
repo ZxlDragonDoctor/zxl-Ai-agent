@@ -307,7 +307,8 @@ npm run build
 - [第十二课：知识接入与增量索引](docs/learning/12-knowledge-ingestion-and-indexing.md)：**PostgreSQL 16.15 + pgvector 0.8.6** 教学主线已实现，保留内存对照；文档版本、原文坐标、去重、并发条件发布、删除与精确检索见[实现与验收](docs/learning/12-implementation.md)。本课22项测试、相关后端共106项通过；真实DashScope 1024维最小链路已实测，真实PG进程重启与逐按钮截图已补录，详见实现记录。业务资料入口 `/knowledge`，课程入口 `/learning?node=lesson-12`。
 - [第十三课：检索、混合召回与重排](docs/learning/13-retrieval-hybrid-and-reranking.md)：独立PG检索与固定22题评测已实现并通过本课集中验收；关键词子串、RRF、规则/HTTP重排与预算边界见[实现记录](docs/learning/13-implementation.md)。第十课 Temporal 仍独立待实现。
 
-- [第十四课：引用、拒答与长期记忆](docs/learning/14-citations-abstention-and-memory.md)：完整六单元任务包已发布、工程待实现；覆盖证据编号/支持性、拒答、短期与长期记忆分离、确认/隔离/TTL/删除、真实PG与模型及逐按钮截图验收。
+- [第十四课：引用、拒答与长期记忆](docs/learning/14-citations-abstention-and-memory.md)：工程已实现；48项专项/186项后端回归、50项前端与真实页面已验证，原始judge门槛未过。分层验收见[实现记录](docs/learning/14-implementation.md)。
+- [第十五课：MCP工具契约与适配](docs/learning/15-mcp-tool-contracts-and-adapters.md)：完整六单元任务包已发布、工程待实现；复用统一工具契约与现有MCP适配，补齐真实远程查询、生命周期、预算取消和逐按钮验收。
 
 ![真实工具结果与结束原因](docs/images/lesson3-acceptance.jpg)
 
