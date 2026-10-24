@@ -304,8 +304,10 @@ npm run build
 - [第六课：生命周期与失败传播](docs/learning/06-lifecycle-and-failure-propagation.md)：六项任务已完成；[48 个专项与相关回归、真实模型及故障页面证据](docs/learning/06-implementation.md)。
 - [第七课：截止时间、取消与并发容量](docs/learning/07-deadlines-cancellation-and-capacity.md)：任务包已发布，覆盖统一预算、协作取消、资源清理和有界排队。
 - [第十一课：上下文工程、裁剪与摘要](docs/learning/11-context-engineering.md)：统一会话初始预算、完整工具组与可追溯摘录已实现；[测试及边界](docs/learning/11-implementation.md)分别记录自动验收与未覆盖范围。
-- [第十二课：知识接入与增量索引](docs/learning/12-knowledge-ingestion-and-indexing.md)：**PostgreSQL 16.15 + pgvector 0.8.6** 教学主线已实现，保留内存对照；文档版本、原文坐标、去重、并发条件发布、删除与精确检索见[实现与验收](docs/learning/12-implementation.md)。本课22项测试、相关后端共106项通过；真实DashScope 1024维最小链路已实测，页面截图及数据库进程重启待本批补录。业务资料入口 `/knowledge`，课程入口 `/learning?node=lesson-12`。
-- [第十三课：检索、混合召回与重排](docs/learning/13-retrieval-hybrid-and-reranking.md)：完整六单元任务包已发布、工程待实现，覆盖真实PG精确基线、中文关键词、RRF、重排、查询预算与固定问题评测。第十课 Temporal 仍独立待实现。
+- [第十二课：知识接入与增量索引](docs/learning/12-knowledge-ingestion-and-indexing.md)：**PostgreSQL 16.15 + pgvector 0.8.6** 教学主线已实现，保留内存对照；文档版本、原文坐标、去重、并发条件发布、删除与精确检索见[实现与验收](docs/learning/12-implementation.md)。本课22项测试、相关后端共106项通过；真实DashScope 1024维最小链路已实测，真实PG进程重启与逐按钮截图已补录，详见实现记录。业务资料入口 `/knowledge`，课程入口 `/learning?node=lesson-12`。
+- [第十三课：检索、混合召回与重排](docs/learning/13-retrieval-hybrid-and-reranking.md)：独立PG检索与固定22题评测已实现并通过本课集中验收；关键词子串、RRF、规则/HTTP重排与预算边界见[实现记录](docs/learning/13-implementation.md)。第十课 Temporal 仍独立待实现。
+
+- [第十四课：引用、拒答与长期记忆](docs/learning/14-citations-abstention-and-memory.md)：完整六单元任务包已发布、工程待实现；覆盖证据编号/支持性、拒答、短期与长期记忆分离、确认/隔离/TTL/删除、真实PG与模型及逐按钮截图验收。
 
 ![真实工具结果与结束原因](docs/images/lesson3-acceptance.jpg)
 
@@ -334,3 +336,5 @@ npm run build
 
 **终端与文件工具的运行范围**：这些工具会真实执行命令和读写文件。项目目前用于学习与开发实验，运行时应限定工具与工作目录，并在部署前完善权限和凭据配置。
 
+
+实际API、配置与实施差异见[第十三课实现记录](docs/learning/13-implementation.md)，本课34项专项、真实PG、真实22题与主要页面流程已验收；总计138项后端、44项前端测试与生产构建通过，图谱筛选/关系/阅读卡/双语截图已归档。关键词采用词典/bigram参数化子串，rewrite只补词；尚无BM25、LLM改写、ANN、生产ACL或最终答案。

@@ -11,7 +11,7 @@
 - [完整课程与毕业标准](enterprise-agent-roadmap.md)
 - [参考资料、固定版本与源码导读](reference-guide.md)
 
-当前进度：第一课已学完；第二课工具已接通；第三课四项工程任务已实现并通过 48 个专项用例、前端构建和真实模型页面验收。第四课已实现统一 Agent 会话、JSON 历史与上下文恢复，构建与页面观察见[实现记录](04-implementation.md)，第四课实施时未新增或运行自动测试。第五课已实现严格计划校验、依赖数据流与真实报告，见[实现记录](05-implementation.md)；第六课已实现原子状态与失败传播，48 个专项与相关回归、真实页面及故障记录见[验收记录](06-implementation.md)；第七课已实现共享截止时间、协作取消、实际资源所有权和有界容量，见[验收记录](07-implementation.md)。第八课本地工单重试与幂等已实现并通过 12 项新增专项及 4 项预算回归，见[验收记录](08-implementation.md)；第九课独立持久化工单实验已实现，2026-10-23 补充18项自动测试与16项相关回归共34项通过，见[实现与证据](09-implementation.md)；第十课[Temporal 对照任务包](10-durable-workflows-with-temporal.md)已发布、工程待实现。真实模型压测与生产授权仍未覆盖；第九课跨JVM恢复证据仅限独立实验，不代表原多Agent编排已支持多进程恢复。第十一课已实现统一会话初始上下文预算、完整轮次裁剪与可追溯摘录，18项专项及66项相关回归通过，见[实现记录](11-implementation.md)；第十二课已实现真实PostgreSQL + pgvector知识接入，22项本课测试及相关回归共106项通过、真实1024维Embedding最小链路已验证，见[实现与边界](12-implementation.md)；截图和数据库进程重启待本批补录。第十三课[检索与重排完整任务包](13-retrieval-hybrid-and-reranking.md)已发布、工程待实现。工程完成与个人独立掌握分别记录；学习图谱入口在前端 `/learning`，实现位于[图谱页面](../../zxl-Ai-agent-fronted/src/views/LearningGraph.vue)。
+当前进度：第一课已学完；第二课工具已接通；第三课四项工程任务已实现并通过 48 个专项用例、前端构建和真实模型页面验收。第四课已实现统一 Agent 会话、JSON 历史与上下文恢复，构建与页面观察见[实现记录](04-implementation.md)，第四课实施时未新增或运行自动测试。第五课已实现严格计划校验、依赖数据流与真实报告，见[实现记录](05-implementation.md)；第六课已实现原子状态与失败传播，48 个专项与相关回归、真实页面及故障记录见[验收记录](06-implementation.md)；第七课已实现共享截止时间、协作取消、实际资源所有权和有界容量，见[验收记录](07-implementation.md)。第八课本地工单重试与幂等已实现并通过 12 项新增专项及 4 项预算回归，见[验收记录](08-implementation.md)；第九课独立持久化工单实验已实现，2026-10-23 补充18项自动测试与16项相关回归共34项通过，见[实现与证据](09-implementation.md)；第十课[Temporal 对照任务包](10-durable-workflows-with-temporal.md)已发布、工程待实现。真实模型压测与生产授权仍未覆盖；第九课跨JVM恢复证据仅限独立实验，不代表原多Agent编排已支持多进程恢复。第十一课已实现统一会话初始上下文预算、完整轮次裁剪与可追溯摘录，18项专项及66项相关回归通过，见[实现记录](11-implementation.md)；第十二课已实现真实PostgreSQL + pgvector知识接入，22项本课测试及相关回归共106项通过、真实1024维Embedding最小链路已验证，见[实现与边界](12-implementation.md)；真实PG进程重启与逐按钮截图已补录，详见第十二课实现记录。第十三课独立链路已实现，34项专项、真实22题与主要页面流程已验收，详见[实现记录](13-implementation.md)。工程完成与个人独立掌握分别记录；学习图谱入口在前端 `/learning`，实现位于[图谱页面](../../zxl-Ai-agent-fronted/src/views/LearningGraph.vue)。
 
 学习以可见功能、真实执行记录、故障场景和独立改动作为验收依据。断点作为遇到具体故障时的可选定位手段。
 
@@ -132,10 +132,16 @@ Agent Hub 提交目标
 
 第十一课：[上下文工程、裁剪与摘要](11-context-engineering.md)，从第四课会话恢复扩展到预算分配、完整工具组和可追溯摘录；操作、验证与限制见[实现记录](11-implementation.md)。第十课不作为本课的硬先修，仍独立保持待实现。
 
-第十二课：[知识接入、分块与增量索引](12-knowledge-ingestion-and-indexing.md)，2026-10-24 调整为 **PostgreSQL + pgvector 正式主线，SimpleVectorStore 保留作内存对照与离线单元测试**。任务覆盖真实数据库迁移、维度与检索索引、文档身份、分块、Embedding、增量发布、去重删除、事务并发与重启恢复；必须独立完成真实 PG 集成验收。当前仍是任务包，数据库和课程工程尚未实现，内存测试不能代替 PG 通过。
+第十二课：[知识接入、分块与增量索引](12-knowledge-ingestion-and-indexing.md)，2026-10-24 调整为 **PostgreSQL + pgvector 正式主线，SimpleVectorStore 保留作内存对照与离线单元测试**。任务覆盖真实数据库迁移、维度与检索索引、文档身份、分块、Embedding、增量发布、去重删除、事务并发与重启恢复；必须独立完成真实 PG 集成验收。独立PG教学链路已实现，迁移、事务、并发、检索、重启及截图证据见[实现与验收记录](12-implementation.md)；内存测试不能代替PG通过。
+
+第十三课：[检索、混合召回与重排](13-retrieval-hybrid-and-reranking.md)，独立链路已实现，34项专项、真实PG/22题与主要页面流程已验收；[实现记录](13-implementation.md)区分检索证据与尚未实现的引用回答。
+
+第十四课：[引用、拒答与长期记忆](14-citations-abstention-and-memory.md)，完整六单元任务包已发布、工程待实现；覆盖证据编号与支持性、拒答、短期上下文与事实记忆、确认/隔离/TTL/删除及分层测试和逐按钮截图。当前没有已接入的长期事实/向量记忆服务。
 
 ## 参考资料
 
 - [Spring AI 工具调用文档](https://docs.spring.io/spring-ai/reference/api/tools.html)：模型提出工具请求，应用执行工具并回填结果。当前官方页面为较新的版本，概念可参考，代码以仓库版本为准。
 - [Spring AI 会话记忆文档](https://docs.spring.io/spring-ai/reference/api/chat-memory.html)：上下文记忆与会话记录的用途。
 - [ReAct 原始论文](https://arxiv.org/abs/2210.03629)：交替使用推理与动作的基本思路。
+
+实际API、配置与实施差异见[第十三课实现记录](13-implementation.md)，本课34项专项、真实PG、真实22题与主要页面流程已验收；总计138项后端、44项前端测试与生产构建通过，图谱筛选/关系/阅读卡/双语截图已归档。关键词采用词典/bigram参数化子串，rewrite只补词；尚无BM25、LLM改写、ANN、生产ACL或最终答案。
