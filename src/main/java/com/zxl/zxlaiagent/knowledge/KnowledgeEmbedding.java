@@ -3,6 +3,11 @@ package com.zxl.zxlaiagent.knowledge;
 /** Model calls happen before SQL publication. This port never owns a database transaction. */
 public interface KnowledgeEmbedding {
     float[] embed(String text);
+    default float[] embed(String text, java.time.Duration remaining) {
+        if (Thread.currentThread().isInterrupted()) throw new IllegalStateException("Embedding cancelled");
+        if (remaining.isNegative() || remaining.isZero()) throw new IllegalStateException("Embedding deadline exceeded");
+        return embed(text);
+    }
     default String identity() { return "deterministic-demo-v1"; }
     default int dimensions() { return 8; }
     static String vectorLiteral(float[] vector) {
