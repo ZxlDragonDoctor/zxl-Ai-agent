@@ -23,6 +23,23 @@ public final class Lesson12Demo {
         }
         @Bean KnowledgeService service(KnowledgeDatabase db,KnowledgeEmbedding embedding){return new KnowledgeService(db,"demo-enterprise",embedding);}
         @Bean KnowledgeController controller(KnowledgeService service){return new KnowledgeController(service);}
+        @Bean com.zxl.zxlaiagent.knowledge.retrieval.Reranker reranker(){
+            String mode=System.getenv().getOrDefault("LESSON13_RERANK_MODE","rule");
+            if("rule".equals(mode))return com.zxl.zxlaiagent.knowledge.retrieval.Reranker.rules();
+            if(!"http".equals(mode))throw new IllegalArgumentException("LESSON13_RERANK_MODE must be rule or http");
+            String endpoint=System.getenv("LESSON13_RERANK_ENDPOINT");
+            if(endpoint==null||!endpoint.startsWith("https://"))throw new IllegalArgumentException("HTTP reranking requires explicit HTTPS LESSON13_RERANK_ENDPOINT");
+            return new com.zxl.zxlaiagent.knowledge.retrieval.HttpReranker(java.net.URI.create(endpoint),
+                    System.getenv("LESSON13_RERANK_API_KEY"),System.getenv("LESSON13_RERANK_MODEL"),System.getenv("LESSON13_RERANK_REVISION"));
+        }
+        @Bean com.zxl.zxlaiagent.knowledge.retrieval.RetrievalService retrievalService(KnowledgeDatabase db,KnowledgeEmbedding embedding,com.zxl.zxlaiagent.knowledge.retrieval.Reranker reranker){return new com.zxl.zxlaiagent.knowledge.retrieval.RetrievalService(db,"demo-enterprise",embedding,reranker);}
+        @Bean com.zxl.zxlaiagent.knowledge.retrieval.RetrievalController retrievalController(com.zxl.zxlaiagent.knowledge.retrieval.RetrievalService service){return new com.zxl.zxlaiagent.knowledge.retrieval.RetrievalController(service);}
+        @Bean com.zxl.zxlaiagent.knowledge.evaluation.EvaluationService evaluationService(KnowledgeDatabase db, KnowledgeEmbedding embedding, com.zxl.zxlaiagent.knowledge.retrieval.Reranker reranker) {
+            return new com.zxl.zxlaiagent.knowledge.evaluation.EvaluationService(db, embedding, reranker);
+        }
+        @Bean com.zxl.zxlaiagent.knowledge.evaluation.EvaluationController evaluationController(com.zxl.zxlaiagent.knowledge.evaluation.EvaluationService service) {
+            return new com.zxl.zxlaiagent.knowledge.evaluation.EvaluationController(service);
+        }
     }
     public static void main(String[] args){
         var context=new AnnotationConfigWebApplicationContext();context.getEnvironment().setActiveProfiles("lesson12-demo");context.register(DemoConfiguration.class);
