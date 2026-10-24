@@ -3,14 +3,19 @@ import { computed } from 'vue'
 import AgentExecutionFlow from '../components/AgentExecutionFlow.vue'
 import ChatRoom from '../components/ChatRoom.vue'
 import ConversationSidebar from '../components/ConversationSidebar.vue'
+import KnowledgeAnswerCard from '../components/KnowledgeAnswerCard.vue'
+import FactMemoryPanel from '../components/FactMemoryPanel.vue'
 import { useAgentConversations } from '../composables/useAgentConversations'
-import { t } from '../i18n'
+import { locale, t } from '../i18n'
 
 const { input, messages, error, running, loading, busy, selectedId, selectedType, newType, conversations,
   agents, working, agentName, openConversation, newConversation, removeConversation, sendMessage,
   stopReceiving, refreshCurrent } = useAgentConversations()
 const title = computed(() => conversations.value.find(item => item.id === selectedId.value)?.title || t('conversation.newTitle'))
 const activeType = computed(() => selectedId.value ? selectedType.value : newType.value)
+const examplePrompt = computed(() => activeType.value === 'enterprise-knowledge'
+  ? (locale.value === 'zh-CN' ? 'VPN报错809，先检查什么？' : 'What should I check first for VPN error 809?')
+  : t(activeType.value === 'love-assistant' ? 'conversation.exampleLove' : 'conversation.exampleMemory'))
 </script>
 
 <template>
@@ -32,6 +37,7 @@ const activeType = computed(() => selectedId.value ? selectedType.value : newTyp
       <p v-if="error" class="chat-error" role="alert">{{ error }}</p>
       <p v-if="loading" class="session-notice" role="status">{{ t('conversation.loading') }}</p>
       <p v-else-if="busy && !running" class="session-notice" role="status">{{ t('conversation.busyNote') }}</p>
+      <FactMemoryPanel v-if="activeType === 'enterprise-knowledge'" :conversation-id="selectedId" />
       <ChatRoom :key="selectedId || 'draft'" v-model="input" :messages="messages" :on-send="sendMessage" :disabled="working || busy || !agents.length">
         <template #empty>
           <div class="conversation-welcome">
@@ -39,8 +45,8 @@ const activeType = computed(() => selectedId.value ? selectedType.value : newTyp
             <h2>{{ t('conversation.welcome') }}</h2>
             <p>{{ t('conversation.welcomeDescription') }}</p>
             <div class="example-prompts">
-              <button @click="input = t(activeType === 'love-assistant' ? 'conversation.exampleLove' : 'conversation.exampleMemory')">
-                {{ t(activeType === 'love-assistant' ? 'conversation.exampleLove' : 'conversation.exampleMemory') }}<span aria-hidden="true">↗</span>
+              <button @click="input = examplePrompt">
+                {{ examplePrompt }}<span aria-hidden="true">↗</span>
               </button>
               <button v-if="activeType === 'manus'" @click="input = t('conversation.exampleTime')">{{ t('conversation.exampleTime') }}<span aria-hidden="true">↗</span></button>
             </div>
@@ -51,6 +57,7 @@ const activeType = computed(() => selectedId.value ? selectedType.value : newTyp
           <div v-if="message.content || message.flow?.status !== 'running'" class="agent-answer">
             {{ message.content || t('flow.emptyReply') }}<span v-if="message.isTyping" class="answer-cursor" aria-hidden="true"></span>
           </div>
+          <KnowledgeAnswerCard v-if="message.knowledgePayload" :payload="message.knowledgePayload" />
         </template>
       </ChatRoom>
     </section>
