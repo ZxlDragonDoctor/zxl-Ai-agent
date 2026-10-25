@@ -4,7 +4,7 @@
 
 学习主线：**模型调用 → 上下文与记忆 → 工具调用 → Agent 执行循环 → 多 Agent 编排 → 可靠性与评估**。
 
-当前为开发阶段：编排初始化修正已提交，前端可以独立运行；后端联调需要有效模型配置，MCP 模块获取方式仍待补齐，详见[当前边界与后续方向](#当前边界与后续方向)。
+当前按 **28课企业知识库与工单助手路线**迭代。第十五课已实现真实只读 MCP 与 PG 研究链路；后续课程依次推进，第十课 Temporal 对照仍待补齐。完整进度、证据和未覆盖项见[工程交付表](docs/learning/delivery-progress.md)，长期学习入口为 `/learning`。
 
 [页面预览](#页面预览) · [功能](#功能与实现范围) · [架构](#架构) · [快速开始](#快速开始) · [API](#主要-api) · [开发指南](#开发指南)
 
@@ -18,6 +18,10 @@
 | **恋爱助手 · Agent 类型** | **Agent Hub · English** |
 | [![在统一对话页面选择恋爱助手类型并交流](docs/images/lesson4-agent-types.jpg)](docs/images/lesson4-agent-types.jpg) | [![英文 Agent Hub：任务编排、智能体状态与性能面板](docs/images/agent-hub-en.jpg)](docs/images/agent-hub-en.jpg) |
 
+| **第十五课 · 真实 MCP 研究回答** | **学习图谱 · 课程与工程证据** |
+| --- | --- |
+| [![真实工具选择与带来源回答](docs/images/lesson15-acceptance-2026-10-25/32-real-final-answer.jpg)](docs/images/lesson15-acceptance-2026-10-25/README.md) | [![课程阅读与知识关系](docs/images/lesson15-acceptance-2026-10-25/43-learning-lesson15.jpg)](docs/images/lesson15-acceptance-2026-10-25/README.md) |
+
 顶部 `EN / 中文` 按钮切换界面语言，选择保存在浏览器中。用户消息、模型回复和后端事件代码保留原文。
 
 ## 功能与实现范围
@@ -27,10 +31,10 @@
 | 统一 Agent 对话 | 新建、搜索、切换、恢复、删除会话；可选择 Agent 类型；JSON 持久化 | `/chat-room`；通用工具助手与恋爱助手共用页面，每个会话固定自己的类型 |
 | 恋爱助手 | `LoveAssistantProvider` 提供角色型示例，使用统一历史与真实流式输出 | 新类型没有文件 / 命令工具；旧 `LoveApp` 接口、Kryo 记忆与 RAG 方法保留，旧数据未自动迁移 |
 | 通用工具助手 `ZxlManus` | 模型选择工具、结果回填、预算、明确结束原因、实际执行卡片 | 每次创建新的 Agent，默认 20 步；恢复最近 8 轮完整上下文，完整历史另存 |
-| 多 Agent 编排 | 严格计划契约、DAG 校验、能力匹配、直接依赖结果快照、真实流式报告 | 三角色工单草稿演示；分析给定材料，尚无联网检索或工单写入工具；原子状态与终态保护已实现，取消与持久化继续完善 |
+| 多 Agent 编排 | 严格计划、DAG、依赖快照、原子终态、共享截止、取消和有界容量；ResearchAgent接只读MCP | 工单草稿不等于业务写入；第九课持久化实验独立，原DAG尚未支持多进程恢复 |
 | 工具集 | 文件读写、网页搜索与抓取、资源下载、终端操作、PDF 生成、图片分割、终止 | 执行能力由注册的 `ToolCallback` 提供；外部服务需要有效配置 |
-| RAG | Markdown 加载、关键词元数据、Embedding、内存向量库、查询重写、本地与云端检索方法 | 默认聊天页面尚未接入 RAG 方法 |
-| MCP | MCP 客户端工具合并、独立图片搜索服务 | 图片搜索依赖 Pexels 服务与凭据 |
+| RAG与知识回答 | 真实PostgreSQL+pgvector接入、版本与原文定位、混合召回、重排、引用校验和受限确认事实 | `/knowledge`、统一会话企业知识类型；SimpleVectorStore仅原理/离线对照，质量与授权边界见各课记录 |
+| MCP | 仓库自有只读知识服务、严格适配、有界客户端、单连接所有权及研究Provider | SDK0.7.0旧版SSE，固定本机演示身份；图片搜索子模块仍未补齐获取地址，未被用于本课验收 |
 | 图片生成 | 文本生成图片、主题/环境/尺寸/风格参数接口 | 后端接口已提供，前端尚无专门页面 |
 | 观察与基准 | Agent 状态、事件接口、执行报告、成功率与耗时分位数 | 前端每 5 秒刷新；基准成功率衡量执行是否报错，尚不评价答案质量 |
 | 前端 | 首页、Agent 协作中心、统一对话空间、聊天组件、中英文切换 | `/super-agent` 与 `/love-master` 重定向到统一对话空间，新增类型不需要新增页面 |
@@ -45,7 +49,7 @@
 | Research | 生成研究与分析内容 | [ResearchAgent](src/main/java/com/zxl/zxlaiagent/multiagent/agents/ResearchAgent.java) |
 | Supervisor | 审阅并汇总其他角色的输出 | [SupervisorAgent](src/main/java/com/zxl/zxlaiagent/multiagent/agents/SupervisorAgent.java) |
 
-CodeAgent 和 ResearchAgent 目前主要调用模型生成文本。能力描述中声明 `web_search` 或 `code_generation`，不等同于已接入真实搜索、文件编辑或代码执行工具；这些工具执行能力主要位于 ZxlManus 的调用链中。
+ResearchAgent 已通过真实 MCP 查询当前 PG 知识并复核来源；CodeAgent 仍生成建议，未执行代码或写入工单。角色提示中的能力描述不授予工具权限。统一对话的 MCP 研究类型复用同一执行器，已有通用工具助手的本地工具边界单独保留。
 
 ## 架构
 
@@ -83,7 +87,7 @@ flowchart TD
 | --- | --- |
 | 主应用 | Java 17、Spring Boot 3.4.6 |
 | AI 接入 | Spring AI Alibaba 1.0.0-M6.1、DashScope |
-| MCP 客户端 / 服务端 | Spring AI MCP 1.0.0-M6 |
+| MCP 客户端 / 服务端 | Spring AI MCP 1.0.0-M6、固定SDK0.7.0；本课单可信应用旧版SSE |
 | 图片搜索 MCP 服务 | Java 21、Spring Boot 3.5.3 |
 | 前端 | Vue 3.5、Vue Router 4、TypeScript 5.8、Vite 7 |
 | 文档与工具 | Markdown Reader、Jsoup、Hutool、iText |
@@ -156,7 +160,11 @@ export SEARCH_API_KEY="你的 SearchAPI.io API Key"
 
 ### 4. 准备 MCP 服务
 
-已提交的主应用默认配置通过 `spring.ai.mcp.client.sse.connections.server1.url` 连接 `http://localhost:8127` 的 MCP 服务；STDIO / `mcp-servers.json` 配置当前被注释停用。
+**第十五课正式教学服务**源码已在本仓库：配置第十二课真实 PG 与相同的 HTTP Embedding profile，运行 `scripts/lesson15/start-mcp.ps1`，默认 `127.0.0.1:18135`。知识原文服务 `18132` 同时用于独立来源复核；统一对话选择“MCP研究助手”，展开工具面板刷新发现，再发送问题。完整启动环境、测试与边界见[实现导读](docs/learning/15-implementation.md)和[服务说明](src/main/java/com/zxl/zxlaiagent/knowledge/mcp/README.md)。
+
+它使用应用自有客户端，`LESSON15_MCP_ENDPOINT` 默认指向上述地址。不使用历史图片服务时，可用 `SPRING_AI_MCP_CLIENT_ENABLED=false` 停用 M6 自动客户端连接；不影响本课自有客户端。本批验证基于现有本地工作区/profile，不等于干净新环境部署已完成，第24课单独验收。
+
+**历史图片服务（可选）**：旧默认配置通过 `spring.ai.mcp.client.sse.connections.server1.url` 连接 `http://localhost:8127`；STDIO / `mcp-servers.json` 配置当前被注释停用。
 
 **模块获取限制**：`zxl-image-search-mcp` 当前是 Git 子模块指针，但仓库没有 `.gitmodules` 获取地址。普通克隆不会提供该模块源码，增加 `--recurse-submodules` 也无法补齐地址。完整联调需要先取得该模块源码，或准备兼容的 MCP SSE 服务。
 
@@ -308,14 +316,15 @@ npm run build
 - [第十三课：检索、混合召回与重排](docs/learning/13-retrieval-hybrid-and-reranking.md)：独立PG检索与固定22题评测已实现并通过本课集中验收；关键词子串、RRF、规则/HTTP重排与预算边界见[实现记录](docs/learning/13-implementation.md)。第十课 Temporal 仍独立待实现。
 
 - [第十四课：引用、拒答与长期记忆](docs/learning/14-citations-abstention-and-memory.md)：工程已实现；48项专项/186项后端回归、50项前端与真实页面已验证，原始judge门槛未过。分层验收见[实现记录](docs/learning/14-implementation.md)。
-- [第十五课：MCP工具契约与适配](docs/learning/15-mcp-tool-contracts-and-adapters.md)：完整六单元任务包已发布、工程待实现；复用统一工具契约与现有MCP适配，补齐真实远程查询、生命周期、预算取消和逐按钮验收。
+- [第十五课：MCP工具契约与适配](docs/learning/15-mcp-tool-contracts-and-adapters.md)：已实现，[47专项+194回归、真实模型/PG与逐状态截图](docs/learning/15-implementation.md)分层记录；SDK连接生命周期的真实故障与修复也保留。
+- [第十六课：Skill与业务策略](docs/learning/16-skills-business-policies-and-controlled-tools.md)：完整六单元任务已发布，下一批实现可信版本、权限交集、受控步骤和统一页面；不提前开放工单写入。
 
 ![真实工具结果与结束原因](docs/images/lesson3-acceptance.jpg)
 
 ## 当前边界与后续方向
 
 - **后端启动**：编排初始化已修正；模型、Embedding、MCP 的环境准备与可复现部署仍需完善。
-- **MCP 模块来源**：为现有子模块指针补齐真实仓库地址与获取说明，或将服务源码按明确的仓库结构管理。
+- **MCP 边界**：本仓库已有只读知识服务；图片搜索子模块的来源仍待补齐。单可信本机SSE不能当多租户MCP网关或生产授权。
 - **上下文传递**：直接依赖实际结果已注入只读快照；后续补充结构化业务产物校验、上下文预算与权威知识。
 - **可观察性**：Agent Hub 已用真实报告替换随机进度；完整事件保存、断线恢复和全局耗时指标仍需完善。
 - **会话存储边界**：统一对话已提供 JSON 历史恢复，当前为单进程、单用户演示；多实例、数据库、身份授权与大历史分页仍需扩展。
@@ -329,7 +338,7 @@ npm run build
 
 **前端没有回复或显示离线**：确认主应用运行在 8123，并能访问状态接口；检查终端中的模型调用异常。`Connection reset` 等错误需要先检查模型服务网络连通性，SSE 连接正常建立也不代表上游模型请求成功。
 
-**启动时 MCP 连接失败**：确认图片搜索 MCP 服务先启动，端口为 8127，使用 SSE 配置，并与主应用连接地址一致。
+**MCP 连接失败**：本课知识服务检查18135与实际发现状态、PG/Embedding profile；历史图片自动客户端单独检查8127或明确停用。空工具、查询失败与成功无资料分别处理。
 
 **启动时找不到模型或搜索凭据**：检查 `application-local.yml` 是否位于 `src/main/resources`，以及环境变量是否设置在实际启动应用的终端或 IDE 中。
 
