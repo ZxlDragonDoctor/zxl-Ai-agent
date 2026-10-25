@@ -1,0 +1,277 @@
+[
+  {
+    "name": "01-research-provider",
+    "note": "选择研究类型并新建：统一会话显示MCP工具状态，原3个会话保留。",
+    "time": "2026-10-25T00:08:09.895Z"
+  },
+  {
+    "name": "02-discovery-ready",
+    "note": "刷新工具发现：READY，协议2024-11-05，唯一允许工具knowledge__knowledge_lookup_v1。",
+    "time": "2026-10-25T00:08:17.589Z"
+  },
+  {
+    "name": "03-tool-schema",
+    "note": "展开工具契约：原名、稳定别名、v1、SHA-256及输入schema可见。",
+    "time": "2026-10-25T00:08:17.980Z"
+  },
+  {
+    "name": "04-keyword-success",
+    "note": "keyword实际MCP→PG：返回VPN-401凭据过期资料及行号。",
+    "time": "2026-10-25T00:08:39.603Z"
+  },
+  {
+    "name": "05-source-current",
+    "note": "点击查看原文后的加载中，按钮暂禁用；完成态见06。",
+    "time": "2026-10-25T00:08:47.896Z"
+  },
+  {
+    "name": "06-source-verified",
+    "note": "原文复核完成后显示当前revision与UTF-16范围；已滚动到原文。05为加载中截图。",
+    "time": "2026-10-25T00:09:09.067Z"
+  },
+  {
+    "name": "07-source-closed",
+    "note": "关闭原文：原文区域消失，保留检索结果。",
+    "time": "2026-10-25T00:09:09.450Z"
+  },
+  {
+    "name": "08-source-reopened",
+    "note": "再次查看原文成功，重新请求当前资料。",
+    "time": "2026-10-25T00:09:28.041Z"
+  },
+  {
+    "name": "09-retrieval-trace",
+    "note": "展开检索记录：实际trace、耗时与检索阶段。",
+    "time": "2026-10-25T00:09:28.433Z"
+  },
+  {
+    "name": "10-empty-success",
+    "note": "预期空成功，但实际出现MCP_PROTOCOL_FAILURE；已定位SSE默认30秒闲置超时，保留失败证据，后续重跑。",
+    "time": "2026-10-25T00:09:51.493Z"
+  },
+  {
+    "name": "11-invalid-query",
+    "note": "空查询被服务端拒绝为MCP_INVALID_ARGUMENT；截图10实际为闲置SSE过期故障，待修复重跑。",
+    "time": "2026-10-25T00:10:47.008Z"
+  },
+  {
+    "name": "12-empty-success-rerun",
+    "note": "SSE闲置修复后重跑不存在关键词：预期OK空hits。",
+    "time": "2026-10-25T00:14:02.839Z"
+  },
+  {
+    "name": "13-real-vector-query",
+    "note": "vector实际调用当前1024维Embedding并查询PG，返回当前资料。",
+    "time": "2026-10-25T00:14:16.981Z"
+  },
+  {
+    "name": "14-stop-lookup",
+    "note": "停止接收：本地取消收取，明确不承诺远端回滚；结果未迟到覆盖。",
+    "time": "2026-10-25T00:14:17.647Z"
+  },
+  {
+    "name": "15-hybrid-after-cancel",
+    "note": "停止接收后立即再查：hybrid返回当前PG资料，未被旧取消请求覆盖。",
+    "time": "2026-10-25T00:15:04.396Z"
+  },
+  {
+    "name": "16-deadline",
+    "note": "100毫秒共享预算：明确MCP_DEADLINE_EXCEEDED，不渲染成空知识成功。",
+    "time": "2026-10-25T00:15:10.160Z"
+  },
+  {
+    "name": "17-real-research-run",
+    "note": "真实模型研究请求执行状态；后续完成态与工具卡另存。",
+    "time": "2026-10-25T00:15:34.553Z"
+  },
+  {
+    "name": "18-real-tool-parameters",
+    "note": "实际模型调用参数与PG结果；本次只召回标题，模型拒绝给出没有证据的处理结论，需修复检索查询表达。",
+    "time": "2026-10-25T00:15:47.611Z"
+  },
+  {
+    "name": "19-fixture-lookup",
+    "note": "查询独立合成资料L15REF8654，供换版/删除验收，未改用户vpn-guide。",
+    "time": "2026-10-25T00:18:32.994Z"
+  },
+  {
+    "name": "20-stale-source-rejected",
+    "note": "合成资料v2查询后已更新v3：旧引用明确拒绝，未显示为当前原文。",
+    "time": "2026-10-25T00:18:53.017Z"
+  },
+  {
+    "name": "21-current-revision-rerun",
+    "note": "重新检索得到合成资料v3，内容与版本均更新。",
+    "time": "2026-10-25T00:20:23.420Z"
+  },
+  {
+    "name": "22-current-source-v3",
+    "note": "当前v3原文、revision和UTF-16范围可见。",
+    "time": "2026-10-25T00:20:29.357Z"
+  },
+  {
+    "name": "23-deleted-source-rejected",
+    "note": "合成资料软删除v4：旧引用拒绝，原文不再作为当前有效资料。",
+    "time": "2026-10-25T00:20:46.316Z"
+  },
+  {
+    "name": "24-service-unavailable",
+    "note": "停止真实MCP进程后发现刷新：UNAVAILABLE及明确诊断，无可用工具，主应用会话仍可读。",
+    "time": "2026-10-25T00:21:06.025Z"
+  },
+  {
+    "name": "25-offline-call-failure",
+    "note": "离线状态执行真实查询：预算耗尽/服务失败，未展示为空查询成功。",
+    "time": "2026-10-25T00:21:34.131Z"
+  },
+  {
+    "name": "26-discovery-restored",
+    "note": "真实MCP进程恢复后刷新：READY，工具身份与schema不变。",
+    "time": "2026-10-25T00:22:12.248Z"
+  },
+  {
+    "name": "27-restored-query-success",
+    "note": "服务重启后实际keyword查询401成功，数据仍来自原PG资料。",
+    "time": "2026-10-25T00:22:36.320Z"
+  },
+  {
+    "name": "28-real-pg-outage",
+    "note": "真实PG进程停止后MCP仍在线，但查询明确MCP_TOOL_ERROR，未返回内存资料；需补展示安全的业务诊断码。",
+    "time": "2026-10-25T00:23:10.313Z"
+  },
+  {
+    "name": "29-pg-failure-diagnosis-rerun",
+    "note": "PG实际离线复测：协议失败优先，同时显示安全业务诊断MCP_REMOTE_BUSINESS_FAILURE，不显示虚假的检索记录或资料。",
+    "time": "2026-10-25T00:24:24.118Z"
+  },
+  {
+    "name": "30-pg-restarted-query",
+    "note": "真实PG进程重启后查询恢复；原vpn-guide仍为v2，来源未切到内存。",
+    "time": "2026-10-25T00:25:23.102Z"
+  },
+  {
+    "name": "31-real-research-supported",
+    "note": "同题复测：真实模型选择MCP工具，当前PG原文支持VPN-401凭据过期、统一身份平台重新登录及网络/客户端检查。耗时21.5秒，结论人工逐项核对。",
+    "time": "2026-10-25T00:26:25.731Z"
+  },
+  {
+    "name": "32-real-final-answer",
+    "note": "折叠工具细节后显示最终三条有原文支持的结论及来源行号。",
+    "time": "2026-10-25T00:26:36.544Z"
+  },
+  {
+    "name": "33-stop-research",
+    "note": "立即停止接收后，页面提示等待服务端保存，暂不允许重复发送；不等于远端模型立即取消。",
+    "time": "2026-10-25T00:26:58.615Z"
+  },
+  {
+    "name": "34-stop-persisted",
+    "note": "7秒后服务端保存OUTPUT_INTERRUPTED，输入恢复可用；未产生可发布的研究回答。",
+    "time": "2026-10-25T00:28:08.406Z"
+  },
+  {
+    "name": "35-real-no-evidence",
+    "note": "真实模型仅选择keyword工具查询不存在的词；成功空结果后执行器明确无当前资料，不再启动生成请求。",
+    "time": "2026-10-25T00:29:55.988Z"
+  },
+  {
+    "name": "36-history-restored",
+    "note": "刷新历史后恢复4个本课run与工具状态，当前空证据回答仍可见。",
+    "time": "2026-10-25T00:30:06.359Z"
+  },
+  {
+    "name": "37-english-tools",
+    "note": "英文切换：Provider、发现、协议实验、范围说明与按钮均为英文，动态原文保留。",
+    "time": "2026-10-25T00:30:15.792Z"
+  },
+  {
+    "name": "38-english-lab-expanded",
+    "note": "英文协议实验实际展开：Query、Retrieval mode、Budget、Run read-only lookup及合法范围均为英文。",
+    "time": "2026-10-25T00:30:30.771Z"
+  },
+  {
+    "name": "39-agent-type-isolation",
+    "note": "切换既有恋爱助手会话：恢复其历史，MCP专用工具面板不出现，未新建独立页面。",
+    "time": "2026-10-25T00:30:49.078Z"
+  },
+  {
+    "name": "40-mobile-390",
+    "note": "目标tab实际390px视口，检查横向溢出与对话/工具面板布局。",
+    "time": "2026-10-25T00:31:23.056Z"
+  },
+  {
+    "name": "41-mobile-tools",
+    "note": "390px工具面板展开，无页面横向溢出；控件和发现状态可读。",
+    "time": "2026-10-25T00:31:30.699Z"
+  },
+  {
+    "name": "42-mobile-lab",
+    "note": "390px协议实验展开，字段按移动布局排列，面板滚动保留对话输入。",
+    "time": "2026-10-25T00:31:39.128Z"
+  },
+  {
+    "name": "43-learning-lesson15",
+    "note": "第十五课阅读卡显示工程已实现与241项分层证据；109节点154关系，个人仍0/28。",
+    "time": "2026-10-25T00:38:58.733Z"
+  },
+  {
+    "name": "44-learning-one-hop",
+    "note": "第十五课1跳邻域：保留该课及直接相连知识/证据节点与真实连线。",
+    "time": "2026-10-25T00:39:21.463Z"
+  },
+  {
+    "name": "45-learning-2d",
+    "note": "同一1跳关系切换2D，知识窗口与关联仍可见。",
+    "time": "2026-10-25T00:39:21.919Z"
+  },
+  {
+    "name": "46-mcp-ownership-knowledge",
+    "note": "尝试点击SVG概念节点，但浮窗遮挡导致未选中，画面仍为原课程；后续用键盘入口验证。",
+    "time": "2026-10-25T00:40:10.245Z"
+  },
+  {
+    "name": "47-mcp-concept-keyboard",
+    "note": "键盘选择新增概念成功，连接代际的双语知识正文与源码证据可读。",
+    "time": "2026-10-25T00:40:47.726Z"
+  },
+  {
+    "name": "48-lesson16-next",
+    "note": "沿先修关系进入第十六课：完整六单元任务可读，工程状态仍计划中，未自动标为掌握。",
+    "time": "2026-10-25T00:41:04.590Z"
+  },
+  {
+    "name": "49-mcp-filter",
+    "note": "概念类型+MCP检索显示协议边界与新连接代际知识；筛选不改变个人掌握。",
+    "time": "2026-10-25T00:41:40.708Z"
+  },
+  {
+    "name": "50-evidence-relations",
+    "note": "关系筛选为课程记录，核对源码/文档证据关系可见。",
+    "time": "2026-10-25T00:41:41.203Z"
+  },
+  {
+    "name": "51-lesson16-english",
+    "note": "第十六课英文阅读卡与3D邻域，任务包/实践/边界均双语，个人0/28。",
+    "time": "2026-10-25T00:42:04.875Z"
+  },
+  {
+    "name": "52-full-constellation",
+    "note": "恢复全图/全景：109节点154关系仍显示，星点和连线完整，个人掌握0/28。",
+    "time": "2026-10-25T00:42:28.027Z"
+  },
+  {
+    "name": "53-progress-restored",
+    "note": "合并导入后仍保留两个验收新增的阅读记录，导出对比未完全一致；此失败促使新增独立的完整备份恢复入口，见54重跑。",
+    "time": "2026-10-25T00:42:41.581Z"
+  },
+  {
+    "name": "54-exact-progress-restored",
+    "note": "点击恢复完整备份并选验收前JSON，再导出逐值比较完全一致（12条原记录）；保留原有笔记、掌握状态和阅读位置，移除2条验收临时记录。",
+    "time": "2026-10-25T14:42:35.508Z"
+  },
+  {
+    "name": "55-original-history-restored",
+    "note": "确认测试会话不忙后，将其JSON可恢复地移到target备份；刷新页面仅剩原有3个演示会话，选回通用工具助手与原始星河会话，未改写原会话内容。",
+    "time": "2026-10-25T14:45:30.839Z"
+  }
+]

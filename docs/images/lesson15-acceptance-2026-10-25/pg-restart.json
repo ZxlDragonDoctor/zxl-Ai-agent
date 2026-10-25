@@ -1,0 +1,75 @@
+{
+  "restoredPgPid": 45232,
+  "date": "2026-10-25",
+  "previousPgPid": 49384,
+  "case": "PG restart and real MCP retrieval",
+  "response": {
+    "success": true,
+    "code": "OK",
+    "message": "只读知识查询完成；空 hits 表示当前无匹配资料",
+    "data": {
+      "traceId": "e178ee60-172f-4afa-a69b-93e9bb7dba92",
+      "query": "401",
+      "rewrittenQuery": null,
+      "mode": "keyword",
+      "embeddingMode": "http:text-embedding-v3:acceptance-20261024:1024:9dca9469a42d",
+      "reranker": "disabled",
+      "elapsedMs": 359,
+      "stages": [
+        {
+          "name": "index-profile",
+          "status": "OK",
+          "elapsedMs": 114,
+          "candidateCount": 0
+        },
+        {
+          "name": "rewrite",
+          "status": "DISABLED",
+          "elapsedMs": 0,
+          "candidateCount": 0
+        },
+        {
+          "name": "keyword",
+          "status": "OK",
+          "elapsedMs": 90,
+          "candidateCount": 1
+        },
+        {
+          "name": "authorization-before-rerank",
+          "status": "OK",
+          "elapsedMs": 78,
+          "candidateCount": 1
+        },
+        {
+          "name": "final-visibility",
+          "status": "OK",
+          "elapsedMs": 75,
+          "candidateCount": 1
+        }
+      ],
+      "degradations": [],
+      "shortageReason": "INSUFFICIENT_CURRENT_CANDIDATES",
+      "hits": [
+        {
+          "chunkId": "04900374017daca8094eefb23f243547fdf92f46b30cdef815cc5570b1152028",
+          "documentId": "vpn-guide",
+          "revisionId": "2575dcee3085dea36f72a33a41098f2263c74c57d02e4a9d10ea1c4e3ba37b96",
+          "generation": 2,
+          "text": "## VPN 连接失败\n先确认本地网络可用，再检查 VPN 客户端版本。错误码 VPN-401 表示登录凭据过期，请通过企业统一身份平台重新登录。\n\n",
+          "startLine": 6,
+          "endLine": 8,
+          "startUtf16": 57,
+          "endUtf16": 132,
+          "distance": null,
+          "vectorRank": null,
+          "keywordRank": 1,
+          "fusionScore": 0.01639344262295082,
+          "rerankScore": null,
+          "channels": [
+            "keyword"
+          ]
+        }
+      ]
+    }
+  }
+}

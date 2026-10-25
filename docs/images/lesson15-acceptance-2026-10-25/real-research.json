@@ -1,0 +1,188 @@
+{
+  "date": "2026-10-25",
+  "model": "qwen-plus",
+  "scope": "fixed demo-enterprise",
+  "assessment": "Development examples, not independent holdout; hybrid three claims manually supported by C1. No semantic judge ran in research.",
+  "runs": [
+    {
+      "case": "initial-keyword-insufficient-recall",
+      "status": "completed",
+      "endReason": "ANSWER_READY",
+      "startedAt": "2026-10-25T00:15:10.790743900Z",
+      "finishedAt": "2026-10-25T00:15:27.208826800Z",
+      "answer": "1. 证据仅显示手册标题“企业 VPN 故障处理手册”，未提供VPN401具体处理方法。[C1]  \n2. 资料来源为C1，但内容不含相关答案。[C1]  \n3. 证据中无VPN401的处理信息。[C1]\n\n引用 / Sources:\n[C1] vpn-guide · cba325c949af94b467fde16cf186a5f6b2ed63bd0a6e6c17115ba127249cb5b1 · L1–2",
+      "tools": [
+        {
+          "type": "TOOL_REQUESTED",
+          "step": 1,
+          "callId": "call_f3b04b8c30084fbd87586e",
+          "toolName": "knowledge__knowledge_lookup_v1",
+          "arguments": "{\"query\": \"VPN401 处理方法\", \"topK\": 3, \"mode\": \"keyword\"}",
+          "content": null,
+          "status": "requested",
+          "durationMs": null,
+          "timestamp": 1792887316347,
+          "endReason": null,
+          "conversationId": "a32bed67-45fa-40b2-a2b5-1cb62f35a1dc",
+          "runId": "51700a6b-3d85-4a54-8c4d-b50cca7bea0d"
+        },
+        {
+          "type": "TOOL_STARTED",
+          "step": 1,
+          "callId": "call_f3b04b8c30084fbd87586e",
+          "toolName": "knowledge__knowledge_lookup_v1",
+          "arguments": "{\"query\": \"VPN401 处理方法\", \"topK\": 3, \"mode\": \"keyword\"}",
+          "content": null,
+          "status": "running",
+          "durationMs": null,
+          "timestamp": 1792887316348,
+          "endReason": null,
+          "conversationId": "a32bed67-45fa-40b2-a2b5-1cb62f35a1dc",
+          "runId": "51700a6b-3d85-4a54-8c4d-b50cca7bea0d"
+        },
+        {
+          "type": "TOOL_COMPLETED",
+          "step": 1,
+          "callId": "call_f3b04b8c30084fbd87586e",
+          "toolName": "knowledge__knowledge_lookup_v1",
+          "arguments": "{\"query\": \"VPN401 处理方法\", \"topK\": 3, \"mode\": \"keyword\"}",
+          "content": "{\"success\":true,\"code\":\"OK\",\"message\":\"只读知识查询完成；空 hits 表示当前无匹配资料\",\"data\":{\"traceId\":\"0cacde56-5ad3-4079-9747-1ba466eb053e\",\"query\":\"VPN401 处理方法\",\"rewrittenQuery\":null,\"mode\":\"keyword\",\"embeddingMode\":\"http:text-embedding-v3:acceptance-20261024:1024:9dca9469a42d\",\"reranker\":\"disabled\",\"elapsedMs\":337,\"stages\":[{\"name\":\"index-profile\",\"status\":\"OK\",\"elapsedMs\":97,\"candidateCount\":0},{\"name\":\"rewrite\",\"status\":\"DISABLED\",\"elapsedMs\":0,\"candidateCount\":0},{\"name\":\"keyword\",\"status\":\"OK\",\"elapsedMs\":84,\"candidateCount\":1},{\"name\":\"authorization-before-rerank\",\"status\":\"OK\",\"elapsedMs\":78,\"candidateCount\":1},{\"name\":\"final-visibility\",\"status\":\"OK\",\"elapsedMs\":75,\"candidateCount\":1}],\"degradations\":[],\"shortageReason\":\"INSUFFICIENT_CURRENT_CANDIDATES\",\"hits\":[{\"chunkId\":\"cba325c949af94b467fde16cf186a5f6b2ed63bd0a6e6c17115ba127249cb5b1\",\"documentId\":\"vpn-guide\",\"revisionId\":\"2575dcee3085dea36f72a33a41098f2263c74c57d02e4a9d10ea1c4e3ba37b96\",\"generation\":2,\"text\":\"# 企业 VPN 故障处理手册\\n\\n\",\"startLine\":1,\"endLine\":2,\"startUtf16\":0,\"endUtf16\":17,\"distance\":null,\"vectorRank\":null,\"keywordRank\":1,\"fusionScore\":0.01639344262295082,\"rerankScore\":null,\"channels\":[\"keyword\"]}]}}",
+          "status": "completed",
+          "durationMs": 357,
+          "timestamp": 1792887316706,
+          "endReason": null,
+          "conversationId": "a32bed67-45fa-40b2-a2b5-1cb62f35a1dc",
+          "runId": "51700a6b-3d85-4a54-8c4d-b50cca7bea0d"
+        }
+      ]
+    },
+    {
+      "case": "hybrid-supported-answer",
+      "status": "completed",
+      "endReason": "ANSWER_READY",
+      "startedAt": "2026-10-25T00:25:23.481774300Z",
+      "finishedAt": "2026-10-25T00:25:44.976237500Z",
+      "answer": "1. 错误码VPN-401表示登录凭据过期[C1]。  \n2. 需通过企业统一身份平台重新登录以解决[C1]。  \n3. 处理前应先确认本地网络可用并检查VPN客户端版本[C1]。\n\n引用 / Sources:\n[C1] vpn-guide · 04900374017daca8094eefb23f243547fdf92f46b30cdef815cc5570b1152028 · L6–8\n[C2] vpn-guide · cba325c949af94b467fde16cf186a5f6b2ed63bd0a6e6c17115ba127249cb5b1 · L1–2\n[C3] vpn-guide · 44ac1cba8b8c1a55a69ca37e80ca815bddf206c0d55d27adffb5ae416cc30261 · L9–10",
+      "tools": [
+        {
+          "type": "TOOL_REQUESTED",
+          "step": 1,
+          "callId": "call_eb7b919634a74b45bb1718",
+          "toolName": "knowledge__knowledge_lookup_v1",
+          "arguments": "{\"query\": \"VPN 401\", \"mode\": \"hybrid\", \"topK\": 3}",
+          "content": null,
+          "status": "requested",
+          "durationMs": null,
+          "timestamp": 1792887929922,
+          "endReason": null,
+          "conversationId": "a32bed67-45fa-40b2-a2b5-1cb62f35a1dc",
+          "runId": "5da72af5-c24f-4c43-b62c-615af7e176ca"
+        },
+        {
+          "type": "TOOL_STARTED",
+          "step": 1,
+          "callId": "call_eb7b919634a74b45bb1718",
+          "toolName": "knowledge__knowledge_lookup_v1",
+          "arguments": "{\"query\": \"VPN 401\", \"mode\": \"hybrid\", \"topK\": 3}",
+          "content": null,
+          "status": "running",
+          "durationMs": null,
+          "timestamp": 1792887929922,
+          "endReason": null,
+          "conversationId": "a32bed67-45fa-40b2-a2b5-1cb62f35a1dc",
+          "runId": "5da72af5-c24f-4c43-b62c-615af7e176ca"
+        },
+        {
+          "type": "TOOL_COMPLETED",
+          "step": 1,
+          "callId": "call_eb7b919634a74b45bb1718",
+          "toolName": "knowledge__knowledge_lookup_v1",
+          "arguments": "{\"query\": \"VPN 401\", \"mode\": \"hybrid\", \"topK\": 3}",
+          "content": "{\"success\":true,\"code\":\"OK\",\"message\":\"只读知识查询完成；空 hits 表示当前无匹配资料\",\"data\":{\"traceId\":\"060bbe3e-1cf1-4464-b1fa-7cc43961f7b7\",\"query\":\"VPN 401\",\"rewrittenQuery\":null,\"mode\":\"hybrid\",\"embeddingMode\":\"http:text-embedding-v3:acceptance-20261024:1024:9dca9469a42d\",\"reranker\":\"disabled\",\"elapsedMs\":944,\"stages\":[{\"name\":\"index-profile\",\"status\":\"OK\",\"elapsedMs\":87,\"candidateCount\":0},{\"name\":\"rewrite\",\"status\":\"DISABLED\",\"elapsedMs\":0,\"candidateCount\":0},{\"name\":\"vector\",\"status\":\"OK\",\"elapsedMs\":604,\"candidateCount\":4},{\"name\":\"keyword\",\"status\":\"OK\",\"elapsedMs\":90,\"candidateCount\":2},{\"name\":\"authorization-before-rerank\",\"status\":\"OK\",\"elapsedMs\":79,\"candidateCount\":4},{\"name\":\"final-visibility\",\"status\":\"OK\",\"elapsedMs\":81,\"candidateCount\":4}],\"degradations\":[],\"shortageReason\":null,\"hits\":[{\"chunkId\":\"04900374017daca8094eefb23f243547fdf92f46b30cdef815cc5570b1152028\",\"documentId\":\"vpn-guide\",\"revisionId\":\"2575dcee3085dea36f72a33a41098f2263c74c57d02e4a9d10ea1c4e3ba37b96\",\"generation\":2,\"text\":\"## VPN 连接失败\\n先确认本地网络可用，再检查 VPN 客户端版本。错误码 VPN-401 表示登录凭据过期，请通过企业统一身份平台重新登录。\\n\\n\",\"startLine\":6,\"endLine\":8,\"startUtf16\":57,\"endUtf16\":132,\"distance\":0.2155740728632154,\"vectorRank\":1,\"keywordRank\":1,\"fusionScore\":0.03278688524590164,\"rerankScore\":null,\"channels\":[\"vector\",\"keyword\"]},{\"chunkId\":\"cba325c949af94b467fde16cf186a5f6b2ed63bd0a6e6c17115ba127249cb5b1\",\"documentId\":\"vpn-guide\",\"revisionId\":\"2575dcee3085dea36f72a33a41098f2263c74c57d02e4a9d10ea1c4e3ba37b96\",\"generation\":2,\"text\":\"# 企业 VPN 故障处理手册\\n\\n\",\"startLine\":1,\"endLine\":2,\"startUtf16\":0,\"endUtf16\":17,\"distance\":0.3282993836224435,\"vectorRank\":2,\"keywordRank\":2,\"fusionScore\":0.03225806451612903,\"rerankScore\":null,\"channels\":[\"vector\",\"keyword\"]},{\"chunkId\":\"44ac1cba8b8c1a55a69ca37e80ca815bddf206c0d55d27adffb5ae416cc30261\",\"documentId\":\"vpn-guide\",\"revisionId\":\"2575dcee3085dea36f72a33a41098f2263c74c57d02e4a9d10ea1c4e3ba37b96\",\"generation\":2,\"text\":\"## 工单升级\\n连续两次连接失败时提交网络支持工单。工单应包含发生时间、客户端版本和脱敏错误码；不要上传密码、验证码或访问令牌。\\n\",\"startLine\":9,\"endLine\":10,\"startUtf16\":132,\"endUtf16\":197,\"distance\":0.5339476466178894,\"vectorRank\":3,\"keywordRank\":null,\"fusionScore\":0.015873015873015872,\"rerankScore\":null,\"channels\":[\"vector\"]}]}}",
+          "status": "completed",
+          "durationMs": 962,
+          "timestamp": 1792887930886,
+          "endReason": null,
+          "conversationId": "a32bed67-45fa-40b2-a2b5-1cb62f35a1dc",
+          "runId": "5da72af5-c24f-4c43-b62c-615af7e176ca"
+        }
+      ]
+    },
+    {
+      "case": "stop-receiving",
+      "status": "interrupted",
+      "endReason": "OUTPUT_INTERRUPTED",
+      "startedAt": "2026-10-25T00:26:58.001844500Z",
+      "finishedAt": "2026-10-25T00:27:05.014685700Z",
+      "answer": "",
+      "tools": [
+        {
+          "type": "TOOL_REQUESTED",
+          "step": 1,
+          "callId": "call_cb1191eda2724d308bc303",
+          "toolName": "knowledge__knowledge_lookup_v1",
+          "arguments": "{\"query\": \"企业VPN 支持的处理办法\", \"topK\": 3, \"mode\": \"hybrid\"}",
+          "content": null,
+          "status": "requested",
+          "durationMs": null,
+          "timestamp": 1792888025013,
+          "endReason": null,
+          "conversationId": "a32bed67-45fa-40b2-a2b5-1cb62f35a1dc",
+          "runId": "b0fcd60b-d4ff-483c-a16c-3eb08959e623"
+        }
+      ]
+    },
+    {
+      "case": "keyword-no-evidence",
+      "status": "completed",
+      "endReason": "ANSWER_READY",
+      "startedAt": "2026-10-25T00:28:08.472832100Z",
+      "finishedAt": "2026-10-25T00:28:14.176684600Z",
+      "answer": "当前有效知识中没有找到匹配资料；未生成缺乏证据的结论。 / No matching current evidence.",
+      "tools": [
+        {
+          "type": "TOOL_REQUESTED",
+          "step": 1,
+          "callId": "call_da95119aa16c492796126e",
+          "toolName": "knowledge__knowledge_lookup_v1",
+          "arguments": "{\"query\": \"notfoundzzxyzlesson15\", \"mode\": \"keyword\", \"topK\": 3}",
+          "content": null,
+          "status": "requested",
+          "durationMs": null,
+          "timestamp": 1792888093964,
+          "endReason": null,
+          "conversationId": "a32bed67-45fa-40b2-a2b5-1cb62f35a1dc",
+          "runId": "ee79acdd-c1ac-4822-89e6-8457536627b8"
+        },
+        {
+          "type": "TOOL_STARTED",
+          "step": 1,
+          "callId": "call_da95119aa16c492796126e",
+          "toolName": "knowledge__knowledge_lookup_v1",
+          "arguments": "{\"query\": \"notfoundzzxyzlesson15\", \"mode\": \"keyword\", \"topK\": 3}",
+          "content": null,
+          "status": "running",
+          "durationMs": null,
+          "timestamp": 1792888093965,
+          "endReason": null,
+          "conversationId": "a32bed67-45fa-40b2-a2b5-1cb62f35a1dc",
+          "runId": "ee79acdd-c1ac-4822-89e6-8457536627b8"
+        },
+        {
+          "type": "TOOL_COMPLETED",
+          "step": 1,
+          "callId": "call_da95119aa16c492796126e",
+          "toolName": "knowledge__knowledge_lookup_v1",
+          "arguments": "{\"query\": \"notfoundzzxyzlesson15\", \"mode\": \"keyword\", \"topK\": 3}",
+          "content": "{\"success\":true,\"code\":\"OK\",\"message\":\"只读知识查询完成；空 hits 表示当前无匹配资料\",\"data\":{\"traceId\":\"34bb5d98-695a-4723-92c8-767908cb7cc6\",\"query\":\"notfoundzzxyzlesson15\",\"rewrittenQuery\":null,\"mode\":\"keyword\",\"embeddingMode\":\"http:text-embedding-v3:acceptance-20261024:1024:9dca9469a42d\",\"reranker\":\"disabled\",\"elapsedMs\":193,\"stages\":[{\"name\":\"index-profile\",\"status\":\"OK\",\"elapsedMs\":100,\"candidateCount\":0},{\"name\":\"rewrite\",\"status\":\"DISABLED\",\"elapsedMs\":0,\"candidateCount\":0},{\"name\":\"keyword\",\"status\":\"OK\",\"elapsedMs\":93,\"candidateCount\":0},{\"name\":\"authorization-before-rerank\",\"status\":\"OK\",\"elapsedMs\":0,\"candidateCount\":0},{\"name\":\"final-visibility\",\"status\":\"OK\",\"elapsedMs\":0,\"candidateCount\":0}],\"degradations\":[],\"shortageReason\":\"NO_CURRENT_MATCHES\",\"hits\":[]}}",
+          "status": "completed",
+          "durationMs": 206,
+          "timestamp": 1792888094172,
+          "endReason": null,
+          "conversationId": "a32bed67-45fa-40b2-a2b5-1cb62f35a1dc",
+          "runId": "ee79acdd-c1ac-4822-89e6-8457536627b8"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "case": "actual PostgreSQL process stopped; no in-memory fallback",
+  "date": "2026-10-25",
+  "result": {
+    "success": false,
+    "code": "MCP_TOOL_ERROR",
+    "message": "远程工具返回失败",
+    "data": {
+      "isError": true,
+      "contentOmitted": true,
+      "remoteCode": "MCP_REMOTE_BUSINESS_FAILURE"
+    }
+  },
+  "previousPgPid": 49384
+}
