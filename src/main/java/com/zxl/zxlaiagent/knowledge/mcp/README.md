@@ -52,3 +52,11 @@ SSE 使用显式无限 async 生命周期（每个业务调用仍有独立预算
 1. SDK 原生 `HttpServletSseServerTransport` 异步 callback 写入已回收的 HTTP response，取消后下一请求出现 `newPosition > limit`；先改用 MVC 管理异步响应生命周期，保留取消后立即再调用的用例。
 2. 官方 `WebMvcSseServerTransport` 0.7.0 的会话 map 只在初始发送异常时移除，正常刷新继续残留，并将结果广播到历史连接；第二次刷新实际 map 大小为 2。其固定 `/mcp/message` 也未绑定连接。现在用本项目有界单客户端传输管理所有权，协议版本与 SDK 版本均未升级。
 3. 仅修会话 map 后，连续第 9 次刷新仍因旧 Java HTTP 客户端的闲置连接池耗尽 16 个连接；增加完成即关连接的策略后，相同 20 次真实刷新/调用通过。原始单次预算与连接上限均未放宽。
+
+## 单次协议期限与返回余量（第十六课补强）
+
+完整发现的期限和 SDK 单次 RPC 期限不同。连接记录当次 SDK requestTimeout，后续调用不得给服务端承诺更长预算。服务端预算取原始剩余时间、SDK 会话上限和 10 秒工具上限的最小值，再保留 100–500ms 接收结果的余量。短预算建立的会话不会在后续长请求中被静默延长。
+
+SDK 使用 Mono.timeout。因果链中的 TimeoutException、HttpTimeoutException、SocketTimeoutException 映射为受控 deadline，不能根据异常文本猜超时。实际 SDK 超时或取消使当前会话失效，下次独立请求重新发现，本次不自动重试。正常远程 isError 的超时、取消、容量由适配器白名单保留，错误文本或 retryable 字段不授予任何权限。
+
+原 100ms 余量在真实 loopback、每个下行块延迟 150ms 时复现了“服务器超时响应未到，SDK 先超时”。保守余量后同一隔离探针收到明确 remote isError deadline。这个有界探针不证明任意网络延迟都能按时返回；客户端绝对期限仍负责停止等待。

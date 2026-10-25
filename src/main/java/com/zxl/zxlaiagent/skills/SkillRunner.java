@@ -98,16 +98,28 @@ public final class SkillRunner {
     private static void check(long end,BooleanSupplier cancel){if(Thread.currentThread().isInterrupted()||cancel.getAsBoolean())throw new CancellationException("SKILL_CANCELLED");if(System.nanoTime()>=end)throw new IllegalStateException("SKILL_DEADLINE");}
     private static Status classify(RuntimeException e){
         String code=e.getMessage()==null?"":e.getMessage();
-        if(e instanceof CancellationException||code.contains("CANCELLED"))return Status.CANCELLED;
-        if(e instanceof SecurityException||code.contains("ALLOWLIST")||code.contains("SELECTION_DENIED")||code.contains("NOT_AUTHORIZED"))return Status.DENIED;
-        if(code.contains("DEADLINE"))return Status.TIMED_OUT;if(code.contains("CAPACITY"))return Status.CAPACITY;return Status.FAILED;
+        if(e instanceof com.zxl.zxlaiagent.knowledge.mcp.KnowledgeMcpClient.Failure typed){
+            return switch(typed.code()==null?"":typed.code()){
+                case "MCP_CANCELLED"->Status.CANCELLED;case "MCP_NOT_AUTHORIZED"->Status.DENIED;
+                case "MCP_DEADLINE_EXCEEDED"->Status.TIMED_OUT;case "MCP_CAPACITY"->Status.CAPACITY;default->Status.FAILED;
+            };
+        }
+        if(e instanceof CancellationException||Set.of("SKILL_CANCELLED","RESEARCH_CANCELLED").contains(code))return Status.CANCELLED;
+        if(e instanceof SecurityException||Set.of("RESEARCH_TOOL_ALLOWLIST","RESEARCH_TOOL_SELECTION_DENIED").contains(code))return Status.DENIED;
+        if(Set.of("SKILL_DEADLINE","RESEARCH_DEADLINE").contains(code))return Status.TIMED_OUT;
+        if(Set.of("SKILL_CAPACITY","RESEARCH_CAPACITY").contains(code))return Status.CAPACITY;return Status.FAILED;
     }
     private static String safeCode(RuntimeException e,Status status){
         if(status==Status.DENIED)return "SKILL_POLICY_DENIED";if(status==Status.CANCELLED)return "SKILL_CANCELLED";if(status==Status.TIMED_OUT)return "SKILL_DEADLINE";if(status==Status.CAPACITY)return "SKILL_CAPACITY";
         String message=e.getMessage();
-        return message!=null&&Set.of("SKILL_TOOL_SNAPSHOT_CHANGED","SKILL_TOOL_UNAVAILABLE").contains(message)?message:"SKILL_EXECUTION_FAILED";
+        return message!=null&&Set.of("SKILL_TOOL_SNAPSHOT_CHANGED","SKILL_TOOL_UNAVAILABLE","RESEARCH_EXPECTS_ONE_TOOL_SELECTION",
+                "RESEARCH_UNEXPECTED_SECOND_TOOL","RESEARCH_INVALID_ANSWER","RESEARCH_MISSING_CITATION","RESEARCH_INVALID_CITATION",
+                "RESEARCH_EVIDENCE_CHANGED_BEFORE_DISPATCH","RESEARCH_EVIDENCE_CHANGED","RESEARCH_EVIDENCE_REJECTED",
+                "RESEARCH_INVALID_EVIDENCE","RESEARCH_MODEL_INPUT_LIMIT","RESEARCH_RESPONSE_LIMIT","RESEARCH_MODEL_FAILED",
+                "RESEARCH_MODEL_AUTH_FAILED","RESEARCH_MODEL_RATE_LIMITED","RESEARCH_MODEL_SERVICE_UNAVAILABLE","RESEARCH_MODEL_HTTP_FAILED","RESEARCH_MODEL_NETWORK_UNAVAILABLE",
+                "RESEARCH_REMOTE_FAILURE","RESEARCH_INVALID_REQUEST").contains(message)?message:"SKILL_EXECUTION_FAILED";
     }
-    private static String message(Status status){return switch(status){case DENIED->"服务端策略拒绝该动作，未创建工单。 / Server policy denied the action; no ticket created.";case CANCELLED->"本地执行已取消；不代表远程回滚，未创建工单。 / Local execution cancelled; remote rollback is not implied.";case TIMED_OUT->"统一执行期限已到，未发布草稿。 / Shared deadline reached; no draft published.";case CAPACITY->"执行容量已满，请稍后重试。 / Capacity reached.";default->"工具或证据校验未完成，未创建工单；请检查服务状态。 / Tool or evidence verification failed; no ticket created.";};}
+    private static String message(Status status){return switch(status){case DENIED->"服务端策略拒绝该动作，未创建工单。 / Server policy denied the action; no ticket created.";case CANCELLED->"本地执行已取消；不代表远程回滚，未创建工单。 / Local execution cancelled; remote rollback is not implied.";case TIMED_OUT->"本次步骤或整体预算已耗尽，未发布草稿。 / Step or overall execution budget exhausted; no draft published.";case CAPACITY->"执行容量已满，请稍后重试。 / Capacity reached.";default->"工具或证据校验未完成，未创建工单；请检查服务状态。 / Tool or evidence verification failed; no ticket created.";};}
     private static final class Trace {
         final Consumer<AgentExecutionEvent> events;final LinkedHashMap<String,StepResult> steps=new LinkedHashMap<>();boolean terminal;String current;long currentStart;
         Trace(Consumer<AgentExecutionEvent> events){this.events=Objects.requireNonNull(events);}

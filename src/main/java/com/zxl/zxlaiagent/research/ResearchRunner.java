@@ -48,7 +48,8 @@ public final class ResearchRunner {
         try{result=gateway.call(choice.name(),choice.arguments(),remaining(end,cancelled),cancelled);check(end,cancelled);}
         catch(RuntimeException failure){
             check(end,cancelled);
-            events.accept(AgentExecutionEvent.tool("TOOL_FAILED",1,choice.callId(),choice.name(),choice.arguments(),ToolResults.json(com.zxl.zxlaiagent.tools.model.ToolResult.fail("MCP_CALL_FAILED","MCP服务未完成调用，请检查服务状态")),"error",(System.nanoTime()-start)/1_000_000));throw failure;
+            String code=safeClientCode(failure);
+            events.accept(AgentExecutionEvent.tool("TOOL_FAILED",1,choice.callId(),choice.name(),choice.arguments(),ToolResults.json(com.zxl.zxlaiagent.tools.model.ToolResult.fail(code,"MCP服务未完成调用，请检查服务状态")),"error",(System.nanoTime()-start)/1_000_000));throw failure;
         }
         if(result==null||result.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>com.zxl.zxlaiagent.tools.support.StructuredMcpToolCallback.MAX_RESPONSE_BYTES){
             events.accept(AgentExecutionEvent.tool("TOOL_FAILED",1,choice.callId(),choice.name(),choice.arguments(),ToolResults.json(com.zxl.zxlaiagent.tools.model.ToolResult.fail("MCP_INVALID_RESPONSE","工具响应超过绝对字节限制")),"error",(System.nanoTime()-start)/1_000_000));
@@ -56,7 +57,14 @@ public final class ResearchRunner {
         }
         JsonNode envelope=ToolResults.read(result);boolean success=envelope.path("success").asBoolean();
         events.accept(AgentExecutionEvent.tool(success?"TOOL_COMPLETED":"TOOL_FAILED",1,choice.callId(),choice.name(),choice.arguments(),result,success?"completed":"error",(System.nanoTime()-start)/1_000_000));
-        if(!success)throw new IllegalStateException("RESEARCH_REMOTE_FAILURE: "+envelope.path("code").asText());
+        if(!success){
+            // Only the adapter's bounded diagnostic enum may classify a remote isError result.
+            // Arbitrary remote text, retry hints and error messages never grant a retry or alter identity.
+            String remote=envelope.path("data").path("remoteCode").asText();
+            if("MCP_TOOL_ERROR".equals(envelope.path("code").asText())&&Set.of("MCP_DEADLINE_EXCEEDED","MCP_CANCELLED","MCP_CAPACITY").contains(remote))
+                throw new com.zxl.zxlaiagent.knowledge.mcp.KnowledgeMcpClient.Failure(remote);
+            throw new IllegalStateException("RESEARCH_REMOTE_FAILURE");
+        }
         JsonNode raw=envelope.path("data").path("hits");
         if(!raw.isArray()||raw.size()>5)throw new IllegalStateException("RESEARCH_INVALID_EVIDENCE");
         List<JsonNode> hits=new ArrayList<>();raw.forEach(hits::add);
@@ -86,6 +94,12 @@ public final class ResearchRunner {
         catch(InterruptedException e){Thread.currentThread().interrupt();throw new CancellationException("RESEARCH_CANCELLED");}
         catch(ExecutionException e){if(e.getCause() instanceof RuntimeException r)throw r;throw new IllegalStateException("RESEARCH_MODEL_FAILED",e.getCause());}
         finally{if(!f.isDone())f.cancel(true);MODELS.purge();}
+    }
+    private static String safeClientCode(RuntimeException failure){
+        if(failure instanceof com.zxl.zxlaiagent.knowledge.mcp.KnowledgeMcpClient.Failure typed
+                &&typed.code()!=null&&Set.of("MCP_CLOSED","MCP_INVALID_ARGUMENT","MCP_NOT_AUTHORIZED","MCP_NETWORK_FAILURE","MCP_PROTOCOL_FAILURE","MCP_SCHEMA_CHANGED",
+                "MCP_DEADLINE_EXCEEDED","MCP_CANCELLED","MCP_CAPACITY","MCP_INVALID_RESPONSE").contains(typed.code()))return typed.code();
+        return "MCP_CALL_FAILED";
     }
     public static Duration remaining(long end,BooleanSupplier cancelled){check(end,cancelled);return Duration.ofNanos(Math.max(1,end-System.nanoTime()));}
     private static void check(long end,BooleanSupplier cancelled){if(Thread.currentThread().isInterrupted()||cancelled.getAsBoolean())throw new CancellationException("RESEARCH_CANCELLED");if(System.nanoTime()>=end)throw new IllegalStateException("RESEARCH_DEADLINE");}
