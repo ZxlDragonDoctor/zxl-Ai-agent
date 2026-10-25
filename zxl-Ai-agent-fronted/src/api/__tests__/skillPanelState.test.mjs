@@ -24,3 +24,17 @@ test('a panel mounted while already sending starts collapsed but permits explici
     disabled.value = false; await nextTick(); assert.equal(expanded.value, true)
   } finally { scope.stop() }
 })
+
+test('settled activity refreshes read-only service status once without reopening the panel', async () => {
+  const scope = effectScope(), disabled = ref(false)
+  let refreshes = 0
+  const expanded = scope.run(() => useSkillPanelExpansion(disabled, () => { refreshes++ }))
+  assert.equal(refreshes, 0)
+  disabled.value = true; await nextTick(); assert.equal(refreshes, 0)
+  disabled.value = false; await nextTick(); assert.equal(refreshes, 1)
+  assert.equal(expanded.value, false)
+  disabled.value = false; await nextTick(); assert.equal(refreshes, 1)
+  scope.stop()
+  disabled.value = true; await nextTick(); disabled.value = false; await nextTick()
+  assert.equal(refreshes, 1)
+})

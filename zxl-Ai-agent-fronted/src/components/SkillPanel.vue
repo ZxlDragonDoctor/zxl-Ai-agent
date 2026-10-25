@@ -6,7 +6,7 @@ import type { SkillCatalogue } from '../api/skills'
 import { useSkillPanelExpansion } from '../utils/skillPanelState'
 const props = defineProps<{ modelValue: string; disabled?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [string] }>()
-const expanded = useSkillPanelExpansion(toRef(props, 'disabled'))
+const expanded = useSkillPanelExpansion(toRef(props, 'disabled'), () => { void refreshService(false) })
 const tr = (zh: string, en: string) => locale.value === 'zh-CN' ? zh : en
 const catalogue = ref<SkillCatalogue | null>(null), error = ref(''), loading = ref(false)
 let disposed = false
