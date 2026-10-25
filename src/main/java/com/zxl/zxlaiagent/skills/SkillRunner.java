@@ -111,6 +111,9 @@ public final class SkillRunner {
     }
     private static String safeCode(RuntimeException e,Status status){
         if(status==Status.DENIED)return "SKILL_POLICY_DENIED";if(status==Status.CANCELLED)return "SKILL_CANCELLED";if(status==Status.TIMED_OUT)return "SKILL_DEADLINE";if(status==Status.CAPACITY)return "SKILL_CAPACITY";
+        if(e instanceof com.zxl.zxlaiagent.knowledge.mcp.KnowledgeMcpClient.Failure typed){
+            return typed.code()!=null&&Set.of("MCP_NETWORK_FAILURE","MCP_PROTOCOL_FAILURE","MCP_SCHEMA_CHANGED").contains(typed.code())?typed.code():"SKILL_EXECUTION_FAILED";
+        }
         String message=e.getMessage();
         return message!=null&&Set.of("SKILL_TOOL_SNAPSHOT_CHANGED","SKILL_TOOL_UNAVAILABLE","RESEARCH_EXPECTS_ONE_TOOL_SELECTION",
                 "RESEARCH_UNEXPECTED_SECOND_TOOL","RESEARCH_INVALID_ANSWER","RESEARCH_MISSING_CITATION","RESEARCH_INVALID_CITATION",

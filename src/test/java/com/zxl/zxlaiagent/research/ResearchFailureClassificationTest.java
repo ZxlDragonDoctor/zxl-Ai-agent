@@ -67,4 +67,23 @@ class ResearchFailureClassificationTest {
             assertEquals(code.startsWith("RESEARCH_")?code:"SKILL_EXECUTION_FAILED",result.code());assertFalse(result.advice().contains("password"));
         }
     }
+    @Test void discoveryFailurePreservesKnownTypedDiagnosticsWithoutModelOrToolCalls() {
+        for(String code:List.of("MCP_NETWORK_FAILURE","MCP_PROTOCOL_FAILURE","MCP_SCHEMA_CHANGED","password=do-not-expose")){
+            var unavailable=new ResearchRunner.Gateway(){
+                public List<ResearchRunner.Tool> discover(Duration d,BooleanSupplier c){throw new KnowledgeMcpClient.Failure(code);}
+                public String call(String n,String a,Duration d,BooleanSupplier c){throw new AssertionError("Discovery failed; tool must not run");}
+            };
+            var forbiddenModel=new ResearchRunner.Model(){
+                public ResearchRunner.Selection select(String q,List<ResearchRunner.Tool> t,Duration d,BooleanSupplier c){throw new AssertionError("Discovery failed; selection must not run");}
+                public String answer(String q,List<com.fasterxml.jackson.databind.JsonNode> h,Duration d,BooleanSupplier c){throw new AssertionError("Discovery failed; synthesis must not run");}
+            };
+            var events=new ArrayList<AgentExecutionEvent>();
+            var result=new SkillRunner(new SkillRegistry(SkillCatalogue.builtIns()),new SkillExecutionPolicy(Set.of(KnowledgeMcpClient.EXPOSED_NAME)),unavailable,forbiddenModel,(h,d,c)->h)
+                    .run("it-ticket-analysis","v1","VPN 401",Duration.ofSeconds(2),SkillExecutionPolicy.demo(),()->false,events::add);
+            assertEquals(SkillRunner.Status.FAILED,result.status());
+            assertEquals(code.startsWith("MCP_")?code:"SKILL_EXECUTION_FAILED",result.code());
+            assertFalse(events.stream().anyMatch(e->e.type().startsWith("TOOL_")));
+            assertFalse(ToolResults.json(result).contains("password"));
+        }
+    }
 }
