@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/ai/learning/mcp': { target: 'http://127.0.0.1:8123' },
+      '/api/ai/learning/skills': { target: 'http://127.0.0.1:8123' },
       '/api/ai/learning/knowledge': {
         target: 'http://127.0.0.1:18132',
         rewrite: path => path.replace(/^\/api/, ''),

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import AgentExecutionFlow from '../components/AgentExecutionFlow.vue'
 import ChatRoom from '../components/ChatRoom.vue'
 import ConversationSidebar from '../components/ConversationSidebar.vue'
 import KnowledgeAnswerCard from '../components/KnowledgeAnswerCard.vue'
 import FactMemoryPanel from '../components/FactMemoryPanel.vue'
 import McpToolsPanel from '../components/McpToolsPanel.vue'
+import SkillPanel from '../components/SkillPanel.vue'
 import { useAgentConversations } from '../composables/useAgentConversations'
 import { locale, t } from '../i18n'
 
@@ -14,9 +15,16 @@ const { input, messages, error, running, loading, busy, selectedId, selectedType
   stopReceiving, refreshCurrent } = useAgentConversations()
 const title = computed(() => conversations.value.find(item => item.id === selectedId.value)?.title || t('conversation.newTitle'))
 const activeType = computed(() => selectedId.value ? selectedType.value : newType.value)
+const skillVersion = ref('')
+watch(selectedId, () => { skillVersion.value = '' })
+function sendSelected(message: string) {
+  return sendMessage(message, activeType.value === 'it-ticket-skill'
+    ? { skillId: 'it-ticket-analysis', ...(skillVersion.value ? { skillVersion: skillVersion.value } : {}) } : undefined)
+}
 const examplePrompt = computed(() => activeType.value === 'enterprise-knowledge'
   ? (locale.value === 'zh-CN' ? 'VPN报错401，应该如何处理？' : 'How should I handle VPN error 401?')
   : activeType.value === 'mcp-research' ? (locale.value === 'zh-CN' ? '请调用知识查询工具，查找 VPN401 的处理方法，并注明资料来源。' : 'Use the knowledge lookup tool to find VPN401 troubleshooting steps and cite the sources.')
+  : activeType.value === 'it-ticket-skill' ? (locale.value === 'zh-CN' ? 'VPN报错401，无法连接公司网络，请按IT工单分析策略给出有依据的处理建议和待审批草稿。' : 'VPN error 401 prevents access to the company network. Analyze the IT issue and prepare an evidence-backed draft for approval.')
   : t(activeType.value === 'love-assistant' ? 'conversation.exampleLove' : 'conversation.exampleMemory'))
 </script>
 
@@ -41,7 +49,8 @@ const examplePrompt = computed(() => activeType.value === 'enterprise-knowledge'
       <p v-else-if="busy && !running" class="session-notice" role="status">{{ t('conversation.busyNote') }}</p>
       <FactMemoryPanel v-if="activeType === 'enterprise-knowledge'" :key="selectedId || 'draft'" :conversation-id="selectedId" />
       <McpToolsPanel v-if="activeType === 'mcp-research'" :key="selectedId || 'draft'" />
-      <ChatRoom :key="selectedId || 'draft'" v-model="input" :messages="messages" :on-send="sendMessage" :disabled="working || busy || !agents.length">
+      <SkillPanel v-if="activeType === 'it-ticket-skill'" :key="selectedId || 'draft'" v-model="skillVersion" :disabled="working || busy" />
+      <ChatRoom :key="selectedId || 'draft'" v-model="input" :messages="messages" :on-send="sendSelected" :disabled="working || busy || !agents.length">
         <template #empty>
           <div class="conversation-welcome">
             <span class="welcome-symbol" aria-hidden="true">✦</span>

@@ -12,8 +12,9 @@
     </summary>
 
     <div class="flow-body">
+      <SkillRunEvidence v-if="flow.skill" :run="flow.skill" :receiving-ended="flow.status !== 'running'" />
       <p v-if="flow.restored" class="flow-waiting">{{ t('flow.restoredNote') }}</p>
-      <p v-if="!flow.steps.length" class="flow-waiting">{{ t('flow.connecting') }}</p>
+      <p v-if="!flow.steps.length && !flow.skill" class="flow-waiting">{{ t('flow.connecting') }}</p>
       <section v-for="step in flow.steps" :key="step.number" class="execution-step">
         <div class="step-heading">
           <span class="step-marker" :class="step.status" aria-hidden="true"></span>
@@ -73,6 +74,7 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { t } from '../i18n'
 import type { AgentFlow, ToolResult } from '../types/agent'
 import McpToolEvidence from './McpToolEvidence.vue'
+import SkillRunEvidence from './SkillRunEvidence.vue'
 
 const props = defineProps<{ flow: AgentFlow }>()
 const now = ref(Date.now())

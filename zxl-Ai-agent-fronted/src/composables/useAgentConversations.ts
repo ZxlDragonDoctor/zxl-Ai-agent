@@ -137,7 +137,7 @@ export function useAgentConversations() {
     if (value) timer = setInterval(() => { void pollCurrent() }, 2500)
   })
 
-  async function sendMessage(message: string) {
+  async function sendMessage(message: string, skillSelection?: { skillId: string; skillVersion?: string }) {
     if (disposed || !message.trim() || working.value || busy.value) return
     let id = selectedId.value
     if (!id) {
@@ -185,7 +185,7 @@ export function useAgentConversations() {
         if (!reply.runId) messages.value.splice(-2, 2)
         if (reason === 'CONVERSATION_NOT_FOUND') forgetMissing()
       }
-    }, onEvent, id)
+    }, onEvent, id, skillSelection)
   }
 
   function stopReceiving() {
