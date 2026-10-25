@@ -26,6 +26,7 @@ const reducedMotion = ref(motionPreference.matches)
 const catalogueOpen = ref(false)
 const readerOpen = ref(false)
 const importPicker = ref<HTMLInputElement>()
+const progressImportMode = ref<'merge' | 'replace'>('merge')
 const reader = ref<HTMLElement>()
 const graphStage = ref<HTMLElement>()
 const stageSize = ref({ width: 1000, height: 650 })
@@ -285,15 +286,21 @@ function download(filename: string, text: string): void {
 }
 function exportCatalogue(): void { download('agent-learning-graph.json', exportGraph()) }
 function exportProgress(): void { download('agent-learning-progress.json', exportLearningProgress(progress.value)) }
+function beginProgressImport(mode: 'merge' | 'replace'): void {
+  progressImportMode.value = mode
+  importPicker.value?.click()
+}
 async function importProgressFile(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
   try {
-    const imported = importLearningProgress(await file.text())
+    const imported = importLearningProgress(await file.text(), progressImportMode.value)
     progress.value = imported
     saveProgress(imported)
-    transferMessage.value = t('learning.progressImported')
+    transferMessage.value = progressImportMode.value === 'replace'
+      ? (locale.value === 'zh-CN' ? '完整备份已恢复，进度与阅读位置以该文件为准。' : 'Full backup restored. Progress and reading positions now match that file.')
+      : t('learning.progressImported')
   } catch (error) {
     transferMessage.value = error instanceof Error ? error.message : t('learning.importFailed')
   } finally {
@@ -341,7 +348,9 @@ onMounted(() => {
         <div class="learning-progress-chip"><strong>{{ completedCount }}/{{ allLessons.length }}</strong><span>{{ t('learning.masteredLessons') }}</span></div>
         <button class="learning-action" type="button" @click="exportCatalogue">{{ t('learning.exportGraph') }}</button>
         <button class="learning-action" type="button" @click="exportProgress">{{ t('learning.exportProgress') }}</button>
-        <button class="learning-action learning-action--quiet" type="button" @click="importPicker?.click()">{{ t('learning.importProgress') }}</button>
+        <button class="learning-action learning-action--quiet" type="button" @click="beginProgressImport('merge')">{{ t('learning.importProgress') }}</button>
+        <button class="learning-action learning-action--quiet" type="button" @click="beginProgressImport('replace')"
+          :title="locale === 'zh-CN' ? '以备份替换全部本机进度与阅读位置；请先导出当前备份。' : 'Replace all local progress and reading positions. Export a current backup first.'">{{ locale === 'zh-CN' ? '恢复完整备份' : 'Restore full backup' }}</button>
         <input ref="importPicker" class="visually-hidden" type="file" accept="application/json,.json" @change="importProgressFile">
       </div>
     </header>

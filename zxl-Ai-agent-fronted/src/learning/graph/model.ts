@@ -249,12 +249,13 @@ export function exportLearningProgress(progress: LearningProgress): string {
   return JSON.stringify(progress, null, 2)
 }
 
-export function importLearningProgress(raw: string): LearningProgress {
+export function importLearningProgress(raw: string, mode: 'merge' | 'replace' = 'merge'): LearningProgress {
+  if (!['merge', 'replace'].includes(mode)) throw new Error('不支持的进度导入方式。')
   const parsed = JSON.parse(raw) as Partial<LearningProgress>
   if (parsed.schemaVersion !== 1 || !parsed.records || typeof parsed.records !== 'object') {
     throw new Error('进度文件格式不正确或版本不支持。')
   }
-  const safe = loadProgress()
+  const safe = mode === 'replace' ? emptyProgress() : loadProgress()
   const knownIds = new Set(catalogue.nodes.map(node => node.id))
   for (const [id, value] of Object.entries(parsed.records)) {
     if (!knownIds.has(id) || !value || !['notStarted', 'inProgress', 'mastered'].includes(value.state)) continue
