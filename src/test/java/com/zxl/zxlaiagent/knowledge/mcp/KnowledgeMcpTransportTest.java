@@ -52,6 +52,9 @@ class KnowledgeMcpTransportTest {
                 var failed=assertThrows(ExecutionException.class,()->response.get(1,TimeUnit.SECONDS));
                 assertEquals("MCP_CANCELLED",((KnowledgeMcpClient.Failure)failed.getCause()).code());
                 release.countDown();assertTrue(finished.await(2,TimeUnit.SECONDS));
+                // Cancellation discards the owned SDK session. Prepare the next independent read
+                // explicitly; discovery is not the operation whose original 2-second budget is tested.
+                client.refresh(Duration.ofSeconds(8),()->false);
                 assertFalse(client.call("knowledge__knowledge_lookup_v1",Map.of("query","later"),Duration.ofSeconds(2),()->false).isError());
             }finally {release.countDown();pool.shutdownNow();}
         }
