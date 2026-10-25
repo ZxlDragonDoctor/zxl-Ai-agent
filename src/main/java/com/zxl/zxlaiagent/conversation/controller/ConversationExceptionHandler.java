@@ -25,4 +25,10 @@ public class ConversationExceptionHandler {
         return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
                 .body(Map.of("code", "INVALID_CONVERSATION_REQUEST", "message", "请求正文不是有效 JSON"));
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> invalidSelection(IllegalArgumentException error) {
+        return ResponseEntity.badRequest().contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("code", "INVALID_AGENT_REQUEST", "message", "请求参数不符合当前 Agent 的约束"));
+    }
 }

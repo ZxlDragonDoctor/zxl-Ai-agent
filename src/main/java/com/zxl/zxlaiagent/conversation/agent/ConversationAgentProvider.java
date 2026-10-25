@@ -6,4 +6,8 @@ import com.zxl.zxlaiagent.agent.ToolCallAgent;
 public interface ConversationAgentProvider {
     AgentDefinition definition();
     ToolCallAgent create();
+    default ToolCallAgent create(AgentRunOptions options) {
+        if (options != null && !options.isEmpty()) throw new IllegalArgumentException("AGENT_DOES_NOT_ACCEPT_SKILL_SELECTION");
+        return create();
+    }
 }

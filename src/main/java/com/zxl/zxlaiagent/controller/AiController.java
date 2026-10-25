@@ -74,15 +74,21 @@ public class AiController {
      */
     @GetMapping(value = {"/manus/chat", "/agent/chat"}, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter doChatWithManus(@RequestParam String message,
-                                    @RequestParam(required = false) String conversationId) {
-        return agentConversations.chat(message, conversationId);
+                                    @RequestParam(required = false) String conversationId,
+                                    @RequestParam(required = false) String skillId,
+                                    @RequestParam(required = false) String skillVersion) {
+        var options = new com.zxl.zxlaiagent.conversation.agent.AgentRunOptions(skillId, skillVersion);
+        return options.isEmpty() ? agentConversations.chat(message, conversationId) : agentConversations.chat(message, conversationId, options);
     }
 
-    public record ManusChatRequest(String message, String conversationId) {}
+    public record ManusChatRequest(String message, String conversationId, String skillId, String skillVersion) {
+        public ManusChatRequest(String message, String conversationId) { this(message, conversationId, null, null); }
+    }
 
     @PostMapping(value = {"/manus/chat", "/agent/chat"}, produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter postChatWithManus(@RequestBody ManusChatRequest request) {
-        return agentConversations.chat(request.message(), request.conversationId());
+        var options = new com.zxl.zxlaiagent.conversation.agent.AgentRunOptions(request.skillId(), request.skillVersion());
+        return options.isEmpty() ? agentConversations.chat(request.message(), request.conversationId()) : agentConversations.chat(request.message(), request.conversationId(), options);
     }
 
 }

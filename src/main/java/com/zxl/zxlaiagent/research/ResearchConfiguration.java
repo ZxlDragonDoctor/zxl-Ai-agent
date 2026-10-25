@@ -12,8 +12,8 @@ import java.util.function.BooleanSupplier;
 @Configuration
 public class ResearchConfiguration {
     @Bean(destroyMethod="close") public KnowledgeMcpClient knowledgeMcpClient(){return new KnowledgeMcpClient(URI.create(System.getenv().getOrDefault("LESSON15_MCP_ENDPOINT","http://127.0.0.1:18135")));}
-    @Bean public ResearchRunner researchRunner(KnowledgeMcpClient client,DashScopeAgentStreamer streamer){
-        var gateway=new ResearchRunner.Gateway(){
+    @Bean public ResearchRunner.Gateway researchGateway(KnowledgeMcpClient client){
+        return new ResearchRunner.Gateway(){
             public List<ResearchRunner.Tool> discover(Duration budget,BooleanSupplier cancelled){
                 client.refresh(budget,cancelled);
                 return client.tools().stream().map(t->new ResearchRunner.Tool(t.exposedName(),t.definition().description(),ToolResults.json(t.definition().inputSchema()))).toList();
@@ -25,6 +25,8 @@ public class ResearchConfiguration {
                 return StructuredMcpToolCallback.views(StructuredMcpToolCallback.adaptResult(client.call(name,arguments,budget,cancelled))).original();
             }
         };
-        return new ResearchRunner(gateway,new StreamingResearchModel(streamer),new McpEvidenceVerifier(URI.create(System.getenv().getOrDefault("LESSON15_EVIDENCE_GATEWAY","http://127.0.0.1:18132/ai/learning/knowledge/documents/"))));
     }
+    @Bean public ResearchRunner.Model researchModel(DashScopeAgentStreamer streamer) { return new StreamingResearchModel(streamer); }
+    @Bean public ResearchRunner.Verifier researchVerifier() { return new McpEvidenceVerifier(URI.create(System.getenv().getOrDefault("LESSON15_EVIDENCE_GATEWAY","http://127.0.0.1:18132/ai/learning/knowledge/documents/"))); }
+    @Bean public ResearchRunner researchRunner(ResearchRunner.Gateway gateway, ResearchRunner.Model model, ResearchRunner.Verifier verifier) { return new ResearchRunner(gateway, model, verifier); }
 }

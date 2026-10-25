@@ -6,6 +6,7 @@ import com.zxl.zxlaiagent.conversation.context.ContextAssembler;
 import com.zxl.zxlaiagent.conversation.model.*;
 import com.zxl.zxlaiagent.conversation.repository.ConversationRepository;
 import com.zxl.zxlaiagent.conversation.agent.ConversationAgentRegistry;
+import com.zxl.zxlaiagent.conversation.agent.AgentRunOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -35,6 +36,11 @@ public class AgentConversationService {
     }
 
     public SseEmitter chat(String message, String conversationId) {
+        return chat(message, conversationId, AgentRunOptions.NONE);
+    }
+
+    public SseEmitter chat(String message, String conversationId, AgentRunOptions options) {
+        options = options == null ? AgentRunOptions.NONE : options;
         if (message == null || message.isBlank() || message.length() > 12000) {
             throw ConversationService.badRequest("消息不能为空且不能超过 12000 个字符");
         }
@@ -44,7 +50,7 @@ public class AgentConversationService {
         if (conversationId == null) {
             // Validate against the actual provider before creating any stored conversation.
             // The ephemeral metadata is never saved and contains no prior messages.
-            preparedAgent = agents.require("manus").create();
+            preparedAgent = options.isEmpty() ? agents.require("manus").create() : agents.require("manus").create(options);
             Instant at = Instant.now();
             var empty = new Conversation(UUID.randomUUID(), "新会话", at, at, 0, List.of(), List.of(), "manus");
             preparedContext = window.prepare(empty, preparedAgent, prompt);
@@ -56,7 +62,8 @@ public class AgentConversationService {
         boolean started = false;
         try {
             Conversation previous = conversations.require(id);
-            var agent = preparedAgent == null ? agents.require(previous.agentType()).create() : preparedAgent;
+            var provider = agents.require(previous.agentType());
+            var agent = preparedAgent == null ? (options.isEmpty() ? provider.create() : provider.create(options)) : preparedAgent;
             var context = preparedContext == null ? window.prepare(previous, agent, prompt) : preparedContext;
             var history = context.history();
             agent.restoreMessages(history);
