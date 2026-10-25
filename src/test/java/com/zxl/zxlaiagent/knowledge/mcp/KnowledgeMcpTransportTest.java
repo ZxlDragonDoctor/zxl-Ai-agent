@@ -10,6 +10,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Real loopback SSE transport, synthetic read-only handler; does not claim PostgreSQL validation. */
 class KnowledgeMcpTransportTest {
+    @Test void idleSseConnectionRemainsUsableBeyondServletDefaultTimeout()throws Exception {
+        try(var server=KnowledgeMcpServer.start(0,new KnowledgeLookupTool(r->Map.of("hits",List.of())));
+            var client=new KnowledgeMcpClient(URI.create("http://127.0.0.1:"+server.port()))) {
+            client.refresh(Duration.ofSeconds(5),()->false);
+            Thread.sleep(32000); // Regression: the default 30-second Servlet async timeout closed the actual SSE channel.
+            assertFalse(client.call(KnowledgeMcpClient.EXPOSED_NAME,Map.of("query","after-idle"),Duration.ofSeconds(3),()->false).isError());
+        }
+    }
     @Test void actualSseDiscoveryCallDisconnectRecoveryAndRepeatedClose() throws Exception {
         var tool=new KnowledgeLookupTool(r->Map.of("query",r.query(),"hits",List.of()));
         var server=KnowledgeMcpServer.start(0,tool);

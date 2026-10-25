@@ -30,7 +30,7 @@ public final class KnowledgeMcpClient implements AutoCloseable {
     private final ThreadPoolExecutor workers;
     private final AtomicBoolean closed=new AtomicBoolean();
     private final Object lifecycle=new Object();
-    // SDK 0.7.0 legacy servlet transport broadcasts over its local sessions: use one owned session and serialize exchanges.
+    // One trusted application owns the server's sole SSE connection; serialize discovery and tool exchanges.
     private final ReentrantLock exchange=new ReentrantLock();
     private volatile McpSyncClient session;
     private volatile String state="UNAVAILABLE",protocolVersion,lastError="NOT_DISCOVERED";
