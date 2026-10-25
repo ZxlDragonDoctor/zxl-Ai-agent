@@ -39,6 +39,10 @@ public abstract class AbstractBaseAgent implements AgentInterface {
     }
     /** 新增工具/副作用时，必须在动作开始前调用该入口。控制对象不进入模型输入。 */
     protected void checkExecution(Task task) { if (runtime != null) runtime.check(task); }
+    protected java.time.Duration remainingExecution(Task task,java.time.Duration cap) {
+        var control=runtime==null?null:runtime.control(task);
+        return control==null?cap:java.time.Duration.ofMillis(control.waitMillis(cap));
+    }
     @Resource
     protected AgentMessageBus messageBus;
     protected final Map<String, Object> config = new ConcurrentHashMap<>();
@@ -176,10 +180,13 @@ public abstract class AbstractBaseAgent implements AgentInterface {
     }
 
     protected String callLlm(Task task, String systemPrompt, String userMessage) {
-        if (runtime != null) return runtime.modelCall(task, () -> callLlm(systemPrompt, userMessage));
+        return controlledModelCall(task, () -> callLlm(systemPrompt,userMessage));
+    }
+    protected <T>T controlledModelCall(Task task,Supplier<T> action) {
+        if (runtime != null) return runtime.modelCall(task, action);
         if (!TaskLifecycle.recordModelCall(task))
             throw new WorkflowException("TASK_ALREADY_TERMINAL", "tasks." + task.getId(), "任务已经结束，不能继续调用模型");
-        return callLlm(systemPrompt, userMessage);
+        return action.get();
     }
 
     protected String callLlm(String systemPrompt, String userMessage) {

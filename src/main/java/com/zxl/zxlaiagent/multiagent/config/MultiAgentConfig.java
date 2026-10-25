@@ -29,13 +29,14 @@ public class MultiAgentConfig {
 
     public MultiAgentConfig(AgentMessageBus messageBus, ObjectMapper mapper, RuntimeSettings limits,
                             DashScopeConnectionProperties connection, DashScopeChatProperties chat,
-                            PlanParser parser, PlanValidator validator, TaskInputBuilder inputs, TaskPromptRenderer renderer) {
+                            PlanParser parser, PlanValidator validator, TaskInputBuilder inputs, TaskPromptRenderer renderer,
+                            com.zxl.zxlaiagent.research.ResearchRunner researchRunner) {
         this.messageBus = messageBus;
         ChatModel chatModel = MultiAgentModelFactory.create(connection, chat, limits);
         this.orchestratorAgent = new OrchestratorAgent(chatModel, mapper, validator, inputs, limits, System::nanoTime);
         this.plannerAgent = new PlannerAgent(chatModel, parser, mapper);
         this.codeAgent = new CodeAgent(chatModel, renderer);
-        this.researchAgent = new ResearchAgent(chatModel, renderer);
+        this.researchAgent = new ResearchAgent(chatModel, renderer,researchRunner);
         this.supervisorAgent = new SupervisorAgent(chatModel, renderer);
         plannerAgent.attachMessageBus(messageBus);
         codeAgent.attachMessageBus(messageBus);

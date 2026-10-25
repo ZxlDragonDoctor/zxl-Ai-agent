@@ -26,18 +26,23 @@ public class ResearchAgent extends AbstractBaseAgent {
             """;
 
     private final TaskPromptRenderer renderer;
+    private final com.zxl.zxlaiagent.research.ResearchRunner research;
 
     public ResearchAgent(ChatModel chatModel) {
         this(chatModel, new TaskPromptRenderer(new ObjectMapper()));
     }
 
     public ResearchAgent(ChatModel chatModel, TaskPromptRenderer renderer) {
+        this(chatModel,renderer,null);
+    }
+    public ResearchAgent(ChatModel chatModel,TaskPromptRenderer renderer,com.zxl.zxlaiagent.research.ResearchRunner research) {
         super("research-1", "research", chatModel);
         this.renderer = renderer;
+        this.research=research;
         this.capability = AgentCapability.builder()
                 .agentType("research")
                 .description("Information gathering, analysis, and research agent")
-                .tools(Set.of("data_analysis", "report_generation"))
+                .tools(research==null?Set.of():Set.of("knowledge__knowledge_lookup_v1"))
                 .domains(Set.of("research", "analysis", "data", "writing"))
                 .maxConcurrency(1)
                 .canDelegate(false)
@@ -48,7 +53,13 @@ public class ResearchAgent extends AbstractBaseAgent {
     public CompletableFuture<String> processTask(Task task) {
         return async(task, () -> {
             log.info("ResearchAgent executing: {}", task.getDescription());
-            String result = callLlm(task, RESEARCH_SYSTEM_PROMPT, renderer.render(task));
+            String result = research==null?callLlm(task, RESEARCH_SYSTEM_PROMPT, renderer.render(task)):
+                research.run(renderer.render(task),remainingExecution(task,java.time.Duration.ofSeconds(30)),
+                    ()->{checkExecution(task);return Thread.currentThread().isInterrupted()||task.snapshot().status()!=com.zxl.zxlaiagent.multiagent.model.TaskStatus.IN_PROGRESS;},
+                    event->publishSafely(com.zxl.zxlaiagent.multiagent.model.AgentEvent.of(agentId,
+                        event.type().equals("TOOL_REQUESTED")||event.type().equals("TOOL_STARTED")?com.zxl.zxlaiagent.multiagent.model.EventType.TOOL_CALLED:com.zxl.zxlaiagent.multiagent.model.EventType.TOOL_RESULT,
+                        java.util.Map.of("taskId",task.getId(),"event",event))),
+                    new com.zxl.zxlaiagent.research.ResearchRunner.ModelGate(){public <T>T call(java.util.function.Supplier<T> action){return controlledModelCall(task,action);}});
             log.info("ResearchAgent completed: {}", task.getDescription());
             return result;
         });
