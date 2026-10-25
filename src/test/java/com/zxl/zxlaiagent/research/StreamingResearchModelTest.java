@@ -27,6 +27,25 @@ class StreamingResearchModelTest {
     private static final String PRIVATE = "secret-provider-body-token-do-not-publish";
     private static final Duration BUDGET = Duration.ofSeconds(2);
 
+    @Test void privateDiagnosticsRecordOnlyBoundedCauseTypesWithoutProviderData() {
+        var logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(StreamingResearchModel.class);
+        var appender = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
+        appender.start(); logger.addAppender(appender);
+        try {
+            var headers = new HttpHeaders(); headers.setBearerAuth(PRIVATE);
+            var failure = new WebClientRequestException(new IOException(PRIVATE), HttpMethod.POST,
+                    URI.create("https://private.invalid/?token=" + PRIVATE), headers);
+            assertDiagnosis(new IllegalStateException(PRIVATE, failure), "RESEARCH_MODEL_NETWORK_UNAVAILABLE");
+            assertFalse(appender.list.isEmpty());
+            for (var event : appender.list) {
+                assertTrue(event.getFormattedMessage().contains("IOException"));
+                assertFalse(event.getFormattedMessage().contains(PRIVATE));
+                assertFalse(event.getFormattedMessage().contains("private.invalid"));
+                assertNull(event.getThrowableProxy());
+            }
+        } finally { logger.detachAppender(appender); appender.stop(); }
+    }
+
     @Test void modelHttpFailuresExposeOnlyKnownSafeCodesForSelectionAndAnswer() {
         int[] statuses = {401, 403, 429, 500, 502, 503, 400};
         String[] codes = {"RESEARCH_MODEL_AUTH_FAILED", "RESEARCH_MODEL_AUTH_FAILED", "RESEARCH_MODEL_RATE_LIMITED",

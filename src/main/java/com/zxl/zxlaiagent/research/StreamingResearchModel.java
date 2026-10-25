@@ -16,6 +16,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 /** Two explicit model requests. Selection never executes tools inside Spring AI. */
 public final class StreamingResearchModel implements ResearchRunner.Model {
+    private static final org.slf4j.Logger LOG=org.slf4j.LoggerFactory.getLogger(StreamingResearchModel.class);
     private final DashScopeAgentStreamer streamer;
     public StreamingResearchModel(DashScopeAgentStreamer streamer){this.streamer=streamer;}
     @Override public ResearchRunner.Selection select(String question,List<ResearchRunner.Tool> tools,Duration remaining,BooleanSupplier cancelled){
@@ -39,8 +40,11 @@ public final class StreamingResearchModel implements ResearchRunner.Model {
         try { return request.get(); }
         catch (RuntimeException failure) {
             String code=null;
+            List<String> causeTypes=new ArrayList<>();
             Set<Throwable> seen=Collections.newSetFromMap(new IdentityHashMap<>());
             for(Throwable cause=failure; cause!=null&&seen.size()<16&&seen.add(cause); cause=cause.getCause()) {
+                String type=cause.getClass().getName();
+                causeTypes.add(type.substring(0,Math.min(200,type.length())));
                 if(cause instanceof CancellationException || cause instanceof InterruptedException)
                     throw new CancellationException("RESEARCH_CANCELLED");
                 if(code==null && cause instanceof WebClientResponseException http) {
@@ -49,7 +53,9 @@ public final class StreamingResearchModel implements ResearchRunner.Model {
                 } else if(code==null && cause instanceof WebClientRequestException) code="RESEARCH_MODEL_NETWORK_UNAVAILABLE";
             }
             // Do not attach provider bodies, headers, request URIs or arbitrary messages as a public cause.
-            throw new IllegalStateException(code==null?"RESEARCH_MODEL_FAILED":code);
+            String safe=code==null?"RESEARCH_MODEL_FAILED":code;
+            LOG.warn("Research model failure category={}, causalTypes={}",safe,String.join(" -> ",causeTypes));
+            throw new IllegalStateException(safe);
         }
     }
 }
