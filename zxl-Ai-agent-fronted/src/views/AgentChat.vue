@@ -5,6 +5,7 @@ import ChatRoom from '../components/ChatRoom.vue'
 import ConversationSidebar from '../components/ConversationSidebar.vue'
 import KnowledgeAnswerCard from '../components/KnowledgeAnswerCard.vue'
 import FactMemoryPanel from '../components/FactMemoryPanel.vue'
+import McpToolsPanel from '../components/McpToolsPanel.vue'
 import { useAgentConversations } from '../composables/useAgentConversations'
 import { locale, t } from '../i18n'
 
@@ -15,6 +16,7 @@ const title = computed(() => conversations.value.find(item => item.id === select
 const activeType = computed(() => selectedId.value ? selectedType.value : newType.value)
 const examplePrompt = computed(() => activeType.value === 'enterprise-knowledge'
   ? (locale.value === 'zh-CN' ? 'VPN报错401，应该如何处理？' : 'How should I handle VPN error 401?')
+  : activeType.value === 'mcp-research' ? (locale.value === 'zh-CN' ? '请调用知识查询工具，查找 VPN401 的处理方法，并注明资料来源。' : 'Use the knowledge lookup tool to find VPN401 troubleshooting steps and cite the sources.')
   : t(activeType.value === 'love-assistant' ? 'conversation.exampleLove' : 'conversation.exampleMemory'))
 </script>
 
@@ -38,6 +40,7 @@ const examplePrompt = computed(() => activeType.value === 'enterprise-knowledge'
       <p v-if="loading" class="session-notice" role="status">{{ t('conversation.loading') }}</p>
       <p v-else-if="busy && !running" class="session-notice" role="status">{{ t('conversation.busyNote') }}</p>
       <FactMemoryPanel v-if="activeType === 'enterprise-knowledge'" :key="selectedId || 'draft'" :conversation-id="selectedId" />
+      <McpToolsPanel v-if="activeType === 'mcp-research'" :key="selectedId || 'draft'" />
       <ChatRoom :key="selectedId || 'draft'" v-model="input" :messages="messages" :on-send="sendMessage" :disabled="working || busy || !agents.length">
         <template #empty>
           <div class="conversation-welcome">

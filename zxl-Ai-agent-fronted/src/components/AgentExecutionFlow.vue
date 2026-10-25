@@ -47,7 +47,8 @@
                     <code>{{ resultEnvelope(tool.result)!.code }}</code>
                     <span>{{ resultEnvelope(tool.result)!.message }}</span>
                   </div>
-                  <dl v-if="resultFields(resultEnvelope(tool.result)!.data).length" class="result-fields">
+                  <McpToolEvidence v-if="tool.name.includes('knowledge_lookup')" :payload="tool.result" />
+                  <dl v-else-if="resultFields(resultEnvelope(tool.result)!.data).length" class="result-fields">
                     <template v-for="field in resultFields(resultEnvelope(tool.result)!.data)" :key="field.key">
                       <dt>{{ fieldLabel(field.key) }}</dt><dd>{{ field.value }}</dd>
                     </template>
@@ -71,6 +72,7 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { t } from '../i18n'
 import type { AgentFlow, ToolResult } from '../types/agent'
+import McpToolEvidence from './McpToolEvidence.vue'
 
 const props = defineProps<{ flow: AgentFlow }>()
 const now = ref(Date.now())
