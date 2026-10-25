@@ -11,7 +11,7 @@ public final class Lesson12Demo {
     @Configuration @EnableWebMvc @Profile("lesson12-demo")
     public static class DemoConfiguration {
         @Bean KnowledgeDatabase database(){return new KnowledgeDatabase(System.getenv("LESSON12_DB_URL"),System.getenv("LESSON12_DB_USER"),System.getenv("LESSON12_DB_PASSWORD"));}
-        @Bean KnowledgeEmbedding embedding(){
+        @Bean public KnowledgeEmbedding embedding(){
             String mode=System.getenv().getOrDefault("LESSON12_EMBEDDING_MODE","demo");
             if("demo".equals(mode))return new DemoKnowledgeEmbedding();
             if(!"http".equals(mode))throw new IllegalArgumentException("LESSON12_EMBEDDING_MODE must be demo or http");
