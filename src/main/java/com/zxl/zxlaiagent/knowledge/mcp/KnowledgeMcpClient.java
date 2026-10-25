@@ -27,20 +27,27 @@ public final class KnowledgeMcpClient implements AutoCloseable {
         private final String code;public Failure(String code){super(code);this.code=code;}public String code(){return code;}
     }
     private final URI endpoint;
+    private final long sdkMaxRequestTimeoutMillis;
     private final ThreadPoolExecutor workers;
     private final AtomicBoolean closed=new AtomicBoolean();
     private final Object lifecycle=new Object();
     // One trusted application owns the server's sole SSE connection; serialize discovery and tool exchanges.
     private final ReentrantLock exchange=new ReentrantLock();
     private volatile McpSyncClient session;
+    private volatile long sessionRequestTimeoutMillis;
     private volatile String state="UNAVAILABLE",protocolVersion,lastError="NOT_DISCOVERED";
     private volatile List<DiscoveredTool> tools=List.of();
-    public KnowledgeMcpClient(URI endpoint){
+    public KnowledgeMcpClient(URI endpoint){this(endpoint,Duration.ofSeconds(10));}
+    /** Package-level transport-test seam: discovery deadline and per-RPC SDK timeout are distinct. */
+    KnowledgeMcpClient(URI endpoint,Duration sdkMaxRequestTimeout){
+        if(sdkMaxRequestTimeout==null||sdkMaxRequestTimeout.compareTo(Duration.ofMillis(100))<0||sdkMaxRequestTimeout.compareTo(Duration.ofSeconds(10))>0)
+            throw new IllegalArgumentException("MCP SDK request timeout must be 100..10000 ms");
         if(endpoint==null||!"http".equals(endpoint.getScheme())||!"127.0.0.1".equals(endpoint.getHost())
                 ||endpoint.getPort()<1||endpoint.getPort()>65535||endpoint.getRawUserInfo()!=null||endpoint.getRawQuery()!=null
                 ||endpoint.getRawFragment()!=null||!(endpoint.getPath().isEmpty()||"/".equals(endpoint.getPath())))
             throw new IllegalArgumentException("Only an explicitly configured http://127.0.0.1:port MCP service is supported");
         this.endpoint=URI.create("http://127.0.0.1:"+endpoint.getPort());
+        this.sdkMaxRequestTimeoutMillis=sdkMaxRequestTimeout.toMillis();
         workers=new ThreadPoolExecutor(2,2,30,TimeUnit.SECONDS,new ArrayBlockingQueue<>(8),r->{var t=new Thread(r,"knowledge-mcp-client");t.setDaemon(true);return t;},new ThreadPoolExecutor.AbortPolicy());
     }
     public Status status(){return new Status(closed.get()?"CLOSED":state,SERVER_ID,endpoint.toString(),protocolVersion,lastError,tools.size(),workers.getActiveCount(),workers.getQueue().size());}
@@ -59,9 +66,13 @@ public final class KnowledgeMcpClient implements AutoCloseable {
             for(int attempt=0;attempt<2;attempt++){
                 try{
                     check(end,cancelled);if(session==null)connect(end,cancelled);check(end,cancelled);
-                    long remaining=TimeUnit.NANOSECONDS.toMillis(end-System.nanoTime());
-                    if(remaining<100)throw new Failure("MCP_DEADLINE_EXCEEDED");
-                    var sent=new HashMap<String,Object>(original);sent.put("budgetMs",Math.min(10000,remaining));
+                    // A short discovery budget fixes this SDK session's request timeout. Never promise
+                    // the server a longer operation, and retain time for the result to cross the wire.
+                    // Reserve a quarter of the session timeout, bounded to 100..500 ms, without extending end.
+                    long responseHeadroom=Math.max(100,Math.min(500,sessionRequestTimeoutMillis/4));
+                    long serverBudget=Math.min(10000,Math.min(remainingMillis(end),sessionRequestTimeoutMillis))-responseHeadroom;
+                    if(serverBudget<100)throw new Failure("MCP_DEADLINE_EXCEEDED");
+                    var sent=new HashMap<String,Object>(original);sent.put("budgetMs",serverBudget);
                     var response=session.callTool(new McpSchema.CallToolRequest(KnowledgeLookupTool.NAME,sent));
                     check(end,cancelled); // A late result must never become a successful task completion.
                     if(response==null)throw new Failure("MCP_INVALID_RESPONSE");
@@ -82,7 +93,8 @@ public final class KnowledgeMcpClient implements AutoCloseable {
     private void connect(long end,BooleanSupplier cancelled){
         check(end,cancelled);state="CONNECTING";lastError=null;
         var transport=new HttpClientSseClientTransport(HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER),endpoint.toString(),new ObjectMapper());
-        var candidate=McpClient.sync(transport).requestTimeout(Duration.ofMillis(Math.max(100,Math.min(10000,remainingMillis(end)))))
+        long requestTimeoutMillis=Math.max(100,Math.min(sdkMaxRequestTimeoutMillis,remainingMillis(end)));
+        var candidate=McpClient.sync(transport).requestTimeout(Duration.ofMillis(requestTimeoutMillis))
                 .clientInfo(new McpSchema.Implementation("zxl-knowledge-client","1.0.0")).build();
         try{
             var initialized=candidate.initialize();check(end,cancelled);
@@ -94,7 +106,7 @@ public final class KnowledgeMcpClient implements AutoCloseable {
             var approved=new McpSchema.Tool(EXPOSED_NAME,KnowledgeLookupTool.definition().description(),KnowledgeLookupTool.SCHEMA);
             var digest=HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(ToolResults.json(tool.inputSchema()).getBytes(StandardCharsets.UTF_8)));
             synchronized(lifecycle){
-                check(end,cancelled);session=candidate;protocolVersion=initialized.protocolVersion();
+                check(end,cancelled);session=candidate;sessionRequestTimeoutMillis=requestTimeoutMillis;protocolVersion=initialized.protocolVersion();
                 tools=List.of(new DiscoveredTool(SERVER_ID,tool.name(),EXPOSED_NAME,"v1",digest,approved));state="READY";lastError=null;
             }
         }catch(Exception failure){candidate.close();tools=List.of();if(!closed.get()){state="UNAVAILABLE";lastError=classify(failure).code();}throw classify(failure);}
@@ -113,12 +125,12 @@ public final class KnowledgeMcpClient implements AutoCloseable {
         while(true){check(end,cancelled);if(exchange.tryLock(Math.min(25,Math.max(1,remainingMillis(end))),TimeUnit.MILLISECONDS))break;}
         try{return task.call();}catch(RuntimeException failure){
             var classified=classify(failure);
-            if(Set.of("MCP_NETWORK_FAILURE","MCP_PROTOCOL_FAILURE","MCP_SCHEMA_CHANGED").contains(classified.code())){
+            if(Set.of("MCP_NETWORK_FAILURE","MCP_PROTOCOL_FAILURE","MCP_SCHEMA_CHANGED","MCP_DEADLINE_EXCEEDED","MCP_CANCELLED").contains(classified.code())){
                 discard();if(!closed.get()){state="UNAVAILABLE";lastError=classified.code();}
             }throw classified;
         }finally{exchange.unlock();}
     }
-    private void discard(){var previous=session;session=null;tools=List.of();if(previous!=null)previous.close();}
+    private void discard(){var previous=session;session=null;sessionRequestTimeoutMillis=0;tools=List.of();if(previous!=null)previous.close();}
     private void backoff(long end,BooleanSupplier cancelled){
         for(int step=0;step<2;step++){check(end,cancelled);try{Thread.sleep(25);}catch(InterruptedException e){Thread.currentThread().interrupt();throw new Failure("MCP_CANCELLED");}}
     }
@@ -135,8 +147,15 @@ public final class KnowledgeMcpClient implements AutoCloseable {
     private static long remainingMillis(long end){return Math.max(0,TimeUnit.NANOSECONDS.toMillis(end-System.nanoTime()));}
     private static Failure classify(Throwable failure){
         if(failure instanceof Failure typed)return typed;
-        for(Throwable cause=failure;cause!=null;cause=cause.getCause())if(cause instanceof java.io.IOException)return new Failure("MCP_NETWORK_FAILURE");
         if(Thread.currentThread().isInterrupted())return new Failure("MCP_CANCELLED");
+        var causes=new ArrayList<Throwable>();var visited=Collections.newSetFromMap(new IdentityHashMap<Throwable,Boolean>());
+        for(Throwable cause=failure;cause!=null&&causes.size()<16&&visited.add(cause);cause=cause.getCause())causes.add(cause);
+        for(var cause:causes)if(cause instanceof Failure typed)return typed;
+        for(var cause:causes)if(cause instanceof InterruptedException||cause instanceof CancellationException||reactor.core.Exceptions.isCancel(cause))return new Failure("MCP_CANCELLED");
+        // Mono.timeout (used by this SDK) is a causal TimeoutException, even when Reactor wraps it.
+        // HttpTimeoutException is also IOException, so timeout detection must precede network detection.
+        for(var cause:causes)if(cause instanceof TimeoutException||cause instanceof java.net.http.HttpTimeoutException||cause instanceof java.net.SocketTimeoutException)return new Failure("MCP_DEADLINE_EXCEEDED");
+        for(var cause:causes)if(cause instanceof java.io.IOException)return new Failure("MCP_NETWORK_FAILURE");
         return new Failure("MCP_PROTOCOL_FAILURE");
     }
     @Override public void close(){
