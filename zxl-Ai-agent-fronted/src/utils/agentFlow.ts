@@ -1,5 +1,6 @@
 import type { AgentChatMessage, AgentStreamEvent, ExecutionStep, RunStatus, ToolStatus } from '../types/agent'
 import type { ConversationDetail } from '../types/conversation'
+import { readSkillEvent } from '../api/skills.ts'
 
 function stepFor(reply: AgentChatMessage, number: number): ExecutionStep {
   const flow = reply.flow!
@@ -31,6 +32,25 @@ export function applyAgentEvent(reply: AgentChatMessage, event: AgentStreamEvent
   if (event.runId) reply.runId = event.runId
   if (event.type === 'RUN_STARTED') { flow.phase = 'thinking'; return }
   if (event.type === 'KNOWLEDGE_RESULT') { reply.knowledgePayload = event.content || ''; return }
+  if (['SKILL_SELECTED', 'SKILL_STEP', 'SKILL_TERMINAL'].includes(event.type)) {
+    const skill = flow.skill ||= { steps: [] }
+    if (event.type === 'SKILL_SELECTED') {
+      const value = readSkillEvent('SKILL_SELECTED', event.content || '')
+      if (value && (!skill.snapshot || JSON.stringify(skill.snapshot) === JSON.stringify(value))) skill.snapshot ||= value
+      else skill.invalidEvent = true
+    } else if (event.type === 'SKILL_STEP') {
+      const value = readSkillEvent('SKILL_STEP', event.content || '')
+      if (value) {
+        const index = skill.steps.findIndex(s => s.step === value.step)
+        if (index < 0) skill.steps.push(value); else skill.steps[index] = value
+      } else skill.invalidEvent = true
+    } else {
+      const value = readSkillEvent('SKILL_TERMINAL', event.content || '')
+      if (value && (!skill.snapshot || JSON.stringify(skill.snapshot) === JSON.stringify(value.snapshot))) { skill.result = value; skill.snapshot ||= value.snapshot }
+      else skill.invalidEvent = true
+    }
+    return
+  }
   if (event.type === 'RUN_COMPLETED' || event.type === 'RUN_FAILED') {
     flow.endReason = event.endReason || undefined
     const status = event.status === 'limit' ? 'limit' : event.status === 'terminated' ? 'terminated'

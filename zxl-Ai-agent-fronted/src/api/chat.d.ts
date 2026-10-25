@@ -9,7 +9,8 @@ export function chatWithManusSse(
   onMessage: (data: string) => void,
   onError?: (reason: string) => void,
   onEvent?: (event: AgentStreamEvent) => void,
-  conversationId?: string
+  conversationId?: string,
+  skillSelection?: { skillId: string; skillVersion?: string }
 ): { close(): void }
 
 export { chatWithManusSse as chatWithAgentSse }

@@ -16,7 +16,7 @@ export function chatWithLoveAppSse(message, chatId, onMessage) {
   return eventSource
 }
 
-export function chatWithManusSse(message, onMessage, onError, onEvent, conversationId) {
+export function chatWithManusSse(message, onMessage, onError, onEvent, conversationId, skillSelection) {
   const controller = new AbortController()
   let finished = false
   const connection = { close() { finished = true; controller.abort() } }
@@ -54,7 +54,7 @@ export function chatWithManusSse(message, onMessage, onError, onEvent, conversat
       const response = await fetch(`${BASE_URL}/ai/agent/chat`, {
         method: 'POST', signal: controller.signal,
         headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
-        body: JSON.stringify({ message, conversationId }),
+        body: JSON.stringify({ message, conversationId, ...(skillSelection?.skillId ? { skillId: skillSelection.skillId, ...(skillSelection.skillVersion ? { skillVersion: skillSelection.skillVersion } : {}) } : {}) }),
       })
       if (!response.ok) {
         const body = await response.json().catch(() => null)

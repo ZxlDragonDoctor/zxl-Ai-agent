@@ -1,3 +1,5 @@
+import type { SkillRun } from '../api/skills'
+
 export type RunStatus = 'running' | 'completed' | 'error' | 'interrupted' | 'limit' | 'terminated'
 export type AgentEndReason = 'ANSWER_READY' | 'STEP_LIMIT' | 'TERMINATED_BY_TOOL' | 'TOOL_RETURNED'
   | 'MODEL_ERROR' | 'TOOL_ERROR' | 'EXECUTION_ERROR' | 'OUTPUT_INTERRUPTED' | 'PERSISTENCE_ERROR'
@@ -51,6 +53,7 @@ export interface AgentFlow {
   error?: string
   endReason?: AgentEndReason
   restored?: boolean
+  skill?: SkillRun
 }
 
 export interface AgentChatMessage {
