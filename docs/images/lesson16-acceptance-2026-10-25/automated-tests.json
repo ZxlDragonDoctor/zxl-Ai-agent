@@ -1,0 +1,203 @@
+{
+  "focused": {
+    "suites": [
+      {
+        "name": "StreamingResearchModelTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "SkillDefinitionTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "SkillPolicyTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "SkillRunnerTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "SkillApiTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "SkillProviderIntegrationTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "SkillChatRequestTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "KnowledgeMcpFailureClassificationTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "ResearchFailureClassificationTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "McpAdapterBoundaryTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "McpResultContractTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "KnowledgeMcpContractTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "KnowledgeMcpTransportTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "KnowledgeMcpSessionTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "KnowledgeMcpPgTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "ResearchRunnerTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "ResearchDispatchBoundaryTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "McpEvidenceVerifierTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "ResearchControllerTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "ResearchAgentIntegrationTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "ResearchDiscoverySnapshotTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "KnowledgeMcpDiscoverySnapshotTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "total": {
+      "tests": 97,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "log": "target/lesson16-final-97.log",
+    "invocation": "22 classes; real PG environment configured; BUILD SUCCESS"
+  },
+  "frontend": {
+    "knowledge": 40,
+    "graph": 34,
+    "failed": 0,
+    "build": "passed; target/lesson16-completed-graph-build.log; existing 3D bundle size warning"
+  },
+  "relatedRegressionBeforeTimeoutPatch": {
+    "suites": 45,
+    "tests": 241,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "note": "Affected MCP/research/adapter classes rerun in focused; remaining 34 suites/194 unchanged."
+  },
+  "priorFailedInvocations": [
+    {
+      "log": "target/lesson16-final-90.log",
+      "tests": 90,
+      "errors": 1,
+      "reason": "Cancellation discards SDK session; independent next request omitted reconnect preparation. Fixture fixed, transport 7 rerun green."
+    },
+    {
+      "log": "target/lesson16-final-90-rerun.log",
+      "tests": 90,
+      "errors": 1,
+      "reason": "Invocation omitted required real PG environment; rerun with configured environment passes 90."
+    }
+  ],
+  "review": {
+    "importantFindings": 1,
+    "fixed": "Evidence HTTP deadline/cancellation classification",
+    "red": "target/lesson16-evidence-red.log",
+    "green": "target/lesson16-evidence-green.log",
+    "finalFull": "target/lesson16-final-97.log"
+  }
+}
