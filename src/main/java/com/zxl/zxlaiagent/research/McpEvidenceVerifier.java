@@ -45,9 +45,24 @@ public final class McpEvidenceVerifier implements ResearchRunner.Verifier {
             // Post-allocation limit: this loopback teaching adapter is not a streaming HTTP memory firewall.
             if(response.statusCode()!=200||response.body().length>1_048_576)throw new IllegalStateException("EVIDENCE_GATEWAY_UNAVAILABLE");
             return JSON.readTree(response.body());
-        }catch(InterruptedException e){Thread.currentThread().interrupt();throw new CancellationException("EVIDENCE_CANCELLED");}
-        catch(Exception e){throw new IllegalStateException("EVIDENCE_GATEWAY_FAILED",e);}
+        }catch(Exception e){
+            var classified=classifyFailure(e);
+            if(classified instanceof CancellationException)throw classified;
+            // Recheck the original deadline/cancellation, never start a fresh verification budget.
+            // The HTTP future may also complete exceptionally just before that deadline.
+            ResearchRunner.remaining(end,cancelled);
+            throw classified;
+        }
         finally{if(!f.isDone())f.cancel(true);}
+    }
+    static RuntimeException classifyFailure(Throwable failure){
+        var causes=new ArrayList<Throwable>();var seen=Collections.newSetFromMap(new IdentityHashMap<Throwable,Boolean>());
+        for(Throwable cause=failure;cause!=null&&causes.size()<16&&seen.add(cause);cause=cause.getCause())causes.add(cause);
+        for(var cause:causes)if(cause instanceof InterruptedException){Thread.currentThread().interrupt();return new CancellationException("RESEARCH_CANCELLED");}
+        for(var cause:causes)if(cause instanceof CancellationException)return new CancellationException("RESEARCH_CANCELLED");
+        for(var cause:causes)if(cause instanceof HttpTimeoutException||cause instanceof TimeoutException)return new IllegalStateException("RESEARCH_DEADLINE");
+        // Unknown transport bodies, URIs and messages cannot forge a public control classification.
+        return new IllegalStateException("EVIDENCE_GATEWAY_FAILED");
     }
     private static int line(String raw,int at){int line=1;for(int i=0;i<at;i++)if(raw.charAt(i)=='\n')line++;return line;}
 }
