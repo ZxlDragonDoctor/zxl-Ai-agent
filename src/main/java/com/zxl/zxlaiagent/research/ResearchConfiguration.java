@@ -15,12 +15,13 @@ public class ResearchConfiguration {
     @Bean public ResearchRunner.Gateway researchGateway(KnowledgeMcpClient client){
         return new ResearchRunner.Gateway(){
             public List<ResearchRunner.Tool> discover(Duration budget,BooleanSupplier cancelled){
-                client.refresh(budget,cancelled);
-                return client.tools().stream().map(t->new ResearchRunner.Tool(t.exposedName(),t.definition().description(),ToolResults.json(t.definition().inputSchema()))).toList();
+                return client.discover(budget,cancelled).stream().map(t->new ResearchRunner.Tool(t.exposedName(),t.definition().description(),ToolResults.json(t.definition().inputSchema()))).toList();
             }
             public String call(String name,String input,Duration budget,BooleanSupplier cancelled){
-                var tool=client.tools().stream().filter(t->t.exposedName().equals(name)).findFirst().orElseThrow(()->new IllegalStateException("MCP_NOT_AUTHORIZED"));
-                var arguments=StructuredMcpToolCallback.validateInput(input,tool.definition());
+                if(!KnowledgeMcpClient.EXPOSED_NAME.equals(name))throw new KnowledgeMcpClient.Failure("MCP_NOT_AUTHORIZED");
+                // The supported contract is fixed in reviewed Java code; do not read a temporary
+                // empty live directory between another request's discard/connect operations.
+                var arguments=StructuredMcpToolCallback.validateInput(input,KnowledgeLookupTool.definition());
                 if(arguments.containsKey("budgetMs"))throw new IllegalArgumentException("Model cannot choose execution budget");
                 return StructuredMcpToolCallback.views(StructuredMcpToolCallback.adaptResult(client.call(name,arguments,budget,cancelled))).original();
             }

@@ -52,6 +52,15 @@ public final class KnowledgeMcpClient implements AutoCloseable {
     }
     public Status status(){return new Status(closed.get()?"CLOSED":state,SERVER_ID,endpoint.toString(),protocolVersion,lastError,tools.size(),workers.getActiveCount(),workers.getQueue().size());}
     public List<DiscoveredTool> tools(){return tools;}
+    /** Return the discovered immutable directory while owning the exchange lock. A later refresh
+     * may clear the live directory, but must not change a caller's already selected snapshot. */
+    public List<DiscoveredTool> discover(Duration budget,BooleanSupplier cancelled){
+        long end=deadline(budget);
+        return bounded(()->locked(end,cancelled,()->{
+            check(end,cancelled);if(session==null)connect(end,cancelled);check(end,cancelled);
+            return List.copyOf(tools);
+        }),end,cancelled);
+    }
     public Status refresh(Duration budget,BooleanSupplier cancelled){
         long end=deadline(budget);
         try{return bounded(()->locked(end,cancelled,()->{discard();connect(end,cancelled);return status();}),end,cancelled);}
