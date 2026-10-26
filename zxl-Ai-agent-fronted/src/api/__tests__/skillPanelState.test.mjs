@@ -38,3 +38,21 @@ test('settled activity refreshes read-only service status once without reopening
   disabled.value = true; await nextTick(); disabled.value = false; await nextTick()
   assert.equal(refreshes, 1)
 })
+
+test('compact viewport starts collapsed and permits manual inspection without reopening after a run', async () => {
+  const scope = effectScope(), disabled = ref(false)
+  const expanded = scope.run(() => useSkillPanelExpansion(disabled, undefined, true))
+  try {
+    assert.equal(expanded.value, false)
+    expanded.value = true; await nextTick(); assert.equal(expanded.value, true)
+    disabled.value = true; await nextTick(); assert.equal(expanded.value, false)
+    disabled.value = false; await nextTick(); assert.equal(expanded.value, false)
+    expanded.value = true; await nextTick(); assert.equal(expanded.value, true)
+  } finally { scope.stop() }
+})
+
+test('desktop default stays expanded when compact mode is explicitly false', () => {
+  const scope = effectScope(), disabled = ref(false)
+  try { assert.equal(scope.run(() => useSkillPanelExpansion(disabled, undefined, false)).value, true) }
+  finally { scope.stop() }
+})

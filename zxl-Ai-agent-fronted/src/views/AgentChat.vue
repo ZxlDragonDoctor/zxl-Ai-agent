@@ -107,6 +107,6 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 :deep(.msg.ai:has(.has-flow)) { width: 100%; }
 @keyframes blink { 50% { opacity: .2; } }
 @media (max-width: 950px) { .conversation-shell { grid-template-columns: 190px minmax(0, 1fr); gap: 18px; } .chat-view-title { font-size: 19px; } }
-@media (max-width: 680px) { .conversation-shell { display: flex; flex-direction: column; height: calc(100dvh - 150px); min-height: 620px; gap: 16px; } .chat-view { flex: 1; } .conversation-welcome { padding: 18px 6px; } .conversation-welcome h2 { font-size: 22px; } }
+@media (max-width: 680px) { .conversation-shell { display: flex; flex-direction: column; height: auto; min-height: calc(100dvh - 150px); gap: 16px; } .chat-view { flex: 0 0 auto; } :deep(.chat-room) { flex: 0 0 auto; height: clamp(360px, 58dvh, 620px); min-height: 360px; } .conversation-welcome { padding: 18px 6px; } .conversation-welcome h2 { font-size: 22px; } }
 @media (prefers-reduced-motion: reduce) { .answer-cursor { animation: none; } }
 </style>

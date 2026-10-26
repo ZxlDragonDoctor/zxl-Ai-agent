@@ -6,7 +6,9 @@ import type { SkillCatalogue } from '../api/skills'
 import { useSkillPanelExpansion } from '../utils/skillPanelState'
 const props = defineProps<{ modelValue: string; disabled?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [string] }>()
-const expanded = useSkillPanelExpansion(toRef(props, 'disabled'), () => { void refreshService(false) })
+// Decide the initial presentation once. Resizing must not interrupt a user's manual inspection.
+const initiallyCompact = typeof window !== 'undefined' && window.matchMedia('(max-width: 680px)').matches
+const expanded = useSkillPanelExpansion(toRef(props, 'disabled'), () => { void refreshService(false) }, initiallyCompact)
 const tr = (zh: string, en: string) => locale.value === 'zh-CN' ? zh : en
 const catalogue = ref<SkillCatalogue | null>(null), error = ref(''), loading = ref(false)
 let disposed = false
