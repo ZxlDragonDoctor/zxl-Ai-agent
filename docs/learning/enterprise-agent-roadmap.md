@@ -109,7 +109,7 @@ flowchart TB
 | 课次 | 主题 | 工程实践 | 完成标准与面试追问 | 参考 |
 | --- | --- | --- | --- | --- |
 | 15，工程已实现/分层验收 | [工具契约与 MCP](15-mcp-tool-contracts-and-adapters.md) | 实际SSE/PG、受控ResearchAgent、单连接所有权、原文出队复核；[实现与证据](15-implementation.md) | 47专项+194回归、真实模型及逐状态截图；固定演示身份，语义支持人工核对，非生产授权 | B4、S1 |
-| 16 | [Skills 与业务策略](16-skills-business-policies-and-controlled-tools.md) | 六单元任务包：可信版本定义、Java 权限交集、步骤预算、在途快照/回滚、统一页面与集中验收；工程待实施 | 版本可追踪且变更不能扩大权限；解释 Skill、Prompt、Tool 和工作流的职责 | B2、S3 |
+| 16 | [Skills 与业务策略](16-skills-business-policies-and-controlled-tools.md) | 已实现：版本定义、Java权限交集、步骤预算、快照/回滚、统一页面；97项专项及真实PG/MCP/模型和截图分层验收，见[记录](16-implementation.md) | 版本可追踪且变更不能扩大权限；解释 Skill、Prompt、Tool 和工作流的职责 | B2、S3 |
 | 17 | 身份、权限与租户隔离 | 接入认证，在接口、任务、会话、向量检索、缓存和工具执行中实施授权 | 两个租户不能读取对方数据，身份不取自模型自报参数 | S6、自定实践 |
 | 18 | 注入防护与运行隔离 | 区分外部资料与可信控制信息；工具最小权限、文件与网络边界、独立运行环境、日志脱敏 | 恶意文档不能绕过工具授权；能说明隔离的覆盖范围与残余风险 | B4、B5、S4 |
 | 19 | 人工审批与业务写入 | 审批绑定动作、参数摘要、操作 ID、审批者、过期时间和版本；恢复后再校验 | 拒绝、过期或参数变更时不执行；审批通过的重复回调不会重复写入 | S5、自定实践 |
@@ -200,6 +200,8 @@ flowchart TB
 - 面试准备面向 Agent 应用与平台工程；模型训练、强化学习和 GPU 集群运维属于另外的深化方向。
 
 ## 7. 当前从哪里继续
+
+2026-10-26：第十五课和第十六课已实现并分层验收，下一批实施[第十七课可信身份与租户授权](17-tenant-authorization-and-tool-policy.md)，完整任务包已发布，个人掌握不自动改变。当前逐课状态以[交付表](delivery-progress.md)为准。下面保留截至第十四课的原始阶段记录。
 
 前四课的模型、工具、循环与会话工程链路已接通。第四课的构建、真实模型连续对话及未覆盖范围见[实现记录](04-implementation.md)。第五课的 Plan / Task 校验、依赖数据流与真实报告已实现，构建和页面观察见[实现记录](05-implementation.md)。第六课的原子状态、失败传播与统一结果已实现并集中验收，见[记录](06-implementation.md)。第七课的截止时间、取消与容量已通过受控验收；第八课[重试与幂等](08-retries-and-idempotency.md)及[验收](08-implementation.md)已完成单进程实验。第九课独立持久工单实验已实现，边界与证据见[实现记录](09-implementation.md)。按用户选择，第十一课[上下文工程](11-context-engineering.md)已实现并通过定向自动验收，第十二课[知识接入与索引](12-knowledge-ingestion-and-indexing.md)已完成独立PG教学链路，实际测试与未覆盖项见[记录](12-implementation.md)。[第十三课检索与重排](13-retrieval-hybrid-and-reranking.md)独立链路已实现并通过专项、真实PG/模型和主要页面验收，详见[实现记录](13-implementation.md)。第十四课[引用、拒答与长期记忆](14-citations-abstention-and-memory.md)工程与功能验证已完成，原始judge门槛未过，证据见[实现记录](14-implementation.md)。下一课[第十五课MCP工具契约与适配](15-mcp-tool-contracts-and-adapters.md)已发布完整六单元任务，工程待实现：契约、生命周期、协议适配、预算取消、身份与研究Agent接入及分层验收。第十课[Temporal 持久化工作流](10-durable-workflows-with-temporal.md)仍是独立待实现任务包，不作为第十一/十二课硬先修。
 

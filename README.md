@@ -4,7 +4,7 @@
 
 学习主线：**模型调用 → 上下文与记忆 → 工具调用 → Agent 执行循环 → 多 Agent 编排 → 可靠性与评估**。
 
-当前按 **28课企业知识库与工单助手路线**迭代。第十五课已实现真实只读 MCP 与 PG 研究链路；后续课程依次推进，第十课 Temporal 对照仍待补齐。完整进度、证据和未覆盖项见[工程交付表](docs/learning/delivery-progress.md)，长期学习入口为 `/learning`。
+当前按 **28课企业知识库与工单助手路线**迭代。第十六课已实现版本化只读 Skill、真实 MCP/PG 知识分析与待审批草稿；下一批推进可信身份与租户授权，第十课 Temporal 对照仍待补齐。完整进度、证据和未覆盖项见[工程交付表](docs/learning/delivery-progress.md)，长期学习入口为 `/learning`。
 
 [页面预览](#页面预览) · [功能](#功能与实现范围) · [架构](#架构) · [快速开始](#快速开始) · [API](#主要-api) · [开发指南](#开发指南)
 
@@ -23,6 +23,10 @@
 | [![真实工具选择与带来源回答](docs/images/lesson15-acceptance-2026-10-25/32-real-final-answer.jpg)](docs/images/lesson15-acceptance-2026-10-25/README.md) | [![课程阅读与知识关系](docs/images/lesson15-acceptance-2026-10-25/43-learning-lesson15.jpg)](docs/images/lesson15-acceptance-2026-10-25/README.md) |
 
 顶部 `EN / 中文` 按钮切换界面语言，选择保存在浏览器中。用户消息、模型回复和后端事件代码保留原文。
+
+**第十六课 · 版本化 Skill 与待审批草稿**：[完整逐状态验收](docs/images/lesson16-acceptance-2026-10-25/README.md) · [实现与边界](docs/learning/16-implementation.md) · [第十七课任务](docs/learning/17-tenant-authorization-and-tool-policy.md)。
+
+[![真实v2草稿、固定输出版本和未创建状态](docs/images/lesson16-acceptance-2026-10-25/18-live-v2-draft-details.jpg)](docs/images/lesson16-acceptance-2026-10-25/README.md)
 
 ## 功能与实现范围
 

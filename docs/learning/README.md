@@ -1,5 +1,7 @@
 # 从 Spring Boot 开始学习 Agent 开发
 
+当前已交付至[第十六课：版本化 Skill 与受控业务策略](16-skills-business-policies-and-controlled-tools.md)，[实现与分层验收](16-implementation.md)包含真实草稿、版本回退、PG/MCP故障恢复和逐状态截图。下一批为[第十七课：可信身份、权限与租户隔离](17-tenant-authorization-and-tool-policy.md)，任务包已完整发布，工程尚未实施。第十课 Temporal 对照仍需独立补齐。
+
 长期学习入口：[Agent 工程知识图谱](../../zxl-Ai-agent-fronted/src/learning/graph/catalogue.json)（前端 `/learning`），按关系查看完整课程、概念、项目源码、文档证据与参考资料。图谱构建方法本身也作为课程知识维护：[建模与维护指南](graph/README.md)。
 
 本课程直接使用当前项目，面向能写 Spring Boot 接口、Agent 零基础的开发者。目标是独立设计、实现、部署和排查企业级 Agent 应用，并能在面试中解释设计取舍和验证结果。
