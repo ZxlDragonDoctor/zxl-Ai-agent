@@ -66,9 +66,19 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 
 随后增加 `AuthHttpPgTest` **4 项真实 PG + MockMvc** 集成用例，连同 Controller/Filter/入口目录共 **26 项通过、0 跳过**，日志 `target/lesson17-mvc-pg.log`。覆盖匿名引导 → 登录 → 状态 → 错误 CSRF → 退出 → 旧凭据拒绝；外来租户候选拒绝后正常重试；非法 JSON 的安全 MVC 错误；跨站与未分类路径关闭。MVC 异常由 `WebSecurityAdvice` 统一输出安全 code/message。该测试使用实际数据库和 Servlet/MVC 链，但没有打开真实 HTTP 端口，不能替代浏览器截图。
 
+### 会话服务的显式身份入口
+
+`ConversationService` 已增加带 `ActorRef` 的创建、列表、正文、详情、恢复和删除入口。创建先登记 PG owner 再写指定 UUID 文件；列表先查 owner ID，只加载本人文件；无 owner 的旧文件保持隔离，不自动归属首位登录者。文件失败留下的 owner 占位不会被列表捏造成会话。
+
+`AgentConversationService` 的 scoped chat/preview 显式传身份，异步回调捕获引用，保存结果时重新授权。Provider 新入口默认拒绝，不能回退旧创建方法。撤销后拒绝保存回答并释放运行 lease；下次受权读取可将遗留 running 标为 interrupted，不能在撤销后偷偷用 legacy 写入。具体 Provider、模型、逐事件发布与 Controller 的正式接线仍待后续完成。
+
+新增 `ScopedConversationServiceTest` **9 项**和 `ScopedConversationPgTest` **4 项**（真实 PG + 临时 JSON 文件），验证双租户、同租户不同主体、旧文件、撤销及文件读取前的归属检查。先复现无权访问 busy 会话泄露 409，再将归属检查置于 lease 检查之前。红/绿日志为 `target/lesson17-conversation-behavior-red.log`、`target/lesson17-conversation-green.log`、`target/lesson17-conversation-pg-green.log`。
+
+最终将上述认证/授权/HTTP、会话新增测试及 `ConversationContextIntegrationTest` 一起运行，**10 类共 74 项通过，0 失败、0 错误、0 跳过**，日志 `target/lesson17-stage-ab-regression.log`。该数字是本轮明确选择的回归范围，不能外推为全仓库测试全部通过。
+
 ## 5. 尚未完成的本课范围
 
-1. 会话归属与异步身份贯穿，文件读取前的 PG 权威检查，旧历史受控迁移。
+1. 将已实现的会话 scoped 服务接到正式 Controller/Provider，完成模型与事件发布边界，并执行旧历史受控迁移。
 2. 主应用唯一入口与知识 worker 的内部鉴权；真实双租户知识、记忆与原文隔离。
 3. MCP 调用级票据、模型排队/工具执行/保存/发布边界的实时撤销。
 4. 多 Agent 运行归属、旧入口和独立实验配置的完整封闭；不得仅隐藏前端按钮。

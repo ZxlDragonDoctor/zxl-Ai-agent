@@ -9,6 +9,8 @@ import com.zxl.zxlaiagent.conversation.agent.ConversationAgentRegistry;
 import com.zxl.zxlaiagent.conversation.agent.AgentRunOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.zxl.zxlaiagent.security.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.time.Instant;
 import java.util.*;
@@ -23,6 +25,15 @@ public class AgentConversationService {
     private final ConversationContextWindow window;
     private final ConversationMessageMapper mapper;
     private final ConversationAgentRegistry agents;
+    private AuthorizationService authorization;
+
+    @Autowired(required = false)
+    public void setAuthorizationService(AuthorizationService authorization) { this.authorization = authorization; }
+
+    private AuthorizationService authorization() {
+        if (authorization == null) throw new SecurityFailure("IDENTITY_SERVICE_UNAVAILABLE", 503);
+        return authorization;
+    }
 
     public AgentConversationService(ConversationService conversations, ConversationRepository repository,
             ConversationRunGuard guard, ConversationContextWindow window,
@@ -40,6 +51,16 @@ public class AgentConversationService {
     }
 
     public SseEmitter chat(String message, String conversationId, AgentRunOptions options) {
+        return chatInternal(null, message, conversationId, options);
+    }
+
+    public SseEmitter chat(ActorRef actor, String message, String conversationId, AgentRunOptions options) {
+        if (actor == null) throw new SecurityFailure("UNAUTHENTICATED", 401);
+        authorization().decide(actor, "agent.execute", null, Phase.ENTRY, null).requireAllowed();
+        return chatInternal(actor, message, conversationId, options);
+    }
+
+    private SseEmitter chatInternal(ActorRef actor, String message, String conversationId, AgentRunOptions options) {
         options = options == null ? AgentRunOptions.NONE : options;
         if (message == null || message.isBlank() || message.length() > 12000) {
             throw ConversationService.badRequest("消息不能为空且不能超过 12000 个字符");
@@ -50,20 +71,21 @@ public class AgentConversationService {
         if (conversationId == null) {
             // Validate against the actual provider before creating any stored conversation.
             // The ephemeral metadata is never saved and contains no prior messages.
-            preparedAgent = options.isEmpty() ? agents.require("manus").create() : agents.require("manus").create(options);
+            preparedAgent = createAgent(actor, agents.require("manus"), options);
             Instant at = Instant.now();
             var empty = new Conversation(UUID.randomUUID(), "新会话", at, at, 0, List.of(), List.of(), "manus");
             preparedContext = window.prepare(empty, preparedAgent, prompt);
         }
-        UUID id = conversationId == null ? conversations.create(null).id() : ConversationService.parseId(conversationId);
-        conversations.get(id); // 懒恢复重启遗留的任务；不把它们当作仍在运行。
+        UUID id = conversationId == null ? (actor == null ? conversations.create(null) : conversations.create(actor, null, "manus")).id() : ConversationService.parseId(conversationId);
+        if (actor == null) conversations.get(id);
+        else conversations.get(actor, id);
         var lease = guard.acquire(id);
         UUID runId = UUID.randomUUID();
         boolean started = false;
         try {
-            Conversation previous = conversations.require(id);
+            Conversation previous = actor == null ? conversations.require(id) : conversations.require(actor, id);
             var provider = agents.require(previous.agentType());
-            var agent = preparedAgent == null ? (options.isEmpty() ? provider.create() : provider.create(options)) : preparedAgent;
+            var agent = preparedAgent == null ? createAgent(actor, provider, options) : preparedAgent;
             var context = preparedContext == null ? window.prepare(previous, agent, prompt) : preparedContext;
             var history = context.history();
             agent.restoreMessages(history);
@@ -81,23 +103,36 @@ public class AgentConversationService {
                 title = prompt.lines().findFirst().orElse(prompt);
                 title = title.substring(0, Math.min(40, title.length()));
             }
-            repository.save(previous.update(title, messages, runs));
+            Conversation starting = previous.update(title, messages, runs);
+            if (actor == null) repository.save(starting);
+            else {
+                authorization().registerResource(actor, new ResourceRef("run", runId.toString()));
+                authorization().gate(actor, "conversation.writeOwn", new ResourceRef("conversation", id.toString()),
+                        Phase.PERSIST, runId.toString(), () -> { repository.save(starting); return null; });
+            }
             started = true;
             RunCapture capture = new RunCapture();
             agent.setEventObserver(capture::accept);
             agent.setCompletionListener(snapshot -> {
-                try { finish(id, run, user, history.size(), snapshot, capture); }
+                try {
+                    if (actor == null) finish(id, run, user, history.size(), snapshot, capture);
+                    else authorization().gate(actor, "conversation.writeOwn", new ResourceRef("conversation", id.toString()),
+                            Phase.RESULT_PERSIST, runId.toString(), () -> { finish(id, run, user, history.size(), snapshot, capture); return null; });
+                }
                 finally { lease.close(); }
             });
             return agent.runStream(prompt);
         } catch (RuntimeException error) {
             if (started) {
                 try {
-                    Conversation current = conversations.require(id);
+                    Conversation current = actor == null ? conversations.require(id) : conversations.require(actor, id);
                     var failedRuns = current.runs().stream().map(run -> run.runId().equals(runId)
                             && "running".equals(run.status()) ? run.finish(AgentEndReason.EXECUTION_ERROR,
                             "", "执行未能启动，请检查服务端日志", List.of()) : run).toList();
-                    repository.save(current.update(current.title(), current.messages(), failedRuns));
+                    Conversation failed = current.update(current.title(), current.messages(), failedRuns);
+                    if (actor == null) repository.save(failed);
+                    else authorization().gate(actor, "conversation.writeOwn", new ResourceRef("conversation", id.toString()),
+                            Phase.RESULT_PERSIST, runId.toString(), () -> { repository.save(failed); return null; });
                 } catch (RuntimeException storageError) {
                     log.error("Unable to record failed run startup: {}", runId, storageError);
                 }
@@ -105,6 +140,20 @@ public class AgentConversationService {
             lease.close();
             throw error;
         }
+    }
+
+    private ToolCallAgent createAgent(ActorRef actor, com.zxl.zxlaiagent.conversation.agent.ConversationAgentProvider provider,
+                                      AgentRunOptions options) {
+        return actor == null ? (options.isEmpty() ? provider.create() : provider.create(options)) : provider.create(actor, options);
+    }
+
+    public ContextAssembler.Plan previewContext(ActorRef actor, String conversationId, String prompt) {
+        if (actor == null) throw new SecurityFailure("UNAUTHENTICATED", 401);
+        if (prompt == null || prompt.isBlank() || prompt.length() > 12000)
+            throw ConversationService.badRequest("消息不能为空且不能超过 12000 个字符");
+        var conversation = conversations.require(actor, ConversationService.parseId(conversationId));
+        var agent = createAgent(actor, agents.require(conversation.agentType()), AgentRunOptions.NONE);
+        return window.prepare(conversation, agent, prompt.strip());
     }
 
     /** Read-only run-start projection; the summary is generated from stored messages, never accepted from the request. */

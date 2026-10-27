@@ -30,10 +30,18 @@ public class FileConversationRepository implements ConversationRepository {
 
     @Override
     public Conversation create(String title, String agentType) {
-        UUID id = UUID.randomUUID();
+        return create(UUID.randomUUID(), title, agentType);
+    }
+
+    @Override
+    public Conversation create(UUID id, String title, String agentType) {
+        Objects.requireNonNull(id, "id");
         Instant now = Instant.now();
         Conversation conversation = new Conversation(id, title, now, now, 0, List.of(), List.of(), agentType);
-        synchronized (lock(id)) { write(conversation); }
+        synchronized (lock(id)) {
+            if (Files.exists(path(id))) throw new ConversationException("CONVERSATION_CONFLICT", "会话已存在", HttpStatus.CONFLICT);
+            write(conversation);
+        }
         return conversation;
     }
 
