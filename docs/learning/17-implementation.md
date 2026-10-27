@@ -1,0 +1,76 @@
+# 第十七课实现与分层证据
+
+更新：2026-10-27。**工程进行中，尚未完成本课整体验收。** 个人学习进度、笔记和掌握状态不变。完整目标见[课程任务](17-tenant-authorization-and-tool-policy.md)与[实施设计](../superpowers/plans/2026-10-25-lesson17-authorization.md)。
+
+## 1. 当前已实现的基础单元
+
+### 数据与身份契约
+
+独立 `lesson17` PostgreSQL schema 保存主体、租户成员、会话、资源归属、授权审计与调用票据；使用独立 Flyway 历史，保留原 `lesson12` 知识与向量。缺少 PG 配置或权威数据库不可用时拒绝认证，没有内存替代路径。
+
+`ActorRef` 是异步运行携带的不可变身份引用；`AuthenticatedActor` 是重新解析出的当前有效主体。调用者提供的 JSON 或 Header 不能直接生成可信主体。`Phase` 和 `AuthorizationDecision` 将“在哪个阶段、按哪个实际版本允许或拒绝”记录到审计。
+
+依赖只增加 Boot BOM 管理的 `spring-security-crypto`，实际依赖树为 **6.4.6**；没有引入自动生成登录页的 Security starter。密码使用 BCrypt，凭据和 CSRF 使用随机值、数据库只存摘要。离线 `provision()` 是受控管理原语，没有公开注册或任意授权接口。
+
+### 会话与撤销
+
+`AuthenticationService` 实现密码与成员校验、8 小时不透明会话、到期、退出撤销、CSRF 校验与轮换。每个 **subject + tenant 最多 5 个有效会话**；登录淘汰不会撤销其他租户会话。密码按 UTF-8 限制 72 字节，避免 BCrypt 静默截断；未知账号也执行 dummy hash 校验。
+
+认证测试包含独立 JVM 从 PG 恢复会话，令牌经子进程标准输入传入，不出现在命令行和测试日志。此证据证明凭据状态跨 JVM 保留，不代表整个应用的重启验收已完成。
+
+### 实时决策与调用票据
+
+`AuthorizationService` 对固定动作、当前成员/会话、资源归属生成原子 Decision。`gate()` 在短事务中检查并启动受控动作，与撤销共用 epoch 锁；远程请求必须只把启动动作放入 gate，不能持锁等待整个模型调用。
+
+`ServiceCallAuthorizer` 签发最长 60 秒、默认 30 秒的单次票据，绑定受众、动作、主体会话、资源及请求摘要。消费再次检查当前权限；**消费票据后，实际动作仍必须进入 gate**。该基础类的测试不表示 worker/MCP 已经接入它。
+
+## 2. 已验证的数据库并发问题
+
+| 问题 | 失败证据 | 修复与覆盖 |
+| --- | --- | --- |
+| 登录先锁旧 session、撤销先锁 epoch，形成反向锁序 | 真实双连接交错出现登录 `AUTHORITY_UNAVAILABLE` | 登录先锁 epoch，再按 subject + tenant 淘汰；满会话与撤销交错回归 |
+| 事务等待锁期间已到期，`now()` 仍是事务开始时间 | resolve、Decision、票据消费三项错误放行 | 先取得 epoch/session/ticket 权威锁，再用独立 SQL 的 `clock_timestamp()` 判断当前到期 |
+| 跨租户同资源引用不应授予访问 | 独立同资源引用拒绝用例 | tenant + subject 归属判定；上限另按租户隔离验证 |
+
+并发测试使用 `pg_blocking_pids` 确认另一连接实际阻塞后才跨过期限，避免只靠随机延时推断锁等待。修复前定向 5 项出现 3 失败、1 错误、0 跳过；修复后通过。独立只读复核确认原触发边界已关闭。
+
+## 3. HTTP 契约实现进度
+
+已编写登录/状态/退出 Controller、严格 JSON 解析、HttpOnly + SameSite Cookie、同源/CSRF Filter 和默认拒绝的入口目录，**尚未作为完整正式配置接入业务运行链**。
+
+- 匿名状态提供登录 CSRF 引导；已登录状态不每次轮换 CSRF，避免其他标签页失效。
+- 登录只接受 `loginName/password/tenantId`，拒绝重复字段、未知身份字段、非字符串、尾随第二个 JSON 值及超过 4096 字节的请求。
+- 已登录身份必须先退出再切换；退出先校验 CSRF、撤销权威会话，再清除 Cookie。
+- 公开主体仅返回 subject、tenant、loginName、role；不返回内部 sessionId、凭据或摘要。
+- 生产 HTTPS Cookie 应为 Secure；当前 Cookie 随实际 HTTPS 请求设置 Secure，开发 HTTP 与正式部署配置仍待集成验收。
+
+## 4. 本轮实际测试
+
+2026-10-27：真实 PostgreSQL **16.15**，以下 Maven 定向命令退出 0：
+
+```powershell
+mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrencyPgTest,EndpointPolicyTest,WebSecurityFilterTest,AuthControllerTest' test
+```
+
+| 类 | 执行数 | 范围 |
+| --- | ---: | --- |
+| AuthenticationPgTest | 6 | 真实 PG 密码、摘要、过期、撤销、CSRF、独立 JVM |
+| AuthorizationDecisionTest | 13 | 实时决策、审计、归属、票据；包含继承认证回归 |
+| SecurityConcurrencyPgTest | 12 | 实际锁等待、到期、锁序、租户上限与归属；包含继承认证回归 |
+| EndpointPolicyTest | 4 | context-path、路径分类、关闭旧入口、动作映射 |
+| WebSecurityFilterTest | 8 | Mock Servlet，匿名、CSRF、Origin、不可见资源、显式请求上下文 |
+| AuthControllerTest | 10 | Mock 身份服务，Cookie、公开主体、严格 JSON、退出与账号切换 |
+| 合计 | **53** | **0 失败、0 错误、0 跳过；执行数不等于独立业务场景数** |
+
+本地日志：`target/lesson17-auth-http-final.log`；并发失败及修复日志为 `target/lesson17-concurrency-red.log`、`target/lesson17-concurrency-green.log`。静默日志需与对应 Surefire XML 汇总共同核对；运行日志不作为源码提交。
+
+## 5. 尚未完成的本课范围
+
+1. 会话归属与异步身份贯穿，文件读取前的 PG 权威检查，旧历史受控迁移。
+2. 主应用唯一入口与知识 worker 的内部鉴权；真实双租户知识、记忆与原文隔离。
+3. MCP 调用级票据、模型排队/工具执行/保存/发布边界的实时撤销。
+4. 多 Agent 运行归属、旧入口和独立实验配置的完整封闭；不得仅隐藏前端按钮。
+5. 登录界面与实际接口集成、两组独立浏览器身份、逐按钮/连续状态/语言与图谱截图。
+6. 本课真实模型与故障验收、课程图谱和总路线最终同步、下一课完整任务。
+
+基础测试没有覆盖上述整条业务链；本课暂不标为完成，也不声称已经接企业 SSO、MFA、生产沙箱或正式审批写入。
