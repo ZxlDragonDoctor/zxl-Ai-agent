@@ -76,6 +76,12 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 
 最终将上述认证/授权/HTTP、会话新增测试及 `ConversationContextIntegrationTest` 一起运行，**10 类共 74 项通过，0 失败、0 错误、0 跳过**，日志 `target/lesson17-stage-ab-regression.log`。该数字是本轮明确选择的回归范围，不能外推为全仓库测试全部通过。
 
+### 知识图谱阶段检查
+
+图谱同步为 **116 节点、164 关系、28 课**，第十七课 `in-progress`、第十八课 `planned`。34 项图谱测试和前端生产构建通过；本轮实际操作课程筛选、十七课阅读卡、1/2 跳、3D→2D、英文、源码证据与十八课先修入口，保留 **9 张窄视口截图**。个人数据先导出、恢复后再导出，JSON 深比较相等。
+
+截图与限制见[阶段证据](../images/lesson17-acceptance-2026-10-27/README.md)。当前运行中的主应用尚未连接新认证接口，认证栏显示 `NOT_FOUND`，故本轮只证明静态知识内容与关系可阅读，**没有将正式登录页面或全部按钮标为验收通过**。桌面尺寸、双浏览器身份和真实业务链仍待后续集中验收。
+
 ## 5. 尚未完成的本课范围
 
 1. 将已实现的会话 scoped 服务接到正式 Controller/Provider，完成模型与事件发布边界，并执行旧历史受控迁移。

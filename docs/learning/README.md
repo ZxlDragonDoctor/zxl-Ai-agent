@@ -1,6 +1,6 @@
 # 从 Spring Boot 开始学习 Agent 开发
 
-当前已交付至[第十六课：版本化 Skill 与受控业务策略](16-skills-business-policies-and-controlled-tools.md)，[实现与分层验收](16-implementation.md)包含真实草稿、版本回退、PG/MCP故障恢复和逐状态截图。下一批为[第十七课：可信身份、权限与租户隔离](17-tenant-authorization-and-tool-policy.md)，任务包已完整发布，工程尚未实施。第十课 Temporal 对照仍需独立补齐。
+当前已交付至[第十六课：版本化 Skill 与受控业务策略](16-skills-business-policies-and-controlled-tools.md)，[实现与分层验收](16-implementation.md)包含真实草稿、版本回退、PG/MCP故障恢复和逐状态截图。[第十七课：可信身份、权限与租户隔离](17-tenant-authorization-and-tool-policy.md)正在实现：PG认证、当前原子Decision、单次票据与HTTP契约基础已有代码和分层证据；正式多租户业务链、模型和页面尚未整体验收，见[进行中的实现记录](17-implementation.md)。[第十八课完整任务包](18-prompt-injection-and-runtime-isolation.md)已发布、工程未实施。第十课 Temporal 对照仍需独立补齐。
 
 长期学习入口：[Agent 工程知识图谱](../../zxl-Ai-agent-fronted/src/learning/graph/catalogue.json)（前端 `/learning`），按关系查看完整课程、概念、项目源码、文档证据与参考资料。图谱构建方法本身也作为课程知识维护：[建模与维护指南](graph/README.md)。
 
@@ -143,7 +143,11 @@ Agent Hub 提交目标
 
 第十五课：[MCP工具契约与适配](15-mcp-tool-contracts-and-adapters.md)，六单元已实现；47专项+194相关回归、真实SSE/PG/模型、逐状态截图与连接故障修复见[实现导读](15-implementation.md)。固定演示身份，不把协议成功或人工核对说成生产授权与独立语义门槛通过。
 
-第十六课：[Skill、业务策略与受控工具范围](16-skills-business-policies-and-controlled-tools.md)，完整六单元任务包已发布、工程待实现。以企业 IT 工单只读分析与草稿为主线，覆盖可信版本定义、Java 权限交集与执行前检查、共享预算、在途快照/回滚、统一页面及真实 MCP/PG/模型与截图验收；不把 Prompt 当作权限机制。
+第十六课：[Skill、业务策略与受控工具范围](16-skills-business-policies-and-controlled-tools.md)，版本化只读业务策略已交付，[实现记录](16-implementation.md)分开记录97项专项/受影响回归、真实 MCP/PG/模型、版本回滚和逐状态截图。以企业 IT 工单只读分析与未创建草稿为主线，覆盖可信版本定义、Java 权限交集与执行前检查、共享预算、在途快照/回滚和统一页面；固定课堂身份不等于正式认证，起始策略版本不代表后续每次授权Decision。
+
+第十七课：[可信身份、权限与租户隔离](17-tenant-authorization-and-tool-policy.md)，**工程进行中**。独立PG身份与会话、同一事务中的当前Decision和phase审计、单次内部票据及HTTP登录/状态/退出契约已实现基础；正式会话/异步主体传播、两租户知识与记忆、worker/MCP、发布前撤销和页面仍在接入。[实现进度与证据](17-implementation.md)明确已验证与未完成项，不能把基础测试视为整体验收。
+
+第十八课：[提示注入防护与运行隔离](18-prompt-injection-and-runtime-isolation.md)，完整六单元任务已发布、**工程未实施**。覆盖内容来源、结构化上下文、真实文件/网络运行隔离、资源清理、开发/留出/正常评估及统一页面；已有正则与模板不等于通用防护或实际沙箱。
 
 ## 参考资料
 
