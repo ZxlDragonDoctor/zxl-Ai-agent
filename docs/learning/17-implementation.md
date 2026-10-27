@@ -74,6 +74,16 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 
 `FormalConversationController` 现已在 required 模式接通创建/列表/详情/删除，身份只取自 `AuthenticatedRequest`。旧 Controller 仅在 legacy-demo 或未指定模式时装配；二者互斥。正文拒绝伪造身份字段、重复或尾随 JSON、非字符串及超大请求；入口与服务层不可见资源都统一 404。新增 `FormalConversationControllerTest` 12 项，与相关回归 26 项通过，日志 `target/lesson17-conversation-http-green.log`；红日志记录旧匿名入口实际返回 200、预期 401。
 
+### 正式配置与实际 HTTP 阶段
+
+`FormalSecurityConfiguration` 以 `agent.security.mode=required` 装配 PG 权威、浏览器 Filter 和可信 Handler 清单。迁移期间未指定模式仍保留独立 legacy-demo 行为，不能将其作为正式租户授权。未知模式拼写直接阻止启动；正式模式禁用旧 wildcard CORS，只接受同源或显式完整 Origin。第八/九课旧实验 profile 不得混用，检查包括 Spring 实际生效的 default profile；普通 active profile 会正确覆盖未生效的 default。
+
+`TrustedHandlerInterceptor` 要求实际 Controller 类型也在已迁移清单中，防止已分类 URL 转入仍调用 legacy 服务的旧方法。当前只激活身份、最小存活和正式会话 Controller，其他已分类但未迁移业务返回 `AUTHORIZATION_INTEGRATION_PENDING/503`，未知或关闭路径返回 404；这不是完成 Agent 授权的替代方案。
+
+独立复核发现 default profile 漏检；先通过 `target/lesson17-default-profile-red.log` 复现，再按 Spring `acceptsProfiles` 的有效配置语义修复。最终 **13 类 97 项通过，0 失败、0 错误、0 跳过**，日志 `target/lesson17-formal-stage-final.log`，精确汇总见阶段证据 `backend-formal-tests.json`。包括正式配置 7 项、可信 Handler 4 项及正式会话 HTTP 12 项；此前 74 项保留为早期阶段记录，不能与 97 累加。
+
+真实主应用已于本轮用 required 模式启动，监听 loopback 8123，PG 16.15；`/health/live` 200，匿名 `/auth/status` 200、HttpOnly CSRF，匿名会话 401。**12 步实际 HTTP 检查通过**：甲登录/创建/读取，乙用独立 Cookie 容器登录后访问甲会话 404，旧 GET 模型执行 404，员工管理知识 403，未迁移 Agent 目录 503，双方退出与删除本轮合成会话。证据见 `live-http-scope.json`。这两个 HTTP 容器不是两个独立浏览器 profile；没有因此声称模型、worker 或 MCP 已验收。原 3 个演示会话文件仍保留，没有自动绑定测试主体。
+
 新增 `ScopedConversationServiceTest` **9 项**和 `ScopedConversationPgTest` **4 项**（真实 PG + 临时 JSON 文件），验证双租户、同租户不同主体、旧文件、撤销及文件读取前的归属检查。先复现无权访问 busy 会话泄露 409，再将归属检查置于 lease 检查之前。红/绿日志为 `target/lesson17-conversation-behavior-red.log`、`target/lesson17-conversation-green.log`、`target/lesson17-conversation-pg-green.log`。
 
 最终将上述认证/授权/HTTP、会话新增测试及 `ConversationContextIntegrationTest` 一起运行，**10 类共 74 项通过，0 失败、0 错误、0 跳过**，日志 `target/lesson17-stage-ab-regression.log`。该数字是本轮明确选择的回归范围，不能外推为全仓库测试全部通过。
@@ -86,7 +96,7 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 
 ## 5. 尚未完成的本课范围
 
-1. 将已实现的会话 scoped 服务接到正式 Controller/Provider，完成模型与事件发布边界，并执行旧历史受控迁移。
+1. 将 scoped 执行接到具体 Provider 与 Agent 聊天 Controller，完成模型与事件发布边界，并执行旧历史受控迁移。
 2. 主应用唯一入口与知识 worker 的内部鉴权；真实双租户知识、记忆与原文隔离。
 3. MCP 调用级票据、模型排队/工具执行/保存/发布边界的实时撤销。
 4. 多 Agent 运行归属、旧入口和独立实验配置的完整封闭；不得仅隐藏前端按钮。
