@@ -36,7 +36,7 @@
 
 ## 3. HTTP 契约实现进度
 
-已编写登录/状态/退出 Controller、严格 JSON 解析、HttpOnly + SameSite Cookie、同源/CSRF Filter 和默认拒绝的入口目录，**尚未作为完整正式配置接入业务运行链**。
+已编写登录/状态/退出 Controller、严格 JSON 解析、HttpOnly + SameSite Cookie、同源/CSRF Filter 和默认拒绝的入口目录。正式会话 Controller 已调用带 ActorRef 的服务；完整 Agent/worker/MCP 业务链仍待接通。
 
 - 匿名状态提供登录 CSRF 引导；已登录状态不每次轮换 CSRF，避免其他标签页失效。
 - 登录只接受 `loginName/password/tenantId`，拒绝重复字段、未知身份字段、非字符串、尾随第二个 JSON 值及超过 4096 字节的请求。
@@ -71,6 +71,8 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 `ConversationService` 已增加带 `ActorRef` 的创建、列表、正文、详情、恢复和删除入口。创建先登记 PG owner 再写指定 UUID 文件；列表先查 owner ID，只加载本人文件；无 owner 的旧文件保持隔离，不自动归属首位登录者。文件失败留下的 owner 占位不会被列表捏造成会话。
 
 `AgentConversationService` 的 scoped chat/preview 显式传身份，异步回调捕获引用，保存结果时重新授权。Provider 新入口默认拒绝，不能回退旧创建方法。撤销后拒绝保存回答并释放运行 lease；下次受权读取可将遗留 running 标为 interrupted，不能在撤销后偷偷用 legacy 写入。具体 Provider、模型、逐事件发布与 Controller 的正式接线仍待后续完成。
+
+`FormalConversationController` 现已在 required 模式接通创建/列表/详情/删除，身份只取自 `AuthenticatedRequest`。旧 Controller 仅在 legacy-demo 或未指定模式时装配；二者互斥。正文拒绝伪造身份字段、重复或尾随 JSON、非字符串及超大请求；入口与服务层不可见资源都统一 404。新增 `FormalConversationControllerTest` 12 项，与相关回归 26 项通过，日志 `target/lesson17-conversation-http-green.log`；红日志记录旧匿名入口实际返回 200、预期 401。
 
 新增 `ScopedConversationServiceTest` **9 项**和 `ScopedConversationPgTest` **4 项**（真实 PG + 临时 JSON 文件），验证双租户、同租户不同主体、旧文件、撤销及文件读取前的归属检查。先复现无权访问 busy 会话泄露 409，再将归属检查置于 lease 检查之前。红/绿日志为 `target/lesson17-conversation-behavior-red.log`、`target/lesson17-conversation-green.log`、`target/lesson17-conversation-pg-green.log`。
 

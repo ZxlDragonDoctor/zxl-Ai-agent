@@ -5,10 +5,12 @@ import com.zxl.zxlaiagent.conversation.model.ConversationSummary;
 import com.zxl.zxlaiagent.conversation.service.ConversationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import java.util.List;
 
 @RestController
 @RequestMapping("/conversations")
+@ConditionalOnProperty(name = "agent.security.mode", havingValue = "legacy-demo", matchIfMissing = true)
 public class ConversationController {
     private final ConversationService service;
     public ConversationController(ConversationService service) { this.service = service; }
