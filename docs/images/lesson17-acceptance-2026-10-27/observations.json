@@ -1,0 +1,65 @@
+[
+  {
+    "name": "01-course-directory",
+    "operation": "打开课程目录 / 筛选",
+    "expected": "28课及新增证据可选择；个人掌握不变",
+    "actual": "116节点/164关系，28课可选择，0/28；当前Auth服务未接线显示NOT_FOUND，此图只验收静态知识入口。",
+    "time": "2026-10-27T14:43:07.945Z"
+  },
+  {
+    "name": "02-lesson17-reading",
+    "operation": "选择第17课并收起目录",
+    "expected": "阅读卡显示工程进行中、已实现和未覆盖边界",
+    "actual": "显示实现与验收中，PG/Decision/HTTP基础与正式链路未验收分开，个人仍未开始。",
+    "time": "2026-10-27T14:43:25.781Z"
+  },
+  {
+    "name": "03-lesson17-one-hop",
+    "operation": "点击1跳",
+    "expected": "保留所选第17课及其直接关系",
+    "actual": "3D直接邻域与阅读卡可见，新增源码证据参与关联。",
+    "time": "2026-10-27T14:43:26.179Z"
+  },
+  {
+    "name": "04-lesson17-two-hops",
+    "operation": "点击2跳",
+    "expected": "在直接邻居上继续扩展，保留阅读卡",
+    "actual": "显示28节点/37关系，所选第17课阅读内容保留。",
+    "time": "2026-10-27T14:43:36.584Z"
+  },
+  {
+    "name": "05-lesson17-two-dimensional",
+    "operation": "从3D切换2D",
+    "expected": "节点与关系同时出现，阅读卡内容不变",
+    "actual": "2D图保留当前邻域和所选课程；未改个人学习状态。",
+    "time": "2026-10-27T14:43:37.068Z"
+  },
+  {
+    "name": "06-lesson17-english",
+    "operation": "切换为英文",
+    "expected": "课程、实现状态和已知边界均切换语言",
+    "actual": "英文阅读卡与进行中边界可读；本轮页面默认窄视口，截图不作为桌面尺寸验收。",
+    "time": "2026-10-27T14:45:31.340Z"
+  },
+  {
+    "name": "07-authorization-code-evidence",
+    "operation": "沿关系进入当前Decision源码节点",
+    "expected": "展示实际源码路径与授权事务边界",
+    "actual": "英文证据卡显示AuthorizationService.java与单次票据不代替实际动作gate；首次精确角色名因CSS大写定位失败，按已观察按钮内容成功。",
+    "time": "2026-10-27T14:46:19.151Z"
+  },
+  {
+    "name": "08-lesson18-task-boundary",
+    "operation": "返回第17课并沿先修关系到第18课",
+    "expected": "第18课显示计划状态和完整任务路径",
+    "actual": "第18课仍planned，关联完整六单元任务包，未标已实现或个人掌握。",
+    "time": "2026-10-27T14:46:34.542Z"
+  },
+  {
+    "name": "09-progress-restored",
+    "operation": "恢复备份并重新导出比对",
+    "expected": "个人掌握、笔记和阅读进度保持原值",
+    "actual": "导出JSON深比较相等，个人学习数据未改变；语言恢复中文。",
+    "time": "2026-10-27T14:47:10.062Z"
+  }
+]

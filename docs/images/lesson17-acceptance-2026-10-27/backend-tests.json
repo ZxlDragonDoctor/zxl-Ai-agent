@@ -1,0 +1,84 @@
+{
+  "date": "2026-10-27",
+  "scope": "Lesson 17 partial foundation, HTTP contract and scoped conversation; not full course acceptance",
+  "postgresql": "16.15",
+  "realModelInvoked": false,
+  "liveHttpPortTested": false,
+  "sourceLog": "target/lesson17-stage-ab-regression.log",
+  "tests": 74.0,
+  "failures": 0.0,
+  "errors": 0.0,
+  "skipped": 0.0,
+  "suites": [
+    {
+      "name": "com.zxl.zxlaiagent.security.AuthenticationPgTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.AuthorizationDecisionTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.SecurityConcurrencyPgTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.EndpointPolicyTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.WebSecurityFilterTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.AuthControllerTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.AuthHttpPgTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.conversation.service.ScopedConversationServiceTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.conversation.service.ScopedConversationPgTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.conversation.context.ConversationContextIntegrationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ]
+}
