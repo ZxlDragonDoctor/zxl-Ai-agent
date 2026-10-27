@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-27",
+  "scope": "Live main application and real PostgreSQL; two independent HTTP cookie containers, not independent browser profiles",
+  "realModelInvoked": false,
+  "syntheticConversationDeleted": true,
+  "steps": [
+    {
+      "name": "A anonymous CSRF bootstrap",
+      "expected": 200,
+      "actual": 200,
+      "passed": true
+    },
+    {
+      "name": "A real PG login",
+      "expected": 200,
+      "actual": 200,
+      "passed": true
+    },
+    {
+      "name": "A create scoped conversation without model execution",
+      "expected": 201,
+      "actual": 201,
+      "passed": true
+    },
+    {
+      "name": "A read own conversation",
+      "expected": 200,
+      "actual": 200,
+      "passed": true
+    },
+    {
+      "name": "B independent HTTP cookie container login",
+      "expected": 200,
+      "actual": 200,
+      "passed": true
+    },
+    {
+      "name": "B cannot read A conversation",
+      "expected": 404,
+      "actual": 404,
+      "passed": true
+    },
+    {
+      "name": "A cannot invoke unmigrated agent directory",
+      "expected": 503,
+      "actual": 503,
+      "passed": true
+    },
+    {
+      "name": "A old GET model execution is closed",
+      "expected": 404,
+      "actual": 404,
+      "passed": true
+    },
+    {
+      "name": "A employee cannot manage knowledge",
+      "expected": 403,
+      "actual": 403,
+      "passed": true
+    },
+    {
+      "name": "B logout revokes session",
+      "expected": 204,
+      "actual": 204,
+      "passed": true
+    },
+    {
+      "name": "A delete only synthetic owned conversation",
+      "expected": 204,
+      "actual": 204,
+      "passed": true
+    },
+    {
+      "name": "A logout revokes session",
+      "expected": 204,
+      "actual": 204,
+      "passed": true
+    }
+  ]
+}

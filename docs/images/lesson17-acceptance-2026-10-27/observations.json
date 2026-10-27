@@ -61,5 +61,61 @@
     "expected": "个人掌握、笔记和阅读进度保持原值",
     "actual": "导出JSON深比较相等，个人学习数据未改变；语言恢复中文。",
     "time": "2026-10-27T14:47:10.062Z"
+  },
+  {
+    "name": "10-live-anonymous-login",
+    "operation": "刷新身份状态连接正式主应用",
+    "expected": "匿名状态可引导登录，按钮可用，不再NOT_FOUND",
+    "actual": "真实8123状态required/匿名，登录按钮可用，错误提示清除。",
+    "time": "2026-10-27T15:09:25.691Z"
+  },
+  {
+    "name": "11-live-wrong-password",
+    "operation": "使用合成账号与错误密码提交",
+    "expected": "拒绝登录、密码清空，可以重试",
+    "actual": "提交后显示正在连接，表单与按钮禁用；这是进行态，拒绝终态另行截图。",
+    "time": "2026-10-27T15:09:49.175Z"
+  },
+  {
+    "name": "12-live-wrong-password-rejected",
+    "operation": "等待本次错误密码请求完成",
+    "expected": "统一拒绝、密码清空、可再次登录",
+    "actual": "表单恢复可用，显示UNAUTHENTICATED重新登录提示；未返回主体。",
+    "time": "2026-10-27T15:10:08.921Z"
+  },
+  {
+    "name": "13-live-authenticated-scope",
+    "operation": "同一合成账号以正确密码重试",
+    "expected": "进入已认证工作空间，未迁移业务明确拒绝",
+    "actual": "顶部已显示合成工作空间与employee身份，业务列表请求仍在进行；终态另行截图。",
+    "time": "2026-10-27T15:10:23.755Z"
+  },
+  {
+    "name": "14-live-unmigrated-handler-denied",
+    "operation": "等待认证后业务列表请求完成",
+    "expected": "已登录仍不能绕过未迁移handler",
+    "actual": "Agent类型加载失败，页面显示操作失败提示，新建/发送不可用；这是未迁移业务拒绝状态，不能作为模型/工具验收。",
+    "time": "2026-10-27T15:10:36.180Z"
+  },
+  {
+    "name": "15-live-logout",
+    "operation": "点击退出账号",
+    "expected": "撤销会话，返回匿名登录页面",
+    "actual": "工作空间主体和业务内容卸载，登录表单重新出现。",
+    "time": "2026-10-27T15:10:36.968Z"
+  },
+  {
+    "name": "16-live-public-learning",
+    "operation": "主应用已正式认证后刷新知识页面",
+    "expected": "匿名仍可阅读课程且身份服务错误消失",
+    "actual": "刷新后公共框架已出现，课程模块仍在加载；完成状态另行截图。",
+    "time": "2026-10-27T15:11:16.497Z"
+  },
+  {
+    "name": "17-live-public-learning-ready",
+    "operation": "等待公开课程模块完成加载",
+    "expected": "匿名可阅读完整图谱，认证状态正常",
+    "actual": "116节点/164关系与28课入口正常，未出现NOT_FOUND身份服务提示。",
+    "time": "2026-10-27T15:11:43.376Z"
   }
 ]
