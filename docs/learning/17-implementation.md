@@ -64,6 +64,8 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 
 本地日志：`target/lesson17-auth-http-final.log`；并发失败及修复日志为 `target/lesson17-concurrency-red.log`、`target/lesson17-concurrency-green.log`。静默日志需与对应 Surefire XML 汇总共同核对；运行日志不作为源码提交。
 
+随后增加 `AuthHttpPgTest` **4 项真实 PG + MockMvc** 集成用例，连同 Controller/Filter/入口目录共 **26 项通过、0 跳过**，日志 `target/lesson17-mvc-pg.log`。覆盖匿名引导 → 登录 → 状态 → 错误 CSRF → 退出 → 旧凭据拒绝；外来租户候选拒绝后正常重试；非法 JSON 的安全 MVC 错误；跨站与未分类路径关闭。MVC 异常由 `WebSecurityAdvice` 统一输出安全 code/message。该测试使用实际数据库和 Servlet/MVC 链，但没有打开真实 HTTP 端口，不能替代浏览器截图。
+
 ## 5. 尚未完成的本课范围
 
 1. 会话归属与异步身份贯穿，文件读取前的 PG 权威检查，旧历史受控迁移。
