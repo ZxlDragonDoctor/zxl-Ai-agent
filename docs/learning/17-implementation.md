@@ -70,7 +70,7 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 
 `ConversationService` 已增加带 `ActorRef` 的创建、列表、正文、详情、恢复和删除入口。创建先登记 PG owner 再写指定 UUID 文件；列表先查 owner ID，只加载本人文件；无 owner 的旧文件保持隔离，不自动归属首位登录者。文件失败留下的 owner 占位不会被列表捏造成会话。
 
-`AgentConversationService` 的 scoped chat/preview 显式传身份，异步回调捕获引用，保存结果时重新授权。Provider 新入口默认拒绝，不能回退旧创建方法。撤销后拒绝保存回答并释放运行 lease；下次受权读取可将遗留 running 标为 interrupted，不能在撤销后偷偷用 legacy 写入。具体 Provider、模型、逐事件发布与 Controller 的正式接线仍待后续完成。
+`AgentConversationService` 的 scoped chat/preview 显式传身份，异步回调捕获引用，保存结果时重新授权。Provider 新入口默认拒绝，不能回退旧创建方法。撤销后拒绝保存回答并释放运行 lease；下次受权读取可将遗留 running 标为 interrupted，不能在撤销后偷偷用 legacy 写入。具体 Provider、模型、逐事件发布与 Agent 聊天 Controller 的正式接线仍待后续完成。
 
 `FormalConversationController` 现已在 required 模式接通创建/列表/详情/删除，身份只取自 `AuthenticatedRequest`。旧 Controller 仅在 legacy-demo 或未指定模式时装配；二者互斥。正文拒绝伪造身份字段、重复或尾随 JSON、非字符串及超大请求；入口与服务层不可见资源都统一 404。新增 `FormalConversationControllerTest` 12 项，与相关回归 26 项通过，日志 `target/lesson17-conversation-http-green.log`；红日志记录旧匿名入口实际返回 200、预期 401。
 
@@ -83,6 +83,12 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 独立复核发现 default profile 漏检；先通过 `target/lesson17-default-profile-red.log` 复现，再按 Spring `acceptsProfiles` 的有效配置语义修复。最终 **13 类 97 项通过，0 失败、0 错误、0 跳过**，日志 `target/lesson17-formal-stage-final.log`，精确汇总见阶段证据 `backend-formal-tests.json`。包括正式配置 7 项、可信 Handler 4 项及正式会话 HTTP 12 项；此前 74 项保留为早期阶段记录，不能与 97 累加。
 
 真实主应用已于本轮用 required 模式启动，监听 loopback 8123，PG 16.15；`/health/live` 200，匿名 `/auth/status` 200、HttpOnly CSRF，匿名会话 401。**12 步实际 HTTP 检查通过**：甲登录/创建/读取，乙用独立 Cookie 容器登录后访问甲会话 404，旧 GET 模型执行 404，员工管理知识 403，未迁移 Agent 目录 503，双方退出与删除本轮合成会话。证据见 `live-http-scope.json`。这两个 HTTP 容器不是两个独立浏览器 profile；没有因此声称模型、worker 或 MCP 已验收。原 3 个演示会话文件仍保留，没有自动绑定测试主体。
+
+### 前端身份模块阶段
+
+`sessionRequest.ts` 管理同源 Cookie/CSRF、身份代际与迟到响应检查；`api/auth.ts` 负责状态、登录和退出；`AuthGate.vue` 提供身份栏与双语登录组件，公开课程始终可读。前端 `test:auth` **10 项**、`test:knowledge` **40 项**由主任务重跑通过，生产构建通过，保留既有 3D 大 chunk 警告。
+
+当前工作树 App/API 接线已用于实际浏览器验证：匿名刷新、错误密码进行/拒绝态、正确登录、未迁移业务拒绝、退出及匿名图谱。全局 App、其余业务请求与代理切换仍随正式业务链继续集成，不能把单独身份组件提交视作统一业务前端已交付。源码已有的前端入口和 API 改动将在完整链路核实后另按职责提交。
 
 新增 `ScopedConversationServiceTest` **9 项**和 `ScopedConversationPgTest` **4 项**（真实 PG + 临时 JSON 文件），验证双租户、同租户不同主体、旧文件、撤销及文件读取前的归属检查。先复现无权访问 busy 会话泄露 409，再将归属检查置于 lease 检查之前。红/绿日志为 `target/lesson17-conversation-behavior-red.log`、`target/lesson17-conversation-green.log`、`target/lesson17-conversation-pg-green.log`。
 
