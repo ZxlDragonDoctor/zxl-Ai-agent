@@ -25,7 +25,29 @@ public final class AuthorizationService {
   try(var s=SecurityDatabase.statement(c,"INSERT INTO authorization_audit(decision_id,run_id,phase,tenant_id,subject_id,session_id,action,resource_type,resource_id,version,allowed,code) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",decision.decisionId(),runId,phase.name(),ref.tenantId(),ref.subjectId(),ref.sessionId(),action,resource==null?null:resource.type(),resource==null?null:resource.id(),version,decision.allowed(),decision.code())){s.executeUpdate();}
   return decision;
  }
- public <T>T gate(ActorRef ref,String action,ResourceRef resource,Phase phase,String runId,Supplier<T> start){record Result<T>(AuthorizationDecision decision,T value){}var result=db.tx(c->{var d=decide(c,ref,action,resource,phase,runId);return new Result<T>(d,d.allowed()?start.get():null);});result.decision().requireAllowed();return result.value();}
+ public <T>T gate(ActorRef ref,String action,ResourceRef resource,Phase phase,String runId,Supplier<T> start){return gateAll(ref,List.of(new Permission(action,resource)),phase,runId,start);}
+ /** All requirements share one epoch transaction. The callback only starts/enqueues an operation. */
+ public record Permission(String action, ResourceRef resource) {}
+
+ public <T> T gateAll(ActorRef ref, List<Permission> requirements, Phase phase, String runId, Supplier<T> start) {
+  if (requirements == null || requirements.isEmpty() || requirements.size() > 8 || start == null
+      || requirements.stream().anyMatch(Objects::isNull)) throw new SecurityFailure("ACTION_DENIED", 403);
+  var permissions = List.copyOf(requirements);
+  record Checked<T>(List<AuthorizationDecision> decisions, T value, RuntimeException startFailure) {}
+  var checked = db.tx(connection -> {
+   var decisions = new ArrayList<AuthorizationDecision>();
+   for (var permission : permissions)
+    decisions.add(decide(connection, ref, permission.action(), permission.resource(), phase, runId));
+   boolean allowed = decisions.stream().allMatch(AuthorizationDecision::allowed);
+   if (!allowed) return new Checked<T>(List.copyOf(decisions), null, null);
+   try { return new Checked<T>(List.copyOf(decisions), start.get(), null); }
+   catch (RuntimeException failure) { return new Checked<T>(List.copyOf(decisions), null, failure); }
+  });
+  // Denied Decisions must commit too; throwing within the transaction would erase their audit.
+  checked.decisions().forEach(AuthorizationDecision::requireAllowed);
+  if (checked.startFailure() != null) throw checked.startFailure();
+  return checked.value();
+ }
  /** Trusted administration primitive; caller authentication/administrative policy belongs at the entry boundary. */
  public void setMembershipActive(ActorRef ref,boolean active){db.tx(c->{AuthenticationService.lockEpoch(c,ref);try(var s=SecurityDatabase.statement(c,"UPDATE membership SET status=?,version=version+1 WHERE tenant_id=? AND subject_id=?",active?"ACTIVE":"REVOKED",ref.tenantId(),ref.subjectId())){s.executeUpdate();}try(var s=SecurityDatabase.statement(c,"UPDATE authorization_epoch SET version=version+1 WHERE tenant_id=? AND subject_id=?",ref.tenantId(),ref.subjectId())){s.executeUpdate();}return null;});}
  public void registerResource(ActorRef ref,ResourceRef resource){db.tx(c->{AuthenticationService.resolve(c,ref);try(var s=SecurityDatabase.statement(c,"INSERT INTO resource_owner(resource_type,resource_id,tenant_id,subject_id) VALUES (?,?,?,?)",resource.type(),resource.id(),ref.tenantId(),ref.subjectId())){s.executeUpdate();}return null;});}
