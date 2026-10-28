@@ -30,6 +30,8 @@ public class LoveAssistantProvider implements ConversationAgentProvider {
         return agent;
     }
 
+    @Override public boolean supportsAuthenticatedExecution() { return true; }
+
     /** Execution service binds the actor's conversation/run boundary before this agent starts. */
     @Override public ToolCallAgent create(com.zxl.zxlaiagent.security.ActorRef actor, AgentRunOptions options) {
         if (actor == null) throw new com.zxl.zxlaiagent.security.SecurityFailure("UNAUTHENTICATED", 401);

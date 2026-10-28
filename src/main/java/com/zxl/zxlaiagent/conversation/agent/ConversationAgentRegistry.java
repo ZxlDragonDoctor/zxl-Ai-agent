@@ -24,4 +24,8 @@ public class ConversationAgentRegistry {
     }
 
     public List<AgentDefinition> list() { return providers.values().stream().map(ConversationAgentProvider::definition).toList(); }
+    public List<AgentDefinition> listAuthenticated() {
+        return providers.values().stream().filter(ConversationAgentProvider::supportsAuthenticatedExecution)
+                .map(ConversationAgentProvider::definition).toList();
+    }
 }

@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "agent.security.mode", havingValue = "legacy-demo", matchIfMissing = true)
 public class AgentTypeController {
     private final ConversationAgentRegistry registry;
     public AgentTypeController(ConversationAgentRegistry registry) { this.registry = registry; }
