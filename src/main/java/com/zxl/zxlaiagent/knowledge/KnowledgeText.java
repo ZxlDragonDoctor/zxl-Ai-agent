@@ -12,7 +12,7 @@ public final class KnowledgeText {
         return prepare(tenant,id,source,raw,max,"deterministic-demo-v1",8);
     }
     public static Prepared prepare(String tenant,String id,String source,String raw,int max,String model,int dimensions) {
-        if(tenant==null||!tenant.matches("[a-zA-Z0-9_-]{1,64}")||id==null||!id.matches("[a-zA-Z0-9_-]{1,80}"))throw new IllegalArgumentException("Invalid document identity");
+        if(tenant==null||tenant.isBlank()||tenant.length()>150||tenant.chars().anyMatch(Character::isISOControl)||id==null||!id.matches("[a-zA-Z0-9_-]{1,120}"))throw new IllegalArgumentException("Invalid document identity");
         if(source==null||source.length()>120||source.contains("/")||source.contains("\\")||!(source.endsWith(".md")||source.endsWith(".txt")))throw new IllegalArgumentException("Only named Markdown/text content is accepted");
         if(raw==null||raw.isBlank()||raw.length()>100000||raw.getBytes(StandardCharsets.UTF_8).length>300000)throw new IllegalArgumentException("Content must be nonempty and within 100000 UTF-16 units / 300000 bytes");
         if(max<16||max>2000)throw new IllegalArgumentException("Invalid chunk limit");

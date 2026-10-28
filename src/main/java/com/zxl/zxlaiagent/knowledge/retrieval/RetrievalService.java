@@ -1,6 +1,8 @@
 package com.zxl.zxlaiagent.knowledge.retrieval;
 
 import com.zxl.zxlaiagent.knowledge.*;
+import com.zxl.zxlaiagent.security.Phase;
+import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 import java.sql.*;
 import java.util.*;
 import java.time.Duration;
@@ -20,6 +22,7 @@ public final class RetrievalService {
         public Failure(String code) { super(code); this.code=code; }
         public String code() { return code; }
     }
+    private final OperationBoundary boundary;
     private final KnowledgeDatabase db;
     private final String tenant;
     private final KnowledgeEmbedding embedding;
@@ -28,11 +31,14 @@ public final class RetrievalService {
             new ArrayBlockingQueue<>(8),task->{var thread=new Thread(task,"retrieval-rerank");thread.setDaemon(true);return thread;},new ThreadPoolExecutor.AbortPolicy());
     public RetrievalService(KnowledgeDatabase db,String tenant,KnowledgeEmbedding embedding) { this(db,tenant,embedding,Reranker.rules()); }
     public RetrievalService(KnowledgeDatabase db,String tenant,KnowledgeEmbedding embedding,Reranker reranker) {
-        this.db=Objects.requireNonNull(db); this.tenant=Objects.requireNonNull(tenant);
+        this(db,tenant,embedding,reranker,OperationBoundary.unrestricted());
+    }
+    public RetrievalService(KnowledgeDatabase db,String tenant,KnowledgeEmbedding embedding,Reranker reranker,OperationBoundary boundary){
+        this.boundary=Objects.requireNonNull(boundary);this.db=Objects.requireNonNull(db); this.tenant=Objects.requireNonNull(tenant);
         this.embedding=Objects.requireNonNull(embedding); this.reranker=Objects.requireNonNull(reranker);
     }
     public Response retrieve(Request request) {
-        validate(request);
+        boundary.check(Phase.ENTRY);validate(request);
         long started=System.nanoTime(); var deadline=new RetrievalDeadline(request.budgetMs());
         List<Stage> stages=new ArrayList<>(); List<String> degradations=new ArrayList<>();
         long profileStarted=System.nanoTime();
@@ -46,7 +52,7 @@ public final class RetrievalService {
             long phase=System.nanoTime();
             try {
                 // Original semantic query is always retained; supplement only enriches the keyword route.
-                String literal=KnowledgeEmbedding.vectorLiteral(embedding.embed(request.query(),deadline.remaining()),embedding.dimensions());
+                String literal=KnowledgeEmbedding.vectorLiteral(embedding.embed(request.query(),deadline.remaining(),boundary),embedding.dimensions());
                 vector=vector(literal,request.candidateLimit(),deadline); successful++;
                 stages.add(stage("vector","OK",phase,vector.size()));
             } catch (RuntimeException failure) {
@@ -80,10 +86,12 @@ public final class RetrievalService {
         stages.add(stage("final-visibility","OK",phase,candidates.size()));
         List<Hit> result=candidates.stream().limit(request.topK()).toList();
         String shortage=result.size()<request.topK()?(result.isEmpty()?"NO_CURRENT_MATCHES":"INSUFFICIENT_CURRENT_CANDIDATES"):null;
+        boundary.check(Phase.RESULT_PUBLISH);
         return new Response(UUID.randomUUID().toString(),request.query(),rewritten,request.mode(),embedding.identity(),usedReranker,
                 elapsed(started),List.copyOf(stages),List.copyOf(degradations),shortage,result);
     }
     private static void propagateCancellation(RuntimeException failure) {
+        if(failure instanceof com.zxl.zxlaiagent.security.SecurityFailure)throw failure;
         if(Thread.currentThread().isInterrupted() || failure instanceof RetrievalDeadline.Cancelled) throw new RetrievalDeadline.Cancelled();
     }
     private List<Reranker.Score> boundedRerank(String query,List<Hit> candidates,RetrievalDeadline deadline) {
@@ -98,11 +106,11 @@ public final class RetrievalService {
             long actualRemaining=deadline.remaining().toMillis();
             long httpBudget=actualRemaining-Math.max(250,actualRemaining/4);
             if(httpBudget<10)throw new IllegalStateException("Insufficient rerank budget after queue and authorization");
-            return reranker.rank(query,authorized,Duration.ofMillis(httpBudget));
+            return reranker.rank(query,authorized,Duration.ofMillis(httpBudget),boundary);
         });
         try { return future.get(optional,TimeUnit.MILLISECONDS); }
         catch(InterruptedException failure) { Thread.currentThread().interrupt(); throw new RetrievalDeadline.Cancelled(); }
-        catch(ExecutionException | TimeoutException failure) { throw new IllegalStateException("Reranker failed or timed out",failure); }
+        catch(ExecutionException | TimeoutException failure) { if(failure.getCause() instanceof com.zxl.zxlaiagent.security.SecurityFailure denied)throw denied;throw new IllegalStateException("Reranker failed or timed out",failure); }
         finally { future.cancel(true); RERANK_WORKERS.purge(); }
     }
     public static void validate(Request r) {
@@ -152,7 +160,7 @@ public final class RetrievalService {
         return result;
     }
     private List<Hit> current(List<Hit> candidates,RetrievalDeadline deadline) {
-        deadline.remaining(); if(candidates.isEmpty())return candidates;
+        boundary.check(Phase.EVIDENCE_READ);deadline.remaining(); if(candidates.isEmpty())return candidates;
         return db.tx(deadline.remaining(),c->{
             List<Hit> current=new ArrayList<>();
             String placeholders=String.join(",",Collections.nCopies(candidates.size(),"?"));
