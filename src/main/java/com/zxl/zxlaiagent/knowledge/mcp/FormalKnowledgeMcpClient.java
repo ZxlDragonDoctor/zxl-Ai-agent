@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zxl.zxlaiagent.security.*;
 import com.zxl.zxlaiagent.tools.support.ToolResults;
 import io.modelcontextprotocol.client.McpClient;
-import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import java.net.URI;
@@ -33,7 +33,7 @@ public final class FormalKnowledgeMcpClient implements AutoCloseable {
     private final Object lifecycle=new Object();
     // One trusted application owns the server's sole SSE connection; serialize discovery and tool exchanges.
     private final ReentrantLock exchange=new ReentrantLock();
-    private volatile McpSyncClient session;
+    private volatile McpAsyncClient session;
     private volatile long sessionRequestTimeoutMillis;
     private volatile String state="UNAVAILABLE",protocolVersion,lastError="NOT_DISCOVERED";
     private volatile List<DiscoveredTool> tools=List.of();
@@ -67,14 +67,32 @@ public final class FormalKnowledgeMcpClient implements AutoCloseable {
         try{return bounded(()->locked(end,cancelled,()->{discard();connect(end,cancelled);return status();}),end,cancelled);}
         catch(Failure failure){if(!closed.get()){state="UNAVAILABLE";lastError=failure.code();}throw failure;}
     }
+    /** Explicit management entry: authorize the queued connection reset, then wait for handshake outside PG. */
+    public Status refresh(ActorRef actor,Duration budget,BooleanSupplier cancelled){
+        long end=deadline(budget);
+        try{return bounded(()->locked(end,cancelled,()->{
+            authorization.gate(actor,"knowledge.manage",null,Phase.DEQUEUE,null,()->{check(end,cancelled);discard();return null;});
+            connect(end,cancelled);
+            return authorization.gate(actor,"knowledge.manage",null,Phase.RESULT_PUBLISH,null,this::status);
+        }),end,cancelled);}
+        catch(Failure failure){if(!closed.get()&&!"MCP_NOT_AUTHORIZED".equals(failure.code())){state="UNAVAILABLE";lastError=failure.code();}throw failure;}
+    }
     public McpSchema.CallToolResult call(ActorRef actor,String exposedName,Map<String,Object> arguments,Duration budget,BooleanSupplier cancelled){
+        return call(actor,exposedName,arguments,budget,cancelled,List.of(),null);
+    }
+    /** Java-selected run/conversation requirements accompany the actor into the actual dispatch gate. */
+    public McpSchema.CallToolResult call(ActorRef actor,String exposedName,Map<String,Object> arguments,Duration budget,BooleanSupplier cancelled,List<AuthorizationService.Permission> additionalPermissions,String runId){
         if(!EXPOSED_NAME.equals(exposedName))throw new Failure("MCP_NOT_AUTHORIZED");
+        if(additionalPermissions==null||additionalPermissions.size()>7||additionalPermissions.stream().anyMatch(Objects::isNull))throw new Failure("MCP_INVALID_ARGUMENT");
+        var permissions=new LinkedHashSet<AuthorizationService.Permission>();
+        permissions.add(new AuthorizationService.Permission(FormalKnowledgeMcpProtocol.ACTION,null));permissions.addAll(additionalPermissions);
+        var required=List.copyOf(permissions);
         final Map<String,Object> original;
         try{original=FormalKnowledgeMcpProtocol.modelArguments(arguments);}
         catch(RuntimeException invalid){throw new Failure("MCP_INVALID_ARGUMENT");}
         long end=deadline(budget);
         return bounded(()->locked(end,cancelled,()->{
-            check(end,cancelled);authorization.decide(actor,FormalKnowledgeMcpProtocol.ACTION,null,Phase.DEQUEUE,null).requireAllowed();
+            check(end,cancelled);authorization.gateAll(actor,required,Phase.DEQUEUE,runId,()->null);
             if(session==null)connect(end,cancelled);check(end,cancelled);
             long responseHeadroom=Math.max(100,Math.min(500,sessionRequestTimeoutMillis/4));
             long serverBudget=Math.min(10000,Math.min(remainingMillis(end),sessionRequestTimeoutMillis))-responseHeadroom;
@@ -84,22 +102,30 @@ public final class FormalKnowledgeMcpClient implements AutoCloseable {
             sent.put("authorization",tickets.issue(actor,FormalKnowledgeMcpProtocol.AUDIENCE,FormalKnowledgeMcpProtocol.ACTION,null,FormalKnowledgeMcpProtocol.requestHash(business)));
             check(end,cancelled);
             // No replay/retry: even a lost response may mean this one-use ticket was consumed.
-            var response=session.callTool(new McpSchema.CallToolRequest(FormalKnowledgeMcpProtocol.NAME,sent));
+            var connected=session;
+            if(connected==null)throw new Failure("MCP_NETWORK_FAILURE");
+            // SDK 0.7.0 subscribes DefaultMcpSession's Mono.create on this thread; its SSE transport
+            // starts HttpClient.sendAsync eagerly. Initialization already completed outside the gate.
+            var pending=authorization.gateAll(actor,required,Phase.TOOL_DISPATCH,runId,()->{
+                check(end,cancelled);return connected.callTool(new McpSchema.CallToolRequest(FormalKnowledgeMcpProtocol.NAME,sent)).toFuture();
+            });
+            final McpSchema.CallToolResult response;
+            try{response=await(pending,end,cancelled);}finally{pending.cancel(true);}
             check(end,cancelled);
             if(response==null)throw new Failure("MCP_INVALID_RESPONSE");
-            return authorization.gate(actor,FormalKnowledgeMcpProtocol.ACTION,null,Phase.RESULT_PUBLISH,null,()->response);
+            return authorization.gateAll(actor,required,Phase.RESULT_PUBLISH,runId,()->response);
         }),end,cancelled);
     }
     private void connect(long end,BooleanSupplier cancelled){
         check(end,cancelled);state="CONNECTING";lastError=null;
         var transport=new HttpClientSseClientTransport(InternalServiceHttpClient.builder(internalToken,endpoint),endpoint.toString(),new ObjectMapper());
         long requestTimeoutMillis=Math.max(100,Math.min(sdkMaxRequestTimeoutMillis,remainingMillis(end)));
-        var candidate=McpClient.sync(transport).requestTimeout(Duration.ofMillis(requestTimeoutMillis))
+        var candidate=McpClient.async(transport).requestTimeout(Duration.ofMillis(requestTimeoutMillis))
                 .clientInfo(new McpSchema.Implementation("zxl-authorized-knowledge-client","2.0.0")).build();
         try{
-            var initialized=candidate.initialize();check(end,cancelled);
+            var initialized=candidate.initialize().block(Duration.ofMillis(Math.max(1,remainingMillis(end))));check(end,cancelled);
             if(!"zxl-knowledge-authorized".equals(initialized.serverInfo().name())||!"2.0.0".equals(initialized.serverInfo().version()))throw new Failure("MCP_PROTOCOL_FAILURE");
-            var discovered=candidate.listTools();check(end,cancelled);
+            var discovered=candidate.listTools().block(Duration.ofMillis(Math.max(1,remainingMillis(end))));check(end,cancelled);
             if(discovered==null||discovered.nextCursor()!=null||discovered.tools()==null||discovered.tools().size()!=1)throw new Failure("MCP_SCHEMA_CHANGED");
             var tool=discovered.tools().get(0);
             if(!FormalKnowledgeMcpProtocol.NAME.equals(tool.name())||!Objects.equals(tool.inputSchema(),FormalKnowledgeMcpProtocol.wireDefinition().inputSchema()))throw new Failure("MCP_SCHEMA_CHANGED");
@@ -110,6 +136,11 @@ public final class FormalKnowledgeMcpClient implements AutoCloseable {
                 tools=List.of(new DiscoveredTool(SERVER_ID,tool.name(),EXPOSED_NAME,"v2",FormalKnowledgeMcpProtocol.schemaDigest(FormalKnowledgeMcpProtocol.MODEL_SCHEMA),digest,approved));state="READY";lastError=null;
             }
         }catch(Exception failure){candidate.close();tools=List.of();if(!closed.get()){state="UNAVAILABLE";lastError=classify(failure).code();}throw classify(failure);}
+    }
+    private <T>T await(CompletableFuture<T> pending,long end,BooleanSupplier cancelled)throws Exception{
+        while(true){check(end,cancelled);try{return pending.get(Math.min(25,Math.max(1,remainingMillis(end))),TimeUnit.MILLISECONDS);}
+            catch(TimeoutException polling){/* Entire RPC shares the caller's deadline. */}
+            catch(ExecutionException failed){throw classify(failed.getCause());}}
     }
     private <T>T bounded(Callable<T> task,long end,BooleanSupplier cancelled){
         check(end,cancelled);final Future<T> future;

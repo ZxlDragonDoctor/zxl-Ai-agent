@@ -20,9 +20,16 @@ class FormalKnowledgeMcpTransportTest {
  private static AuthorizationService allowed(){
   var auth=mock(AuthorizationService.class);
   when(auth.decide(any(),anyString(),isNull(),any(),isNull())).thenReturn(new AuthorizationDecision("test","epoch:1",true,"ALLOWED"));
-  when(auth.gate(any(),anyString(),isNull(),any(),isNull(),any())).thenAnswer(call->((Supplier<?>)call.getArgument(5)).get());return auth;
+  when(auth.gate(any(),anyString(),isNull(),any(),isNull(),any())).thenAnswer(call->((Supplier<?>)call.getArgument(5)).get());
+  when(auth.gateAll(any(),anyList(),any(),nullable(String.class),any())).thenAnswer(call->((Supplier<?>)call.getArgument(4)).get());return auth;
  }
  private static String text(McpSchema.CallToolResult result){return ((McpSchema.TextContent)result.content().get(0)).text();}
+ @Test void internalServiceCredentialsNeverUseTheDefaultProxy(){
+  var origin=URI.create("http://127.0.0.1:18135");
+  var client=InternalServiceHttpClient.builder(SERVICE_TOKEN,origin).build();
+  assertTrue(client.proxy().isPresent(),"An explicit direct selector is required");
+  assertEquals(List.of(java.net.Proxy.NO_PROXY),client.proxy().orElseThrow().select(origin));
+ }
  @Test void missingOrWrongServiceTokenCannotClaimSseOrPost()throws Exception{
   var tickets=mock(ServiceCallAuthorizer.class);var auth=allowed();
   try(var server=FormalKnowledgeMcpServer.start(0,new FormalKnowledgeMcpTool(tickets,auth,(actor,r)->Map.of()),SERVICE_TOKEN)){

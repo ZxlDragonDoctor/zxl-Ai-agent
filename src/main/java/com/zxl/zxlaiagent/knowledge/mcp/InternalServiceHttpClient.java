@@ -21,7 +21,11 @@ final class InternalServiceHttpClient extends HttpClient {
   return HttpRequest.newBuilder(request,(name,value)->!name.equalsIgnoreCase("Authorization")).header("Authorization",bearer).build();
  }
  static HttpClient.Builder builder(String token,URI endpoint){
-  requireToken(token);return new AuthBuilder(HttpClient.newBuilder().followRedirects(Redirect.NEVER),token,endpoint);
+  requireToken(token);return new AuthBuilder(HttpClient.newBuilder().followRedirects(Redirect.NEVER)
+    .connectTimeout(Duration.ofSeconds(2)).proxy(new ProxySelector(){
+      public List<Proxy> select(URI uri){return List.of(Proxy.NO_PROXY);}
+      public void connectFailed(URI uri,SocketAddress address,IOException failure){}
+    }),token,endpoint);
  }
  private record AuthBuilder(HttpClient.Builder delegate,String token,URI origin) implements HttpClient.Builder {
   public HttpClient.Builder cookieHandler(CookieHandler v){delegate.cookieHandler(v);return this;}
