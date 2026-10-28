@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zxl.zxlaiagent.agent.ToolCallAgent;
 import com.zxl.zxlaiagent.agent.model.AgentEndReason;
 import com.zxl.zxlaiagent.agent.model.AgentExecutionEvent;
+import com.zxl.zxlaiagent.knowledge.gateway.ScopedKnowledgeClient;
+import com.zxl.zxlaiagent.security.*;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.tool.ToolCallback;
@@ -13,6 +15,8 @@ import java.net.http.*;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.List;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.*;
 
 /** Registers a knowledge agent in the existing conversation engine. Database ownership stays in the isolated worker. */
@@ -20,6 +24,9 @@ import java.util.concurrent.*;
 public final class KnowledgeAssistantProvider implements ConversationAgentProvider {
     private final URI endpoint;
     private final String mode;
+    private ScopedKnowledgeClient scopedClient;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setScopedKnowledgeClient(ScopedKnowledgeClient client) { this.scopedClient = client; }
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).followRedirects(HttpClient.Redirect.NEVER).build();
     public KnowledgeAssistantProvider() {
@@ -35,14 +42,37 @@ public final class KnowledgeAssistantProvider implements ConversationAgentProvid
     }
     @Override public AgentDefinition definition() {
         return new AgentDefinition("enterprise-knowledge", "企业知识助手", "Enterprise knowledge assistant",
-                "引用校验、证据不足拒答与经确认的事实记忆；固定Alice演示身份", "Validated citations, abstention and confirmed facts; fixed Alice demo identity");
+                "引用校验、证据不足拒答与经确认的事实记忆；"+(scopedClient==null?"固定Alice演示身份":"当前登录身份与租户"),
+                "Validated citations, abstention and confirmed facts; "+(scopedClient==null?"fixed Alice demo identity":"current authenticated actor and tenant"));
     }
+    @Override public boolean supportsAuthenticatedExecution() { return scopedClient != null; }
     @Override public ToolCallAgent create() {
+        return createInternal(null);
+    }
+    @Override public ToolCallAgent create(ActorRef actor, AgentRunOptions options) {
+        if (actor == null) throw new SecurityFailure("UNAUTHENTICATED", 401);
+        if (options != null && !options.isEmpty()) throw new IllegalArgumentException("AGENT_DOES_NOT_ACCEPT_SKILL_SELECTION");
+        if (scopedClient == null) throw new SecurityFailure("SCOPED_KNOWLEDGE_UNAVAILABLE", 503);
+        return createInternal(actor);
+    }
+    private ToolCallAgent createInternal(ActorRef actor) {
         var agent = new ToolCallAgent(new ToolCallback[0]) {
             @Override public String step() {
                 String question = getMessageList().stream().filter(m -> m instanceof UserMessage).reduce((a,b)->b).orElseThrow().getText();
                 CompletableFuture<HttpResponse<String>> pending = null;
                 try {
+                    final int responseStatus;
+                    final String responseBody;
+                    if (actor != null) {
+                        if (getConversationId() == null || getRunId() == null) throw new SecurityFailure("RESOURCE_UNAVAILABLE", 404);
+                        String body = JSON.writeValueAsString(Map.of("question", question, "conversationId", getConversationId(), "mode", mode, "budgetMs", 30000));
+                        var response = scopedClient.exchange(actor, "POST", "/ai/learning/knowledge/answers", null,
+                                body.getBytes(StandardCharsets.UTF_8), Duration.ofSeconds(30), this::isStreamClosed, List.of(
+                                        new AuthorizationService.Permission("agent.execute", null),
+                                        new AuthorizationService.Permission("conversation.readOwn", new ResourceRef("conversation", getConversationId())),
+                                        new AuthorizationService.Permission("run.readOwn", new ResourceRef("run", getRunId()))), getRunId());
+                        responseStatus = response.status(); responseBody = new String(response.body(), StandardCharsets.UTF_8);
+                    } else {
                     String body = JSON.writeValueAsString(Map.of("question", question, "conversationId", getConversationId() == null ? "local-run" : getConversationId(), "mode", mode, "budgetMs", 30000, "profile", "alice"));
                     var request = HttpRequest.newBuilder(endpoint).timeout(Duration.ofSeconds(32)).header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build();
                     pending = HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString());
@@ -52,12 +82,16 @@ public final class KnowledgeAssistantProvider implements ConversationAgentProvid
                         try { response = pending.get(100, TimeUnit.MILLISECONDS); break; }
                         catch (TimeoutException polling) { /* The HTTP request owns the total timeout. */ }
                     }
-                    if (!Set.of(200, 503).contains(response.statusCode()) || response.body().length() > 262144) throw new IllegalStateException("Knowledge worker unavailable or invalid response");
-                    var result = JSON.readTree(response.body());
+                    responseStatus = response.statusCode(); responseBody = response.body();
+                    }
+                    if (actor != null && Set.of(401, 403, 404).contains(responseStatus))
+                        throw new SecurityFailure(responseStatus == 401 ? "UNAUTHENTICATED" : responseStatus == 404 ? "NOT_FOUND" : "ACTION_DENIED", responseStatus);
+                    if (!Set.of(200, 503).contains(responseStatus) || responseBody.length() > 262144) throw new IllegalStateException("Knowledge worker unavailable or invalid response");
+                    var result = JSON.readTree(responseBody);
                     String status = result.path("status").asText();
                     if (!Set.of("ANSWERED", "PARTIAL", "NEEDS_CLARIFICATION", "INSUFFICIENT_EVIDENCE", "SERVICE_FAILURE").contains(status)
                             || !result.path("claims").isArray() || !result.path("evidence").isArray()) throw new IllegalStateException("Invalid knowledge answer contract");
-                    emitExecutionEvent(AgentExecutionEvent.of("KNOWLEDGE_RESULT", getCurrentStep(), response.body(), "completed"));
+                    emitExecutionEvent(AgentExecutionEvent.of("KNOWLEDGE_RESULT", getCurrentStep(), responseBody, "completed"));
                     if ("SERVICE_FAILURE".equals(status)) throw new IllegalStateException("Knowledge service did not complete; this is not a no-evidence answer");
                     String answer = result.path("answer").asText();
                     if (answer.isBlank()) answer = status + " · " + result.path("reason").asText() + "\n" + result.path("missingInformation").toString();
@@ -68,6 +102,7 @@ public final class KnowledgeAssistantProvider implements ConversationAgentProvid
                 } catch (InterruptedException interrupted) {
                     Thread.currentThread().interrupt(); throw new CancellationException("Knowledge call interrupted");
                 } catch (CancellationException cancelled) { throw cancelled; }
+                catch (SecurityFailure denied) { throw denied; }
                 catch (Exception failure) { throw new IllegalStateException("Knowledge worker failed; retry after checking the worker", failure); }
                 finally { if (pending != null && !pending.isDone()) pending.cancel(true); }
             }
