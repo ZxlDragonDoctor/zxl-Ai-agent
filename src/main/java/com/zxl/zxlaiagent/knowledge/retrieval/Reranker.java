@@ -1,11 +1,14 @@
 package com.zxl.zxlaiagent.knowledge.retrieval;
 
+import com.zxl.zxlaiagent.security.Phase;
+import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 import java.time.Duration;
 import java.util.*;
 
 public interface Reranker {
     record Score(String chunkId, double score) { }
     List<Score> rank(String originalQuery, List<RetrievalService.Hit> candidates, Duration remaining);
+    default List<Score> rank(String query,List<RetrievalService.Hit> candidates,Duration remaining,OperationBoundary boundary){boundary.check(Phase.MODEL_DISPATCH);return rank(query,candidates,remaining);}
     default String identity() { return "rule-keyword-v1"; }
     static Map<String, Double> validate(List<RetrievalService.Hit> candidates, List<Score> scores) {
         if (scores == null || scores.size() != candidates.size()) throw new IllegalArgumentException("Reranker omitted candidates");

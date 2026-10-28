@@ -1,5 +1,8 @@
 package com.zxl.zxlaiagent.knowledge;
 
+import com.zxl.zxlaiagent.security.Phase;
+import com.zxl.zxlaiagent.security.execution.OperationBoundary;
+import com.zxl.zxlaiagent.knowledge.scoped.AuthorizedHttp;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.net.http.*;
@@ -24,12 +27,13 @@ public final class HttpKnowledgeEmbedding implements KnowledgeEmbedding {
     @Override public float[] embed(String text){
         return embed(text,Duration.ofSeconds(30));
     }
-    @Override public float[] embed(String text,Duration remaining){
+    @Override public float[] embed(String text,Duration remaining){return embed(text,remaining,OperationBoundary.unrestricted());}
+    @Override public float[] embed(String text,Duration remaining,OperationBoundary boundary){
         if(remaining.isNegative()||remaining.isZero()||Thread.currentThread().isInterrupted())throw new IllegalStateException("Embedding cancelled or deadline exceeded");
         try{
             String body=json.writeValueAsString(Map.of("model",model,"input",List.of(text),"dimensions",dimensions,"encoding_format","float"));
             var request=HttpRequest.newBuilder(endpoint).timeout(remaining.compareTo(Duration.ofSeconds(30))<0?remaining:Duration.ofSeconds(30)).header("Authorization","Bearer "+key).header("Content-Type","application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build();
-            var response=client.send(request,HttpResponse.BodyHandlers.ofString());
+            var response=AuthorizedHttp.send(client,request,HttpResponse.BodyHandlers.ofString(),remaining,boundary);
             if(response.statusCode()!=200)throw new IllegalStateException("Embedding provider returned HTTP "+response.statusCode()+"; no fallback was used");
             if(response.body().length()>1024*1024)throw new IllegalStateException("Embedding response exceeds 1 MiB");
             var values=json.readTree(response.body()).path("data").path(0).path("embedding");

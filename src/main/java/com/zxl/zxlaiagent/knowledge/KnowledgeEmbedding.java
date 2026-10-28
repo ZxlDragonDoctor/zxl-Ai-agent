@@ -1,5 +1,8 @@
 package com.zxl.zxlaiagent.knowledge;
 
+import com.zxl.zxlaiagent.security.Phase;
+import com.zxl.zxlaiagent.security.execution.OperationBoundary;
+
 /** Model calls happen before SQL publication. This port never owns a database transaction. */
 public interface KnowledgeEmbedding {
     float[] embed(String text);
@@ -8,6 +11,7 @@ public interface KnowledgeEmbedding {
         if (remaining.isNegative() || remaining.isZero()) throw new IllegalStateException("Embedding deadline exceeded");
         return embed(text);
     }
+    default float[] embed(String text,java.time.Duration remaining,OperationBoundary boundary){boundary.check(Phase.MODEL_DISPATCH);return embed(text,remaining);}
     default String identity() { return "deterministic-demo-v1"; }
     default int dimensions() { return 8; }
     static String vectorLiteral(float[] vector) {

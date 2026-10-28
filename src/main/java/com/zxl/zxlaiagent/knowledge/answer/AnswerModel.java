@@ -1,5 +1,8 @@
 package com.zxl.zxlaiagent.knowledge.answer;
 
+import com.zxl.zxlaiagent.security.Phase;
+import com.zxl.zxlaiagent.security.execution.OperationBoundary;
+
 import java.time.Duration;
 import java.util.*;
 
@@ -9,6 +12,8 @@ public interface AnswerModel {
  record Verdict(String support,String reason) { }
  Draft generate(String question,String snapshotId,List<AnswerService.Evidence> evidence,MemoryContext.MemoryView memory,Duration remaining);
  Verdict judge(String question,AnswerService.Claim claim,List<AnswerService.Evidence> evidence,Duration remaining);
+ default Draft generate(String q,String s,List<AnswerService.Evidence> e,MemoryContext.MemoryView m,Duration t,OperationBoundary boundary){boundary.check(Phase.MODEL_DISPATCH);return generate(q,s,e,m,t);}
+ default Verdict judge(String q,AnswerService.Claim c,List<AnswerService.Evidence> e,Duration t,OperationBoundary boundary){boundary.check(Phase.MODEL_DISPATCH);return judge(q,c,e,t);}
  String identity();
  default String judgeIdentity(){return identity();}
  static AnswerModel demo(){return new AnswerModel(){

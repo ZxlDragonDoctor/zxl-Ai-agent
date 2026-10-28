@@ -1,5 +1,8 @@
 package com.zxl.zxlaiagent.knowledge.retrieval;
 
+import com.zxl.zxlaiagent.security.Phase;
+import com.zxl.zxlaiagent.security.execution.OperationBoundary;
+import com.zxl.zxlaiagent.knowledge.scoped.AuthorizedHttp;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -35,7 +38,8 @@ public final class HttpReranker implements Reranker {
     }
     @Override public String identity() { return identity; }
 
-    @Override public List<Score> rank(String originalQuery, List<RetrievalService.Hit> candidates, Duration remaining) {
+    @Override public List<Score> rank(String originalQuery,List<RetrievalService.Hit> candidates,Duration remaining){return rank(originalQuery,candidates,remaining,OperationBoundary.unrestricted());}
+    @Override public List<Score> rank(String originalQuery,List<RetrievalService.Hit> candidates,Duration remaining,OperationBoundary boundary) {
         if (remaining == null || remaining.isNegative() || remaining.isZero()) throw new IllegalArgumentException("Reranking budget exhausted");
         if (originalQuery == null || originalQuery.isBlank() || originalQuery.length() > 2000 || candidates == null || candidates.size() > 20) throw new IllegalArgumentException("Reranking input exceeds lesson limits");
         if (candidates.isEmpty()) return List.of();
@@ -47,7 +51,7 @@ public final class HttpReranker implements Reranker {
             var request = HttpRequest.newBuilder(endpoint).timeout(remaining)
                     .header("Authorization", "Bearer " + key).header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body)).build();
-            var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            var response = AuthorizedHttp.send(client,request,HttpResponse.BodyHandlers.ofString(),remaining,boundary);
             if (response.statusCode() != 200) throw new IllegalStateException("Reranker provider HTTP " + response.statusCode());
             if (response.body().length() > 1024 * 1024) throw new IllegalStateException("Reranker response exceeds 1 MiB");
             var results = json.readTree(response.body()).path("output").path("results");
