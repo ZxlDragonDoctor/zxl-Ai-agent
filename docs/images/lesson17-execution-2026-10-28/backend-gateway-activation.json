@@ -1,0 +1,68 @@
+{
+  "suites": 9,
+  "results": [
+    {
+      "name": "com.zxl.zxlaiagent.conversation.controller.FormalAgentChatControllerTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.conversation.ScopedLoveProviderTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.knowledge.gateway.FormalKnowledgeGatewayControllerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.AuthControllerTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.EndpointPolicyTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.FormalGatewayActivationTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.FormalSecurityConfigurationTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.TrustedHandlerInterceptorTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.WebSecurityFilterTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ]
+}

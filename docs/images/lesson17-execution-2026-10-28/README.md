@@ -6,6 +6,8 @@
 
 - `backend-integration-tests.json`：18 类 92 项，0 失败、错误、跳过。真实 PG、独立 worker HTTP、实际 MCP SDK SSE、本机模型 HTTP 与 MockMvc 分别覆盖，不等同于浏览器全链路。
 - `backend-legacy-regression.json`：13 类 100 项，0 失败、错误、跳过；与上述范围有重叠，不相加当作独立场景数。
+- `backend-gateway-tests.json`：新增内部客户端、PG 与 Controller 3 类 13 项通过。真实 PG 先复现不可见资源状态错误，再修复重跑。
+- `backend-gateway-activation.json`：配置与 HTTP 相关回归 9 类 51 项通过。首次夹具缺少不相关 LoveApp 依赖的失败另记在导读中；不是生产启动失败证据。这些范围仍有重叠。
 - 图谱 34 项通过，生产构建通过；保留既有三维图大 chunk 警告。
 - 取消无帧等待、worker writer 未刷新、输出无上限及慢 socket 持授权锁均先复现再修复。本地日志在 `target/lesson17-model-cancel-red.log`、`lesson17-worker-publication-red.log` 和最终回归日志中。
 

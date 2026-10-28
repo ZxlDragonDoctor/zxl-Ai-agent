@@ -1,0 +1,27 @@
+{
+  "suites": 3,
+  "tests": 13.0,
+  "results": [
+    {
+      "name": "com.zxl.zxlaiagent.knowledge.gateway.FormalKnowledgeGatewayControllerTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.knowledge.gateway.ScopedKnowledgeClientContractTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.knowledge.gateway.ScopedKnowledgeClientPgTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ]
+}

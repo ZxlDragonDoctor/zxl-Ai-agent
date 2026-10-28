@@ -147,4 +147,3 @@ class AgentPublicationBoundaryTest {
         assertEquals(true, state.get(emitter), "rejected terminal must close without sensitive output");
     }
 }
-
