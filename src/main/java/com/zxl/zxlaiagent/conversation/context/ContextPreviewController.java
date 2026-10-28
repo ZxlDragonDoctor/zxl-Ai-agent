@@ -9,6 +9,7 @@ import java.util.Map;
 
 /** Same local single-user scope as existing conversation endpoints; deliberately demo-only. */
 @RestController
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "agent.security.mode", havingValue = "legacy-demo", matchIfMissing = true)
 @Profile("lesson11-demo")
 @RequestMapping("/ai/learning/context")
 public class ContextPreviewController {

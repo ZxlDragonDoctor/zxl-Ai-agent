@@ -17,6 +17,7 @@ import reactor.core.publisher.Flux;
 import java.io.IOException;
 
 @RestController
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "agent.security.mode", havingValue = "legacy-demo", matchIfMissing = true)
 @RequestMapping("/ai")
 public class AiController {
 

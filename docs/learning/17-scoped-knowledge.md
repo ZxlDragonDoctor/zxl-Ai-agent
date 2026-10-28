@@ -27,3 +27,11 @@ embedding、rerank、answer 的 HTTP 适配器在实际 `sendAsync` 启动时检
 传入的 Java 权限列表与路由知识权限合并成一个 `gateAll`。会话和运行归属不能作为模型参数。响应通过有界 subscriber 接收至 1MiB，完整正文共享截止时间；取消标志在无正文返回时仍能结束等待。没有自动重试，以免重放已消费的票据。资源不存在和不可见统一为 404。
 
 新增客户端 PG 7 项、Controller 4 项与契约 2 项共 **13 项通过，零失败、错误、跳过**，日志 `target/lesson17-gateway-maven-green.log`。先在真实 PG 用例复现不可见资源返回 403，再修正为 404。测试同时核对原始正文、票据篡改、双租户同 ID、未知身份字段零出站、撤销、慢正文、超大响应、额外归属权限及取消信号；服务端使用本机受控 HTTP 与真实 PG，不替代常驻正式 worker 的整体接线验收。
+
+## 正式配置接线
+
+`FormalKnowledgeGatewayConfiguration` 在 required 模式创建内部客户端。部署必须提供高熵的 `LESSON17_INTERNAL_SERVICE_TOKEN`（或等价 `agent.security.internal-service-token`），由主应用与内部服务共享；没有默认演示凭据。默认知识服务 origin 为 `http://127.0.0.1:18132`，可通过 `agent.security.knowledge-worker-origin` 显式改为另一个固定 loopback 端口。凭据缺失、弱值或非 loopback 地址会使启动失败，不得为了启动而放宽校验。不要把值写进 Git 或前端。
+
+正式可信 Handler 清单接通知识 gateway 与 prepared 聊天 Controller，并注册延迟启动 interceptor。旧 `AiController` 及课堂 context preview 在 required 模式不装配，避免重复路由或旧匿名入口；正式主应用不得同时启用独立 `lesson17-worker` profile。尚未迁移的业务 Handler 继续显式拒绝，不能回退旧调用。
+
+配置及相关入口 **9 类 51 项通过，0 失败、错误、跳过**，日志 `target/lesson17-gateway-activation-green.log`。首次配置测试因夹具不必要地实例化旧 LoveApp mock 而缺少 VectorStore 失败，修正夹具后重跑；该失败不是正式应用已验证的启动故障。测试证明条件装配、明确缺少服务凭据时关闭、Handler/CSRF/严格正文与 MVC prepared 行为；本批未用新配置重启常驻主应用，真实模型及登录后页面仍待下一阶段验收。当前运行的旧进程没有自动加载这些 Java 改动。

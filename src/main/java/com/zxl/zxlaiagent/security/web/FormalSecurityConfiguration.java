@@ -1,6 +1,9 @@
 package com.zxl.zxlaiagent.security.web;
 
 import com.zxl.zxlaiagent.conversation.controller.FormalConversationController;
+import com.zxl.zxlaiagent.conversation.controller.FormalAgentChatController;
+import com.zxl.zxlaiagent.knowledge.gateway.FormalKnowledgeGatewayController;
+import com.zxl.zxlaiagent.agent.stream.PreparedAgentStreamInterceptor;
 import com.zxl.zxlaiagent.security.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -22,7 +25,7 @@ public class FormalSecurityConfiguration implements WebMvcConfigurer {
 
     public FormalSecurityConfiguration(Environment environment) {
         this.environment = environment;
-        if (environment.acceptsProfiles(Profiles.of("lesson8-demo", "lesson9-demo")))
+        if (environment.acceptsProfiles(Profiles.of("lesson8-demo", "lesson9-demo", "lesson17-worker")))
             throw new IllegalStateException("Formal authorization cannot enable unscoped classroom profiles");
     }
 
@@ -48,6 +51,8 @@ public class FormalSecurityConfiguration implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         // Add a business handler only after all of its methods use the trusted scoped service.
         registry.addInterceptor(new TrustedHandlerInterceptor(Set.of(AuthController.class,
-                FormalConversationController.class, SecurityHealthController.class)));
+                FormalConversationController.class, SecurityHealthController.class,
+                FormalAgentChatController.class, FormalKnowledgeGatewayController.class)));
+        registry.addInterceptor(new PreparedAgentStreamInterceptor());
     }
 }
