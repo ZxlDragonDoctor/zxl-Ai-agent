@@ -23,10 +23,18 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
+import reactor.core.Disposable;
+import com.zxl.zxlaiagent.security.Phase;
+import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 
 /** Stream reasoning/content without upgrading the rest of the M6 application. */
 @Component
@@ -56,6 +64,13 @@ public class DashScopeAgentStreamer {
 
     public ChatResponse stream(String systemPrompt, List<Message> history, ToolCallback[] tools,
                                BiConsumer<String, String> onDelta, BooleanSupplier cancelled) {
+        return stream(systemPrompt, history, tools, onDelta, cancelled, OperationBoundary.unrestricted());
+    }
+
+    /** Authorization covers subscription start; response waiting never holds the authority transaction. */
+    public ChatResponse stream(String systemPrompt, List<Message> history, ToolCallback[] tools,
+                               BiConsumer<String, String> onDelta, BooleanSupplier cancelled, OperationBoundary boundary) {
+        Objects.requireNonNull(boundary, "Explicit operation boundary required");
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("model", model);
         request.put("stream", true);
@@ -77,8 +92,10 @@ public class DashScopeAgentStreamer {
         StringBuilder reasoning = new StringBuilder();
         Map<Integer, PendingToolCall> calls = new TreeMap<>();
         boolean[] sawCompletion = {false};
+        var completed = new CompletableFuture<Void>();
+        Disposable subscription = null;
         try {
-            client.post().uri("/chat/completions")
+            var frames = client.post().uri("/chat/completions")
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.TEXT_EVENT_STREAM)
                     .bodyValue(request)
@@ -86,6 +103,7 @@ public class DashScopeAgentStreamer {
                     .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {})
                     .doOnNext(event -> {
                         if (cancelled.getAsBoolean()) throw new CancellationException("输出连接已关闭");
+                        boundary.check(Phase.RESULT_PUBLISH);
                         String data = event.data();
                         if (data == null || data.isBlank()) return;
                         if ("[DONE]".equals(data.trim())) {
@@ -116,14 +134,20 @@ public class DashScopeAgentStreamer {
                             if (function.hasNonNull("name")) call.name.append(function.path("name").asText());
                             if (function.hasNonNull("arguments")) call.arguments.append(function.path("arguments").asText());
                         }
-                    })
-                    .blockLast(Duration.ofMinutes(4));
+                    });
+            if (cancelled.getAsBoolean()) throw new CancellationException("输出连接已关闭");
+            subscription = boundary.start(Phase.MODEL_DISPATCH,
+                    () -> frames.subscribe(ignored -> {}, completed::completeExceptionally, () -> completed.complete(null)));
+            await(completed, cancelled);
         } catch (WebClientResponseException e) {
             throw new IllegalStateException("模型服务请求失败（HTTP " + e.getStatusCode().value()
                     + "），请检查模型配置、额度及服务状态", e);
         } catch (WebClientRequestException e) {
             throw new IllegalStateException("连接模型服务失败，请检查网络后重试", e);
+        } finally {
+            if (subscription != null) subscription.dispose();
         }
+        boundary.check(Phase.RESULT_PUBLISH);
         if (!sawCompletion[0]) throw new IllegalStateException("模型输出连接提前中断，请重试");
 
         List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
@@ -136,6 +160,29 @@ public class DashScopeAgentStreamer {
         if (answer.isEmpty() && toolCalls.isEmpty()) throw new IllegalStateException("模型未返回回答或工具调用，请重试");
         AssistantMessage message = new AssistantMessage(answer.toString(), Map.of(), toolCalls);
         return new ChatResponse(List.of(new Generation(message)));
+    }
+
+    private static void await(CompletableFuture<Void> completed, BooleanSupplier cancelled) {
+        long deadline = System.nanoTime() + TimeUnit.MINUTES.toNanos(4);
+        try {
+            while (true) {
+                if (cancelled.getAsBoolean()) throw new CancellationException("模型输出接收已取消");
+                long remaining = deadline - System.nanoTime();
+                if (remaining <= 0) throw new IllegalStateException("模型输出等待超时");
+                try {
+                    completed.get(Math.min(remaining, TimeUnit.MILLISECONDS.toNanos(50)), TimeUnit.NANOSECONDS);
+                    return;
+                } catch (TimeoutException polling) {
+                    // Poll independently of incoming frames so a silent server cannot retain a cancelled run.
+                }
+            }
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            throw new CancellationException("模型输出接收已取消");
+        } catch (ExecutionException failed) {
+            if (failed.getCause() instanceof RuntimeException runtime) throw runtime;
+            throw new IllegalStateException("模型输出未完成", failed.getCause());
+        }
     }
 
     private List<Map<String, Object>> messages(String systemPrompt, List<Message> history) {
