@@ -29,4 +29,11 @@ public class LoveAssistantProvider implements ConversationAgentProvider {
         agent.setStreamClient(streamer);
         return agent;
     }
+
+    /** Execution service binds the actor's conversation/run boundary before this agent starts. */
+    @Override public ToolCallAgent create(com.zxl.zxlaiagent.security.ActorRef actor, AgentRunOptions options) {
+        if (actor == null) throw new com.zxl.zxlaiagent.security.SecurityFailure("UNAUTHENTICATED", 401);
+        if (options != null && !options.isEmpty()) throw new IllegalArgumentException("AGENT_DOES_NOT_ACCEPT_SKILL_SELECTION");
+        return create();
+    }
 }

@@ -27,3 +27,5 @@
 事件使用固定线程数和有界队列，在准入与消费时检查当前权限。慢消费者不会持有 PG 锁；终态发布失败也必须清理并释放运行资源。撤销不能撤回已经开始发送的网络字节，不能声称数据库与 TCP 原子提交。
 
 2026-10-28 复核：`PreparedAgentStreamTest` 6 项、`AgentPublicationBoundaryTest` 7 项、`ScopedConversationServiceTest` 10 项通过，包括实际 MockMvc 生命周期、控制器异常、准备后放弃、排队期间撤销和队列饱和。此处没有替代正式主应用重启后的浏览器验收。
+
+角色示例 `LoveAssistantProvider` 已提供显式 ActorRef 创建方法，拒绝缺失身份和不支持的 Skill 参数，不增加工具。执行服务仍负责在准备运行前绑定会话/运行权限；Provider 接受身份不等于独立完成授权。`ScopedLoveProviderTest` 2 项通过；统一 Agent 类型目录与其余 Provider 的正式接线继续完成。
