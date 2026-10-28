@@ -15,6 +15,7 @@ import static org.mockito.Mockito.mock;
 class FormalGatewayActivationTest {
     private final ApplicationContextRunner gateway = new ApplicationContextRunner()
             .withUserConfiguration(FormalKnowledgeGatewayConfiguration.class)
+            .withBean(com.zxl.zxlaiagent.agent.stream.DashScopeAgentStreamer.class, () -> mock(com.zxl.zxlaiagent.agent.stream.DashScopeAgentStreamer.class))
             .withBean(ServiceCallAuthorizer.class, () -> mock(ServiceCallAuthorizer.class))
             .withBean(AuthorizationService.class, () -> mock(AuthorizationService.class));
     private static final String TOKEN = "agent.security.internal-service-token=abcdefghijklmnopqrstuvwxyz_0123456789-ABCDEFGHIJKLMNO";
