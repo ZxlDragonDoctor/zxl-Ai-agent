@@ -8,6 +8,7 @@ import com.zxl.zxlaiagent.agent.model.AgentEndReason;
 import com.zxl.zxlaiagent.tools.support.ToolResults;
 import com.zxl.zxlaiagent.tools.model.ToolResult;
 import com.zxl.zxlaiagent.agent.stream.DashScopeAgentStreamer;
+import com.zxl.zxlaiagent.security.Phase;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -84,8 +85,14 @@ public class ToolCallAgent extends ReActAgent {
         }
         Prompt prompt = new Prompt(messageList, chatOptions);
         try {
+            if (hasOperationBoundary() && streamClient == null)
+                throw new IllegalStateException("正式 Agent 必须使用带执行授权的模型通道");
             // 获取带工具选项的响应
-            ChatResponse chatResponse = streamClient != null
+            ChatResponse chatResponse = hasOperationBoundary()
+                    ? streamClient.stream(getSystemPrompt(), messageList, availableTools,
+                            (type, text) -> emitExecutionEvent(AgentExecutionEvent.of(type, getCurrentStep(), text, "running")),
+                            this::isStreamClosed, operationBoundary())
+                    : streamClient != null
                     ? streamClient.stream(getSystemPrompt(), messageList, availableTools,
                             (type, text) -> emitExecutionEvent(AgentExecutionEvent.of(type, getCurrentStep(), text, "running")),
                             this::isStreamClosed)
@@ -223,7 +230,11 @@ public class ToolCallAgent extends ReActAgent {
                     name, input, null, "running", null));
             long started = System.nanoTime();
             try {
+                // Remote tools must authorize their actual transport start internally; never hold
+                // the PG epoch lock across an arbitrary callback or its remote response wait.
+                operationBoundary().check(Phase.TOOL_DISPATCH);
                 String result = execution.get();
+                operationBoundary().check(Phase.RESULT_PUBLISH);
                 boolean error = !ToolResults.read(result).path("success").asBoolean();
                 emitExecutionEvent(AgentExecutionEvent.tool(error ? "TOOL_FAILED" : "TOOL_COMPLETED",
                         getCurrentStep(), callId, name, input, result, error ? "error" : "completed",

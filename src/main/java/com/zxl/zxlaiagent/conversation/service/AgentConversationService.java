@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.zxl.zxlaiagent.security.*;
+import com.zxl.zxlaiagent.security.execution.ActorBoundary;
+import com.zxl.zxlaiagent.agent.stream.PreparedAgentStream;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.time.Instant;
 import java.util.*;
@@ -55,9 +57,13 @@ public class AgentConversationService {
     }
 
     public SseEmitter chat(ActorRef actor, String message, String conversationId, AgentRunOptions options) {
+        throw new IllegalStateException("正式对话使用 prepareChat，并由 MVC prepared-stream hook 激活");
+    }
+
+    public PreparedAgentStream prepareChat(ActorRef actor, String message, String conversationId, AgentRunOptions options) {
         if (actor == null) throw new SecurityFailure("UNAUTHENTICATED", 401);
         authorization().decide(actor, "agent.execute", null, Phase.ENTRY, null).requireAllowed();
-        return chatInternal(actor, message, conversationId, options);
+        return (PreparedAgentStream) chatInternal(actor, message, conversationId, options);
     }
 
     private SseEmitter chatInternal(ActorRef actor, String message, String conversationId, AgentRunOptions options) {
@@ -109,6 +115,10 @@ public class AgentConversationService {
                 authorization().registerResource(actor, new ResourceRef("run", runId.toString()));
                 authorization().gate(actor, "conversation.writeOwn", new ResourceRef("conversation", id.toString()),
                         Phase.PERSIST, runId.toString(), () -> { repository.save(starting); return null; });
+                agent.bindOperationBoundary(new ActorBoundary(authorization(), actor, List.of(
+                        new AuthorizationService.Permission("agent.execute", null),
+                        new AuthorizationService.Permission("conversation.readOwn", new ResourceRef("conversation", id.toString())),
+                        new AuthorizationService.Permission("run.readOwn", new ResourceRef("run", runId.toString()))), runId.toString()));
             }
             started = true;
             RunCapture capture = new RunCapture();
@@ -121,7 +131,7 @@ public class AgentConversationService {
                 }
                 finally { lease.close(); }
             });
-            return agent.runStream(prompt);
+            return actor == null ? agent.runStream(prompt) : agent.prepareStream(prompt);
         } catch (RuntimeException error) {
             if (started) {
                 try {

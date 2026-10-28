@@ -7,6 +7,10 @@ import com.zxl.zxlaiagent.agent.model.AgentRunSnapshot;
 import lombok.Data;
 import lombok.AccessLevel;
 import lombok.Setter;
+import lombok.Getter;
+import com.zxl.zxlaiagent.security.Phase;
+import com.zxl.zxlaiagent.security.execution.OperationBoundary;
+import com.zxl.zxlaiagent.agent.stream.PreparedAgentStream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
@@ -22,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.concurrent.*;
 
 /**
  * 抽象基础代理类，用于管理代理状态和执行流程。  
@@ -64,13 +69,74 @@ public abstract class BaseAgent {
     private String failureMessage;
     private final AtomicBoolean streamClosed = new AtomicBoolean(false);
     private final AtomicBoolean completionNotified = new AtomicBoolean(false);
+    @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
+    private transient OperationBoundary operationBoundary = OperationBoundary.unrestricted();
+    @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
+    private boolean operationBoundaryBound;
+    @Getter(AccessLevel.NONE) @Setter(AccessLevel.NONE)
+    private boolean executionClaimed;
+    // Fixed capacity across runs. Slow sockets cannot create unlimited threads or queued secrets.
+    private static final ThreadPoolExecutor PUBLICATIONS = new ThreadPoolExecutor(4, 4, 0,
+            TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(32), task -> {
+                Thread thread = new Thread(task, "agent-publication"); thread.setDaemon(true); return thread;
+            }, new ThreadPoolExecutor.AbortPolicy());
+    private static final ThreadPoolExecutor CLOSURES = new ThreadPoolExecutor(1, 1, 0,
+            TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(32), task -> {
+                Thread thread = new Thread(task, "agent-stream-close"); thread.setDaemon(true); return thread;
+            }, new ThreadPoolExecutor.AbortPolicy());
+
+    /** Identity is captured on the new per-run instance, before asynchronous execution starts. */
+    public synchronized void bindOperationBoundary(OperationBoundary boundary) {
+        if (executionClaimed || state != AgentState.IDLE || operationBoundaryBound)
+            throw new IllegalStateException("只能向未启动的新 Agent 绑定一次执行身份");
+        operationBoundary = java.util.Objects.requireNonNull(boundary);
+        operationBoundaryBound = true;
+    }
+
+    protected final OperationBoundary operationBoundary() { return operationBoundary; }
+    protected final boolean hasOperationBoundary() { return operationBoundaryBound; }
 
     protected void emitExecutionEvent(AgentExecutionEvent event) {
         event = event.withIdentity(conversationId, runId);
-        if (eventObserver != null) eventObserver.accept(event);
-        if (executionListener == null) return;
+        final AgentExecutionEvent captured = event;
+        publish(() -> {
+            if (eventObserver != null) operationBoundary.start(Phase.RESULT_PUBLISH, () -> {
+                eventObserver.accept(captured); return null;
+            });
+            if (executionListener != null) {
+                operationBoundary.check(Phase.RESULT_PUBLISH);
+                executionListener.accept(captured);
+            }
+        });
+    }
+
+    /** The PG linearization point is bounded queue admission. Consumer checks again before
+     * capture/send. Spring MVC and TCP cannot share the PG transaction: a send already started
+     * may finish after revocation. Formal MVC starts prepared streams only after handler
+     * initialization, preventing Spring's early-send buffer from retaining authorized frames.
+     * We do not hold the epoch lock while waiting for a socket. */
+    private void publish(Runnable action) {
         if (streamClosed.get()) throw new CancellationException("输出连接已关闭");
-        executionListener.accept(event);
+        if (!operationBoundaryBound) { action.run(); return; }
+        FutureTask<Void> task = new FutureTask<>(() -> {
+            if (streamClosed.get() || Thread.currentThread().isInterrupted())
+                throw new CancellationException("输出连接已关闭");
+            operationBoundary.check(Phase.RESULT_PUBLISH);
+            action.run(); return null;
+        });
+        try {
+            operationBoundary.start(Phase.RESULT_PUBLISH, () -> { PUBLICATIONS.execute(task); return null; });
+            task.get(2, TimeUnit.SECONDS);
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt(); task.cancel(true); streamClosed.set(true);
+            throw new CancellationException("输出接收已停止");
+        } catch (ExecutionException error) {
+            if (error.getCause() instanceof RuntimeException runtime) throw runtime;
+            throw new IllegalStateException("输出发布失败", error.getCause());
+        } catch (TimeoutException | RejectedExecutionException error) {
+            task.cancel(true); PUBLICATIONS.remove(task); streamClosed.set(true);
+            throw new CancellationException("输出接收超时或繁忙");
+        }
     }
 
     public boolean isStreamClosed() {
@@ -84,6 +150,7 @@ public abstract class BaseAgent {
      * @return 执行结果  
      */  
     public String run(String userPrompt) {  
+        claimExecution();
         startRun(userPrompt);
         // 保存结果列表  
         List<String> results = new ArrayList<>();
@@ -124,7 +191,25 @@ public abstract class BaseAgent {
      * @return SseEmitter实例
      */
     public SseEmitter runStream(String userPrompt) {
-        SseEmitter emitter = new SseEmitter(300000L); // 5分钟超时
+        if (operationBoundaryBound) throw new IllegalStateException("正式 Agent 必须使用 prepareStream 并在 MVC 就绪后激活");
+        PreparedAgentStream prepared = prepareStream(userPrompt);
+        prepared.activate();
+        return prepared;
+    }
+
+    /** Formal callers must attach this stream through PreparedAgentStreamInterceptor. */
+    public PreparedAgentStream prepareStream(String userPrompt) {
+        claimExecution();
+        // The closure captures only this run's explicit boundary, never thread-local identity.
+        java.util.concurrent.atomic.AtomicReference<PreparedAgentStream> reference = new java.util.concurrent.atomic.AtomicReference<>();
+        PreparedAgentStream emitter = new PreparedAgentStream(300000L,
+                () -> executeStream(userPrompt, reference.get()), () -> {
+                    streamClosed.set(true);
+                    failRun(AgentEndReason.OUTPUT_INTERRUPTED);
+                    failureMessage = "输出连接未就绪，执行未启动";
+                    try { notifyCompletion(); } finally { cleanup(); }
+                });
+        reference.set(emitter);
         executionListener = event -> {
             try {
                 emitter.send(SseEmitter.event().name("agent").data(event, MediaType.APPLICATION_JSON));
@@ -137,6 +222,10 @@ public abstract class BaseAgent {
         emitter.onTimeout(() -> streamClosed.set(true));
         emitter.onError(error -> streamClosed.set(true));
         emitter.onCompletion(() -> streamClosed.set(true));
+        return emitter;
+    }
+
+    private void executeStream(String userPrompt, SseEmitter emitter) {
         CompletableFuture.runAsync(() -> {
             try {
                 startRun(userPrompt);
@@ -147,8 +236,11 @@ public abstract class BaseAgent {
                     String result = step();
                     emitExecutionEvent(AgentExecutionEvent.of("STEP_COMPLETED", currentStep, null, "completed"));
                     // Keep the original text events for existing SSE clients.
-                    try { emitter.send("Step " + currentStep + ": " + result); }
-                    catch (IOException e) { throw new CancellationException("输出连接已关闭"); }
+                    final String raw = "Step " + currentStep + ": " + result;
+                    publish(() -> {
+                        try { emitter.send(raw); }
+                        catch (IOException error) { throw new CancellationException("输出连接已关闭"); }
+                    });
                 }
                 if (streamClosed.get()) failRun(AgentEndReason.OUTPUT_INTERRUPTED);
                 else completeRun();
@@ -168,15 +260,24 @@ public abstract class BaseAgent {
                         String detail = endReason == AgentEndReason.STEP_LIMIT
                                 ? "达到最大执行步数，执行已停止" : failureMessage;
                         emitExecutionEvent(AgentExecutionEvent.terminal(currentStep, detail, endReason));
-                        emitter.complete();
                     } catch (Exception sendFailure) {
                         streamClosed.set(true);
                     }
                 }
-                cleanup();
+                // A rejected terminal must still release the HTTP response without sending its detail.
+                streamClosed.set(true);
+                if (!operationBoundaryBound) {
+                    try { emitter.complete(); } finally { cleanup(); }
+                }
+                else {
+                    cleanup();
+                    // complete() also takes the emitter monitor held by a slow send; keep lease
+                    // release independent. Servlet timeout remains the final socket backstop.
+                    try { CLOSURES.execute(emitter::complete); }
+                    catch (RejectedExecutionException busy) { /* bounded closure backlog; servlet timeout */ }
+                }
             }
         });
-        return emitter;
     }
 
     private void notifyCompletion() {
@@ -226,8 +327,14 @@ public abstract class BaseAgent {
         if (!StringUtils.hasText(userPrompt)) {
             throw new IllegalArgumentException("请输入需要完成的任务");
         }
+        operationBoundary.check(Phase.DEQUEUE);
         state = AgentState.RUNNING;
         messageList.add(new UserMessage(userPrompt));
+    }
+
+    private synchronized void claimExecution() {
+        if (executionClaimed || state != AgentState.IDLE) throw new IllegalStateException("Agent 已启动");
+        executionClaimed = true;
     }
 
     private boolean hasReachedStepLimit() {

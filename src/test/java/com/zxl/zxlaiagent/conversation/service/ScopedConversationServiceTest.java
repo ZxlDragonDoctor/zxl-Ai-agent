@@ -140,8 +140,14 @@ class ScopedConversationServiceTest {
         var coordinator = new AgentConversationService(service(), repository, guard,
                 new ConversationContextWindow(mapper, 8), mapper, registry);
         coordinator.setAuthorizationService(authorization);
-        coordinator.chat(ACTOR, "问题", id.toString(), AgentRunOptions.NONE);
+        coordinator.prepareChat(ACTOR, "问题", id.toString(), AgentRunOptions.NONE);
         assertSame(ACTOR, providerActor.get());
+        agent.checkExecutionBoundary();
+        verify(authorization).gateAll(eq(ACTOR), argThat(permissions -> permissions.size() == 3
+                && permissions.contains(new AuthorizationService.Permission("agent.execute", null))
+                && permissions.contains(new AuthorizationService.Permission("conversation.readOwn", new ResourceRef("conversation", id.toString())))
+                && permissions.stream().anyMatch(permission -> "run.readOwn".equals(permission.action())
+                    && "run".equals(permission.resource().type()))), eq(Phase.RESULT_PUBLISH), anyString(), any());
         assertTrue(guard.isBusy(id));
         verify(authorization).registerResource(eq(ACTOR), argThat(resource -> "run".equals(resource.type())));
         doThrow(new SecurityFailure("UNAUTHENTICATED", 401)).when(authorization)
@@ -163,7 +169,7 @@ class ScopedConversationServiceTest {
         var coordinator = new AgentConversationService(service(), repository, guard,
                 new ConversationContextWindow(mapper, 8), mapper, registry);
         coordinator.setAuthorizationService(authorization);
-        coordinator.chat(ACTOR, "问题", id.toString(), AgentRunOptions.NONE);
+        coordinator.prepareChat(ACTOR, "问题", id.toString(), AgentRunOptions.NONE);
         agent.complete();
         verify(authorization).gate(eq(ACTOR), eq("conversation.writeOwn"), any(), eq(Phase.RESULT_PERSIST), anyString(), any());
         assertFalse(guard.isBusy(id));
@@ -171,13 +177,32 @@ class ScopedConversationServiceTest {
         assertEquals(2, stored.get().messages().size());
     }
 
+    @Test void preparedRequestAbandonReleasesLeaseWithoutStartingAgent() {
+        allowGates(); UUID id = UUID.randomUUID();
+        AtomicReference<Conversation> stored = new AtomicReference<>(empty(id));
+        when(repository.find(id)).thenAnswer(call -> Optional.of(stored.get()));
+        doAnswer(call -> { stored.set(call.getArgument(0)); return null; }).when(repository).save(any());
+        var mapper = new ConversationMessageMapper();
+        var coordinator = new AgentConversationService(service(), repository, guard,
+                new ConversationContextWindow(mapper, 8), mapper, registry);
+        coordinator.setAuthorizationService(authorization);
+        var prepared = coordinator.prepareChat(ACTOR, "问题", id.toString(), AgentRunOptions.NONE);
+        assertTrue(guard.isBusy(id)); assertTrue(agent.getMessageList().isEmpty());
+        prepared.abandon(); prepared.activate();
+        assertFalse(guard.isBusy(id)); assertTrue(agent.getMessageList().isEmpty());
+        assertEquals("interrupted", stored.get().runs().get(0).status());
+        verify(repository, times(2)).save(any());
+    }
+
     static class DeferredAgent extends ToolCallAgent {
         DeferredAgent() { super(new ToolCallback[0]); setSystemPrompt("Safe role"); }
+        void checkExecutionBoundary() { assertTrue(hasOperationBoundary()); operationBoundary().check(Phase.RESULT_PUBLISH); }
         @Override public SseEmitter runStream(String prompt) {
             getMessageList().add(new UserMessage(prompt));
             return new SseEmitter();
         }
         void complete() {
+            getMessageList().add(new UserMessage("问题"));
             getMessageList().add(new AssistantMessage("回答"));
             getCompletionListener().accept(new AgentRunSnapshot(getMessageList(), AgentEndReason.ANSWER_READY, null));
         }

@@ -19,3 +19,11 @@
 `DashScopeAgentStreamer` 的正式六参入口要求显式边界：在实际订阅模型传输时授权，等待响应在事务外；每次内容增量和最终结果发布前重新校验。旧五参接口保留课堂兼容性，正式 Agent 不应调用它。
 
 取消等待不依赖模型返回下一帧。每 50 毫秒检查取消信号，取消后释放订阅。新增的本机 HTTP 用例先复现无帧时等待不退出，再修复；5 项模型传输测试通过。它们没有调用收费模型，不能冒充真实模型验收。
+
+## SSE 准备与发布
+
+`BaseAgent.prepareStream` 只准备任务，不启动工作线程。正式 MVC Controller 使用 `PreparedAgentStreamInterceptor.attach` 绑定，等 Spring 初始化输出 handler 后，`afterConcurrentHandlingStarted` 才激活任务。这样避免在输出 handler 尚未就绪时，把敏感内容提前缓存在 `SseEmitter` 中。请求在激活前失败会放弃准备、释放会话 lease；旧课堂 `runStream` 仍立即启动，绑定授权边界后的 Agent 禁止调用该旧入口。
+
+事件使用固定线程数和有界队列，在准入与消费时检查当前权限。慢消费者不会持有 PG 锁；终态发布失败也必须清理并释放运行资源。撤销不能撤回已经开始发送的网络字节，不能声称数据库与 TCP 原子提交。
+
+2026-10-28 复核：`PreparedAgentStreamTest` 6 项、`AgentPublicationBoundaryTest` 7 项、`ScopedConversationServiceTest` 10 项通过，包括实际 MockMvc 生命周期、控制器异常、准备后放弃、排队期间撤销和队列饱和。此处没有替代正式主应用重启后的浏览器验收。
