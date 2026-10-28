@@ -1,0 +1,68 @@
+[
+  {
+    "image": "01-lesson17-zh.jpg",
+    "action": "打开目录并选择第十七课",
+    "expected": "显示本轮92项证据与未完成边界，个人未开始",
+    "actual": "Intermediate state: reader body is below the screenshot viewport; not readable-body acceptance."
+  },
+  {
+    "image": "02-lesson17-visible-zh.jpg",
+    "action": "滚动到阅读卡正文",
+    "expected": "可直接阅读新增摘要及工程边界",
+    "actual": "Intermediate state: reader body is below the screenshot viewport; not readable-body acceptance."
+  },
+  {
+    "image": "03-filter-closed-reading.jpg",
+    "action": "关闭课程目录",
+    "expected": "图内阅读窗口保留且正文可见",
+    "actual": "Intermediate state: reader body is below the screenshot viewport; not readable-body acceptance."
+  },
+  {
+    "image": "04-readable-zh.jpg",
+    "action": "页面向下滚动一屏",
+    "expected": "完整可读的中文摘要与未验收边界",
+    "actual": "第十七课标题和92项摘要已在视口内"
+  },
+  {
+    "image": "05-readable-en.jpg",
+    "action": "一键切换英文",
+    "expected": "英文标题、摘要和证据边界一致",
+    "actual": "英文进行中摘要含92项与未完成UI说明"
+  },
+  {
+    "image": "06-one-hop.jpg",
+    "action": "点击1 hop",
+    "expected": "仅当前节点与直接邻居，阅读卡保留",
+    "actual": "图谱范围缩小，阅读卡保持第17课"
+  },
+  {
+    "image": "07-two-hop.jpg",
+    "action": "点击2 hop",
+    "expected": "展示邻居的邻居，当前阅读内容不丢失",
+    "actual": "范围扩展，当前课程仍第17课"
+  },
+  {
+    "image": "08-two-dimensional.jpg",
+    "action": "从3D切换2D",
+    "expected": "保留课程与跳数，二维节点与曲线可见",
+    "actual": "二维视图已显示，阅读卡保留"
+  },
+  {
+    "image": "09-source-evidence.jpg",
+    "action": "点击执行边界导读复制路径",
+    "expected": "路径复制成功且源码证据可见",
+    "actual": "路径按钮显示Copied"
+  },
+  {
+    "image": "10-restored-graph-view.jpg",
+    "action": "回到3D全图、关闭详情并切回中文",
+    "expected": "116节点164关系，原个人掌握数量不变",
+    "actual": "完整中文三维图恢复，个人仍0/28"
+  },
+  {
+    "image": "11-progress-restored.jpg",
+    "action": "恢复后重新导出并比较",
+    "expected": "全部个人笔记、掌握状态与阅读位置恢复",
+    "actual": "导出JSON深比较相等"
+  }
+]

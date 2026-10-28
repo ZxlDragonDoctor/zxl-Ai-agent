@@ -100,6 +100,16 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 
 截图与限制见[阶段证据](../images/lesson17-acceptance-2026-10-27/README.md)。最初旧主应用的 `NOT_FOUND` 失败已保留；随后启动正式主应用，实际完成单身份登录、错误密码重试和退出，公开课程正常。**没有将全部按钮、两个独立浏览器身份或真实 Agent 业务标为验收通过**；桌面尺寸和完整链路仍待后续集中验收。
 
+### 2026-10-28：执行与知识服务阶段
+
+新增组合权限 `gateAll`、显式 `OperationBoundary/ActorBoundary`，同一 PG 权威事务检查 Java 选择的权限列表，拒绝及启动失败仍保留实际审计。模型实际订阅、内容增量及最终结果重新授权；无帧等待也每 50ms 响应取消。`prepareStream` 等 MVC handler 初始化后才启动工作线程，避免早期缓存帧绕过之后的发布检查。准备后请求失败会放弃并释放 lease；正式旧 scoped chat 入口显式报错，正式 Controller 必须使用 prepared hook。
+
+`ScopedKnowledgeFactory` 已实现按可信 tenant/subject 的知识与记忆范围、实际用户消息来源核对和回答的组合权限。V3 迁移在真实 PG 扩展身份列，保留旧数据。独立正式 worker 要求服务 Bearer 与绑定 method/query/body 摘要的单次票据，严格拒绝课堂 profile；发布缓冲限 1MiB，刷新 writer，实际 socket I/O 位于授权锁外。MCP v2 将模型 schema 与授权票据分开，并在共享 SSE 连接上保持每调用身份。
+
+本轮明确选择的 **18 类 92 项整合测试通过，0 失败、错误、跳过**；另运行 **13 类 100 项旧行为回归通过**，两组范围有重叠，不累加为独立场景。真实 PG、独立 JVM worker、实际 MCP SDK SSE、本机受控模型 HTTP 和 MockMvc 是不同层证据。日志 `target/lesson17-integration-stage.log`、`target/lesson17-legacy-regression.log`；精确 XML 汇总与 11 张图谱操作截图见 [执行阶段证据](../images/lesson17-execution-2026-10-28/README.md)。页面核实双语、1/2 跳、3D→2D、新导读路径，恢复备份后导出 JSON 深比较相等。
+
+阅读 [执行边界导读](17-execution-boundaries.md)、[可信知识范围导读](17-scoped-knowledge.md) 和 MCP 代码目录 `FORMAL-V2.md`。尚未重新启动正式主应用来验收新链路；Controller、gateway 和 Research 的整条业务接线仍在进行，不据阶段测试宣布完成。已经开始的网络发送无法撤回，也不声称 PG 与 TCP 原子。
+
 ## 5. 尚未完成的本课范围
 
 1. 将 scoped 执行接到具体 Provider 与 Agent 聊天 Controller，完成模型与事件发布边界，并执行旧历史受控迁移。
