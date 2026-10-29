@@ -120,7 +120,7 @@ public final class RetrievalService {
     }
     private static final String ACTIVE=" FROM knowledge_chunk k JOIN knowledge_document d ON d.tenant_id=k.tenant_id AND d.document_id=k.document_id AND d.active_revision=k.revision_id JOIN knowledge_revision r ON r.tenant_id=k.tenant_id AND r.document_id=k.document_id AND r.revision_id=k.revision_id WHERE k.tenant_id=? AND k.model_identity=? AND k.dimensions=? AND r.model_identity=k.model_identity AND r.state='ACTIVE' AND d.status='ACTIVE' ";
     private void profileReady(RetrievalDeadline deadline) {
-        db.tx(deadline.remaining(),connection->{
+        db.tx(boundary,Phase.EVIDENCE_READ,deadline.remaining(),connection->{
             try(var statement=connection.prepareStatement("SELECT EXISTS(SELECT 1 FROM knowledge_document WHERE tenant_id=? AND status='ACTIVE'), EXISTS(SELECT 1"+ACTIVE+")")){
                 statement.setString(1,tenant);scope(statement,2);
                 try(var row=statement.executeQuery()){row.next();if(row.getBoolean(1)&&!row.getBoolean(2))throw new Failure("NO_COMPATIBLE_INDEX_PROFILE");}
@@ -128,7 +128,7 @@ public final class RetrievalService {
         });
     }
     private List<Hit> vector(String literal,int limit,RetrievalDeadline deadline) {
-        return db.tx(deadline.remaining(),c->{
+        return db.tx(boundary,Phase.EVIDENCE_READ,deadline.remaining(),c->{
             try(var s=c.prepareStatement("SELECT k.*,d.version,k.embedding <=> ?::vector AS distance"+ACTIVE+"ORDER BY distance,k.chunk_id LIMIT ?")) {
                 s.setString(1,literal); scope(s,2); s.setInt(5,limit);
                 try(var rows=s.executeQuery()) { return read(rows,true); }
@@ -139,10 +139,10 @@ public final class RetrievalService {
         var terms=QueryTerms.extract(query);
         // Even an un-tokenizable query must observe storage availability. A broken
         // database must never look like a successful empty keyword search.
-        if(terms.isEmpty())return db.tx(deadline.remaining(),connection->List.of());
+        if(terms.isEmpty())return db.tx(boundary,Phase.EVIDENCE_READ,deadline.remaining(),connection->List.of());
         // position uses bind parameters: %, _, quotes and SQL syntax remain literal text.
         String score=String.join(" + ",Collections.nCopies(terms.size(),"CASE WHEN position(? in lower(k.text_content))>0 THEN 1 ELSE 0 END"));
-        return db.tx(deadline.remaining(),c->{
+        return db.tx(boundary,Phase.EVIDENCE_READ,deadline.remaining(),c->{
             String sql="SELECT * FROM (SELECT k.*,d.version,("+score+") AS keyword_score"+ACTIVE+") scored WHERE keyword_score>0 ORDER BY keyword_score DESC,chunk_id LIMIT ?";
             try(var s=c.prepareStatement(sql)) {
                 int index=1; for(String term:terms)s.setString(index++,term);
@@ -161,7 +161,7 @@ public final class RetrievalService {
     }
     private List<Hit> current(List<Hit> candidates,RetrievalDeadline deadline) {
         boundary.check(Phase.EVIDENCE_READ);deadline.remaining(); if(candidates.isEmpty())return candidates;
-        return db.tx(deadline.remaining(),c->{
+        return db.tx(boundary,Phase.EVIDENCE_READ,deadline.remaining(),c->{
             List<Hit> current=new ArrayList<>();
             String placeholders=String.join(",",Collections.nCopies(candidates.size(),"?"));
             try(var s=c.prepareStatement("SELECT k.chunk_id,d.version"+ACTIVE+"AND k.chunk_id IN ("+placeholders+")")) {

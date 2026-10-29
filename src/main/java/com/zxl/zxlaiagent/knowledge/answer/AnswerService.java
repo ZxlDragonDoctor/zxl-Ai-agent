@@ -77,8 +77,8 @@ public final class AnswerService {
   }
  }
  private record SelectedEvidence(List<Evidence> evidence,int quarantined) { }
- private SelectedEvidence snapshot(String snapshot,List<RetrievalService.Hit> hits,long end){boundary.check(Phase.SOURCE_READ);
-  return db.tx(remaining(end),c->{List<Evidence> list=new ArrayList<>();int budget=4000;int quarantined=0;
+ private SelectedEvidence snapshot(String snapshot,List<RetrievalService.Hit> hits,long end){
+  return db.tx(boundary,Phase.SOURCE_READ,remaining(end),c->{List<Evidence> list=new ArrayList<>();int budget=4000;int quarantined=0;
    for(var h:hits){if(untrustedSource(h.text())){quarantined++;continue;}if(budget<=0)continue;
     try(var s=KnowledgeDatabase.statement(c,"SELECT d.source_name,r.raw_text FROM knowledge_document d JOIN knowledge_revision r ON r.tenant_id=d.tenant_id AND r.document_id=d.document_id AND r.revision_id=d.active_revision WHERE d.tenant_id=? AND d.document_id=? AND d.active_revision=? AND d.version=? AND d.status='ACTIVE' AND r.state='ACTIVE'",tenant,h.documentId(),h.revisionId(),h.generation());var rows=s.executeQuery()){
      if(!rows.next())continue;String raw=rows.getString(2);int length=Math.min(Math.min(h.text().length(),1200),budget);
@@ -90,7 +90,7 @@ public final class AnswerService {
    }return new SelectedEvidence(List.copyOf(list),quarantined);
   });
  }
- private boolean current(List<Evidence> es,long end){boundary.check(Phase.SOURCE_READ);return db.tx(remaining(end),c->{for(var e:es){try(var s=KnowledgeDatabase.statement(c,"SELECT k.text_content,k.start_utf16,k.end_utf16,r.raw_text,d.version FROM knowledge_chunk k JOIN knowledge_document d ON d.tenant_id=k.tenant_id AND d.document_id=k.document_id AND d.active_revision=k.revision_id JOIN knowledge_revision r ON r.tenant_id=k.tenant_id AND r.document_id=k.document_id AND r.revision_id=k.revision_id WHERE k.tenant_id=? AND k.document_id=? AND k.revision_id=? AND k.chunk_id=? AND d.status='ACTIVE' AND r.state='ACTIVE'",tenant,e.documentId(),e.revisionId(),e.chunkId());var r=s.executeQuery()){
+ private boolean current(List<Evidence> es,long end){return db.tx(boundary,Phase.SOURCE_READ,remaining(end),c->{for(var e:es){try(var s=KnowledgeDatabase.statement(c,"SELECT k.text_content,k.start_utf16,k.end_utf16,r.raw_text,d.version FROM knowledge_chunk k JOIN knowledge_document d ON d.tenant_id=k.tenant_id AND d.document_id=k.document_id AND d.active_revision=k.revision_id JOIN knowledge_revision r ON r.tenant_id=k.tenant_id AND r.document_id=k.document_id AND r.revision_id=k.revision_id WHERE k.tenant_id=? AND k.document_id=? AND k.revision_id=? AND k.chunk_id=? AND d.status='ACTIVE' AND r.state='ACTIVE'",tenant,e.documentId(),e.revisionId(),e.chunkId());var r=s.executeQuery()){
     if(!r.next()||e.generation()!=r.getLong(5)||e.startUtf16()!=r.getInt(2)||e.endUtf16()>r.getInt(3)||!r.getString(1).startsWith(e.text())||!r.getString(4).substring(e.startUtf16(),e.endUtf16()).equals(e.text())||!hash(e.text()).equals(e.sha256()))return false;
    }}return true;});}
  /** Conservative v2 quarantine for explicit source override instructions; not a general injection detector. */
