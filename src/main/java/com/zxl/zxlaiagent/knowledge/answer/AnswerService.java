@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 
 /** One request-local immutable evidence snapshot, one generation, no unbounded repair. Unsupported claims are removed. */
 public final class AnswerService {
+ private static final org.slf4j.Logger LOG=org.slf4j.LoggerFactory.getLogger(AnswerService.class);
  public record Request(String question,String conversationId,String mode,long budgetMs,String profile) { }
  public record Claim(String text,List<String> evidenceIds) { }
  public record CheckedClaim(String text,List<String> evidenceIds,String support,String reason) { }
@@ -38,17 +39,18 @@ public final class AnswerService {
   String trace=UUID.randomUUID().toString(),snapshot=UUID.randomUUID().toString();
   String profile=trusted?"authenticated":request.profile()==null?"alice":request.profile();AnswerModel model="real".equals(request.mode())?real:AnswerModel.demo();
   MemoryContext.MemoryView mem=new MemoryContext.MemoryView(List.of(),"not-read",0,0);
+  String phase="MEMORY";
   if(model==null)return response(trace,snapshot,"SERVICE_FAILURE",List.of(),List.of(),"REAL_MODEL_NOT_CONFIGURED",List.of(),"unavailable","unavailable",started,0,mem);
   try{
    mem=memory.read(profile,request.conversationId(),remaining(end));
    if(request.question().matches("(?s).*(VPN|vpn|连接).*")&&!request.question().matches("(?s).*\\d{3}.*")&&!request.question().contains("通用"))
     return response(trace,snapshot,"NEEDS_CLARIFICATION",List.of(),List.of(),"MISSING_ERROR_CODE",List.of("请提供错误码或产品版本，例如 VPN 809。"),model.identity(),model.judgeIdentity(),started,0,mem);
    long retrieveBudget=Math.min(10000,Math.max(100,remaining(end).toMillis()-300));
-   var result=retrieval.retrieve(new RetrievalService.Request(request.question(),"hybrid",5,20,false,false,retrieveBudget));
-   remaining(end);var selected=snapshot(snapshot,result.hits(),end);List<Evidence> es=selected.evidence();int quarantined=selected.quarantined();
+   phase="RETRIEVAL";var result=retrieval.retrieve(new RetrievalService.Request(request.question(),"hybrid",5,20,false,false,retrieveBudget));
+   phase="EVIDENCE_SNAPSHOT";remaining(end);var selected=snapshot(snapshot,result.hits(),end);List<Evidence> es=selected.evidence();int quarantined=selected.quarantined();
    if(es.isEmpty())return response(trace,snapshot,"INSUFFICIENT_EVIDENCE",List.of(),List.of(),quarantined>0?"QUARANTINED_UNTRUSTED_SOURCE":"NO_CURRENT_EVIDENCE",List.of("请补充相关资料或更具体的问题。"),model.identity(),model.judgeIdentity(),started,0,mem);
    final List<Evidence> dispatchEvidence=es;final MemoryContext.MemoryView dispatchMemory=mem;
-   var draft=bounded(()->{if(!memory.read(profile,request.conversationId(),remaining(end)).equals(dispatchMemory))throw new IllegalStateException("MEMORY_CHANGED_BEFORE_DISPATCH");if(dispatchEvidence.stream().anyMatch(e->untrustedSource(e.text())))throw new IllegalStateException("QUARANTINED_UNTRUSTED_SOURCE");if(!current(dispatchEvidence,end))throw new IllegalStateException("EVIDENCE_CHANGED");return model.generate(request.question(),snapshot,dispatchEvidence,dispatchMemory,remaining(end),boundary);},end);
+   phase="GENERATION";var draft=bounded(()->{if(!memory.read(profile,request.conversationId(),remaining(end)).equals(dispatchMemory))throw new IllegalStateException("MEMORY_CHANGED_BEFORE_DISPATCH");if(dispatchEvidence.stream().anyMatch(e->untrustedSource(e.text())))throw new IllegalStateException("QUARANTINED_UNTRUSTED_SOURCE");if(!current(dispatchEvidence,end))throw new IllegalStateException("EVIDENCE_CHANGED");return model.generate(request.question(),snapshot,dispatchEvidence,dispatchMemory,remaining(end),boundary);},end);
    if(draft==null||!snapshot.equals(draft.snapshotId())||draft.claims()==null||draft.claims().size()>8||!validMissing(draft.missingInformation()))throw new IllegalStateException("INVALID_GENERATION_FORMAT_OR_SNAPSHOT");
    List<CheckedClaim> accepted=new ArrayList<>();int removed=0;
    for(var claim:draft.claims()){
@@ -57,11 +59,11 @@ public final class AnswerService {
     var refs=es.stream().filter(e->claim.evidenceIds().contains(e.id())).toList();
     // Validate immediately before every external judge dispatch, and once again before publication.
     if(!current(refs,end)){removed++;continue;}
-    var verdict=bounded(()->{if(!current(refs,end))throw new IllegalStateException("EVIDENCE_CHANGED");return model.judge(request.question(),claim,refs,remaining(end),boundary);},end);
+    phase="SUPPORT_JUDGE";var verdict=bounded(()->{if(!current(refs,end))throw new IllegalStateException("EVIDENCE_CHANGED");return model.judge(request.question(),claim,refs,remaining(end),boundary);},end);
     if(verdict==null||!Set.of("SUPPORTED","CONTRADICTED","INSUFFICIENT").contains(verdict.support())||verdict.reason()==null||verdict.reason().length()>500)throw new IllegalStateException("INVALID_JUDGE_FORMAT");
     if("SUPPORTED".equals(verdict.support()))accepted.add(new CheckedClaim(claim.text(),List.copyOf(claim.evidenceIds()),verdict.support(),verdict.reason()));else removed++;
    }
-   if(!memory.read(profile,request.conversationId(),remaining(end)).equals(mem))throw new IllegalStateException("MEMORY_CHANGED_DURING_ANSWER");
+   phase="FINAL_VALIDATION";if(!memory.read(profile,request.conversationId(),remaining(end)).equals(mem))throw new IllegalStateException("MEMORY_CHANGED_DURING_ANSWER");
    if(!current(es,end))return response(trace,snapshot,"INSUFFICIENT_EVIDENCE",List.of(),List.of(),"EVIDENCE_CHANGED_DURING_ANSWER",List.of("资料已更新或删除，请重试。"),model.identity(),model.judgeIdentity(),started,draft.claims().size(),mem);
    var ids=accepted.stream().flatMap(c->c.evidenceIds().stream()).collect(java.util.stream.Collectors.toSet());
    es=es.stream().filter(e->ids.contains(e.id())).toList();
@@ -69,6 +71,8 @@ public final class AnswerService {
    return response(trace,snapshot,status,accepted,es,quarantined>0?"QUARANTINED_UNTRUSTED_SOURCE":accepted.isEmpty()?"NO_SUPPORTED_CLAIMS":removed>0?"UNSUPPORTED_CLAIMS_REMOVED":!draft.missingInformation().isEmpty()?"MISSING_SUBQUESTION_EVIDENCE":"SUPPORTED_CURRENT_EVIDENCE",List.copyOf(draft.missingInformation()),model.identity(),model.judgeIdentity(),started,removed,mem);
   }catch(RuntimeException failure){
    if(failure instanceof com.zxl.zxlaiagent.security.SecurityFailure)throw failure;
+   var diagnostic=AnswerFailureDiagnostics.summarize(failure);
+   LOG.warn("Knowledge answer failed trace={} stage={} category={} code={} causes={}",trace,phase,diagnostic.kind(),diagnostic.code(),diagnostic.causes());
    return response(trace,snapshot,"SERVICE_FAILURE",List.of(),List.of(),Thread.currentThread().isInterrupted()?"CANCELLED":"RETRIEVAL_GENERATION_OR_VALIDATION_FAILED",List.of("服务未完成证据校验，请稍后重试。"),model.identity(),model.judgeIdentity(),started,0,new MemoryContext.MemoryView(List.of(),"discarded-on-failure",0,0));
   }
  }
