@@ -119,7 +119,10 @@ public final class FormalKnowledgeMcpClient implements AutoCloseable {
     private void connect(long end,BooleanSupplier cancelled){
         check(end,cancelled);state="CONNECTING";lastError=null;
         var transport=new HttpClientSseClientTransport(InternalServiceHttpClient.builder(internalToken,endpoint),endpoint.toString(),new ObjectMapper());
-        long requestTimeoutMillis=Math.max(100,Math.min(sdkMaxRequestTimeoutMillis,remainingMillis(end)));
+        // The shared session has a fixed reviewed ceiling. Initialization/listTools still use
+        // this discovery's remaining deadline below; later calls enforce their own deadline.
+        // Pinning the session to the first discovery budget silently shrinks all later calls.
+        long requestTimeoutMillis=sdkMaxRequestTimeoutMillis;
         var candidate=McpClient.async(transport).requestTimeout(Duration.ofMillis(requestTimeoutMillis))
                 .clientInfo(new McpSchema.Implementation("zxl-authorized-knowledge-client","2.0.0")).build();
         try{

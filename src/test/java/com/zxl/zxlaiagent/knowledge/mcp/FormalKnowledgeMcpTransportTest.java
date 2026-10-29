@@ -60,6 +60,20 @@ class FormalKnowledgeMcpTransportTest {
    assertEquals(1,server.activeConnections());assertEquals(0,server.pendingRequests());assertTrue(actors.isEmpty());
   }
  }
+ @Test void discoveryBudgetDoesNotPermanentlyShrinkLaterToolBudgets(){
+  var tickets=mock(ServiceCallAuthorizer.class);var auth=allowed();var observed=new java.util.concurrent.atomic.AtomicLong();
+  when(tickets.issue(any(),anyString(),anyString(),isNull(),anyString())).thenReturn("opaque-test-ticket");
+  when(tickets.consume(anyString(),anyString(),anyString(),anyString())).thenReturn(alice);
+  try(var server=FormalKnowledgeMcpServer.start(0,new FormalKnowledgeMcpTool(tickets,auth,(actor,r)->{observed.set(r.budgetMs());return Map.of("hits",List.of());}),SERVICE_TOKEN);
+      var client=new FormalKnowledgeMcpClient(URI.create("http://127.0.0.1:"+server.port()),SERVICE_TOKEN,tickets,auth)){
+   assertEquals(1,client.discover(Duration.ofSeconds(5),()->false).size());
+   assertFalse(client.call(alice,FormalKnowledgeMcpProtocol.EXPOSED_NAME,Map.of("query","test"),Duration.ofSeconds(9),()->false).isError());
+   assertTrue(observed.get()>6000,"Five-second discovery must not pin the shared SDK session to five seconds: "+observed.get());
+   assertFalse(client.call(alice,FormalKnowledgeMcpProtocol.EXPOSED_NAME,Map.of("query","test"),Duration.ofSeconds(2),()->false).isError());
+   assertTrue(observed.get()>0&&observed.get()<2000,"Each shorter caller deadline must still apply");
+   assertEquals(1,server.activeConnections());
+  }
+ }
  @Test void consumedTicketIsNotRetriedAndRevokedPublishDiscardsSensitiveResult(){
   var tickets=mock(ServiceCallAuthorizer.class);var auth=allowed();var hits=new AtomicInteger();
   when(tickets.consume(anyString(),anyString(),anyString(),anyString())).thenReturn(alice).thenThrow(new SecurityFailure("INVALID_SERVICE_TICKET",401));
