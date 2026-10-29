@@ -21,7 +21,7 @@ public final class ScopedKnowledgeController {
  public Object handle(HttpServletRequest request)throws java.io.IOException{
   ActorRef actor=WorkerAuthenticationFilter.actor(request);String path=request.getRequestURI().substring(WorkerRequestContract.BASE.length()),method=request.getMethod();WorkerRequestContract.action(method,request.getRequestURI());
   if(method.equals("GET")){
-   if(path.equals("/status")){factory.knowledge(actor).list();return Map.of("storage","PostgreSQL + pgvector","available",true,"scope","authenticated");}
+   if(path.equals("/status")){var status=factory.knowledge(actor).status();return Map.of("storage",status.get("storage"),"available",true,"scope","authenticated","embeddingMode",status.get("embeddingMode"),"dimensions",status.get("dimensions"));}
    if(path.equals("/documents"))return factory.knowledge(actor).list();
    if(path.startsWith("/documents/"))return factory.knowledge(actor).detail(path.substring(11));
    if(path.equals("/search"))return factory.knowledge(actor).search(request.getParameter("q"),number(request,"limit",5));
