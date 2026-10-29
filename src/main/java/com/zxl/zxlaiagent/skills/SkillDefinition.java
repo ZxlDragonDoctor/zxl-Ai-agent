@@ -3,6 +3,7 @@ package com.zxl.zxlaiagent.skills;
 import com.fasterxml.jackson.core.StreamReadFeature;
 import com.fasterxml.jackson.databind.*;
 import com.zxl.zxlaiagent.knowledge.mcp.KnowledgeLookupTool;
+import com.zxl.zxlaiagent.knowledge.mcp.FormalKnowledgeMcpProtocol;
 import com.zxl.zxlaiagent.tools.support.ToolResults;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -18,7 +19,7 @@ public record SkillDefinition(String skillId,String version,String description,L
     public SkillDefinition {
         if(skillId==null||!skillId.matches("[a-z][a-z0-9-]{1,63}")||version==null||!version.matches("v[1-9][0-9]{0,3}")
                 ||description==null||description.isBlank()||description.length()>1000||!EXECUTION_STEPS.equals(steps)
-                ||tools==null||tools.size()!=1||!approvedTool().equals(tools.get(0))
+                ||tools==null||tools.size()!=1||!reviewedTool(version).equals(tools.get(0))
                 ||outputSchemaVersion==null||!Set.of("ticket-draft-v1","ticket-draft-v2").contains(outputSchemaVersion)
                 ||budgetMs<100||budgetMs>30000||state==null||!Set.of("ACTIVE","DISABLED").contains(state))
             throw new IllegalArgumentException("SKILL_INVALID_DEFINITION");
@@ -49,5 +50,11 @@ public record SkillDefinition(String skillId,String version,String description,L
     private static String text(JsonNode value){if(!value.isTextual())throw new IllegalArgumentException("SKILL_STRING_REQUIRED");return value.textValue();}
     private static void exactFields(JsonNode node,Set<String> fields){if(node==null||!node.isObject()||node.size()!=fields.size())throw new IllegalArgumentException("SKILL_UNKNOWN_OR_MISSING_FIELD");node.fieldNames().forEachRemaining(key->{if(!fields.contains(key))throw new IllegalArgumentException("SKILL_UNKNOWN_FIELD");});}
     public static ToolReference approvedTool(){return new ToolReference("knowledge",KnowledgeLookupTool.NAME,"knowledge__knowledge_lookup_v1","v1",digest(KnowledgeLookupTool.definition().inputSchema()),true);}
+    public static ToolReference formalTool(){return new ToolReference("knowledge",FormalKnowledgeMcpProtocol.NAME,FormalKnowledgeMcpProtocol.EXPOSED_NAME,"v2",digest(FormalKnowledgeMcpProtocol.modelDefinition().inputSchema()),true);}
+    private static ToolReference reviewedTool(String version){
+        if(Set.of("v1","v2").contains(version))return approvedTool();
+        if(Set.of("v3","v4").contains(version))return formalTool();
+        throw new IllegalArgumentException("SKILL_UNREVIEWED_VERSION");
+    }
     public static String digest(Object value){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(ToolResults.json(value).getBytes(StandardCharsets.UTF_8)));}catch(Exception e){throw new IllegalStateException("SKILL_DIGEST_FAILURE",e);}}
 }

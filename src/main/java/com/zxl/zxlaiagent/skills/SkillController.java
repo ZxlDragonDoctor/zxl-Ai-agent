@@ -8,6 +8,7 @@ import java.util.List;
 /** Read-only catalogue. Publication and rollback are trusted local operations, never anonymous HTTP. */
 @RestController
 @RequestMapping("/ai/learning/skills")
+@org.springframework.boot.autoconfigure.condition.ConditionalOnExpression("'${agent.security.mode:legacy}' != 'required'")
 public final class SkillController {
     private final SkillRegistry registry;
     public SkillController(SkillRegistry registry) { this.registry = registry; }

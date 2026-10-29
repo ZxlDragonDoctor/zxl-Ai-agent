@@ -1,0 +1,130 @@
+[
+  {
+    "name": "com.zxl.zxlaiagent.agent.AgentPublicationBoundaryTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:05"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.conversation.ScopedKnowledgeProviderTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:08"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.conversation.ScopedMcpResearchProviderTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:08"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.conversation.service.ProviderExecutionPermissionsTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:09"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.conversation.service.ScopedConversationServiceTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:09"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.security.web.FormalGatewayActivationTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:10"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.skills.FormalSkillConfigurationTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:11"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.skills.FormalSkillControllerTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:12"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.skills.FormalSkillProviderTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:12"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.skills.FormalSkillTest",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:13"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.skills.SkillApiTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:14"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.skills.SkillChatRequestTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:14"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.skills.SkillDefinitionTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:14"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.skills.SkillPolicyTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:14"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.skills.SkillProviderIntegrationTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:14"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.skills.SkillRunnerTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:47:14"
+  }
+]
