@@ -91,6 +91,8 @@ public class AgentConversationService {
         try {
             Conversation previous = actor == null ? conversations.require(id) : conversations.require(actor, id);
             var provider = agents.require(previous.agentType());
+            List<AuthorizationService.Permission> executionPermissions = actor == null ? List.of() : executionPermissions(provider);
+            if(actor!=null)authorization().gateAll(actor,executionPermissions,Phase.ENTRY,runId.toString(),()->null);
             var agent = preparedAgent == null ? createAgent(actor, provider, options) : preparedAgent;
             var context = preparedContext == null ? window.prepare(previous, agent, prompt) : preparedContext;
             var history = context.history();
@@ -113,12 +115,13 @@ public class AgentConversationService {
             if (actor == null) repository.save(starting);
             else {
                 authorization().registerResource(actor, new ResourceRef("run", runId.toString()));
-                authorization().gate(actor, "conversation.writeOwn", new ResourceRef("conversation", id.toString()),
-                        Phase.PERSIST, runId.toString(), () -> { repository.save(starting); return null; });
-                agent.bindOperationBoundary(new ActorBoundary(authorization(), actor, List.of(
-                        new AuthorizationService.Permission("agent.execute", null),
-                        new AuthorizationService.Permission("conversation.readOwn", new ResourceRef("conversation", id.toString())),
-                        new AuthorizationService.Permission("run.readOwn", new ResourceRef("run", runId.toString()))), runId.toString()));
+                var publicationPermissions=new ArrayList<>(executionPermissions);
+                publicationPermissions.add(new AuthorizationService.Permission("conversation.readOwn",new ResourceRef("conversation",id.toString())));
+                publicationPermissions.add(new AuthorizationService.Permission("run.readOwn",new ResourceRef("run",runId.toString())));
+                var startingPermissions=new ArrayList<>(publicationPermissions);
+                startingPermissions.add(new AuthorizationService.Permission("conversation.writeOwn",new ResourceRef("conversation",id.toString())));
+                authorization().gateAll(actor,List.copyOf(startingPermissions),Phase.PERSIST,runId.toString(),()->{repository.save(starting);return null;});
+                agent.bindOperationBoundary(new ActorBoundary(authorization(),actor,List.copyOf(publicationPermissions),runId.toString()));
             }
             started = true;
             RunCapture capture = new RunCapture();
@@ -126,8 +129,20 @@ public class AgentConversationService {
             agent.setCompletionListener(snapshot -> {
                 try {
                     if (actor == null) finish(id, run, user, history.size(), snapshot, capture);
-                    else authorization().gate(actor, "conversation.writeOwn", new ResourceRef("conversation", id.toString()),
-                            Phase.RESULT_PERSIST, runId.toString(), () -> { finish(id, run, user, history.size(), snapshot, capture); return null; });
+                    else {
+                        var required=new ArrayList<>(executionPermissions);
+                        required.add(new AuthorizationService.Permission("conversation.readOwn",new ResourceRef("conversation",id.toString())));
+                        required.add(new AuthorizationService.Permission("run.readOwn",new ResourceRef("run",runId.toString())));
+                        required.add(new AuthorizationService.Permission("conversation.writeOwn",new ResourceRef("conversation",id.toString())));
+                        try{
+                            authorization().gateAll(actor,List.copyOf(required),Phase.RESULT_PERSIST,runId.toString(),()->{finish(id,run,user,history.size(),snapshot,capture);return null;});
+                        }catch(SecurityFailure denied){
+                            // A still-authorized owner may see a neutral failure record, never captured output.
+                            try{recordDeniedCompletion(actor,id,runId);}
+                            catch(RuntimeException unavailable){log.warn("Unable to record sanitized authorization failure for run {}",runId);}
+                            throw denied;
+                        }
+                    }
                 }
                 finally { lease.close(); }
             });
@@ -155,6 +170,25 @@ public class AgentConversationService {
     private ToolCallAgent createAgent(ActorRef actor, com.zxl.zxlaiagent.conversation.agent.ConversationAgentProvider provider,
                                       AgentRunOptions options) {
         return actor == null ? (options.isEmpty() ? provider.create() : provider.create(options)) : provider.create(actor, options);
+    }
+
+    private static List<AuthorizationService.Permission> executionPermissions(com.zxl.zxlaiagent.conversation.agent.ConversationAgentProvider provider){
+        var declared=provider.executionPermissions();
+        if(declared==null||declared.size()>4||declared.stream().anyMatch(action->action==null||!action.matches("[a-z][A-Za-z0-9.]{1,79}")||action.endsWith("Own")))
+            throw new IllegalArgumentException("INVALID_PROVIDER_EXECUTION_PERMISSIONS");
+        var required=new LinkedHashSet<AuthorizationService.Permission>();
+        required.add(new AuthorizationService.Permission("agent.execute",null));
+        for(String action:List.copyOf(declared))required.add(new AuthorizationService.Permission(action,null));
+        return List.copyOf(required);
+    }
+
+    private void recordDeniedCompletion(ActorRef actor,UUID id,UUID runId){
+        authorization().gate(actor,"conversation.writeOwn",new ResourceRef("conversation",id.toString()),Phase.RESULT_PERSIST,runId.toString(),()->{
+            var current=conversations.require(id);
+            var runs=current.runs().stream().map(run->run.runId().equals(runId)&&"running".equals(run.status())
+                    ?run.finish(AgentEndReason.EXECUTION_ERROR,"","执行权限已变化，本次输出未保存 / Execution authorization changed; output was not saved",List.of()):run).toList();
+            repository.save(current.update(current.title(),current.messages(),runs));return null;
+        });
     }
 
     public ContextAssembler.Plan previewContext(ActorRef actor, String conversationId, String prompt) {

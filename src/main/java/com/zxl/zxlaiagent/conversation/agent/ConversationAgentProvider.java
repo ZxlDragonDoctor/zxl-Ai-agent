@@ -10,6 +10,9 @@ public interface ConversationAgentProvider {
     ToolCallAgent create();
     /** Server capability declaration; discovery does not itself grant execution permission. */
     default boolean supportsAuthenticatedExecution() { return false; }
+    /** Trusted Java declaration for this provider, captured once per run. Never read from requests/models.
+     * The coordinator always adds agent.execute and conversation/run ownership itself. */
+    default java.util.List<String> executionPermissions() { return java.util.List.of(); }
     default ToolCallAgent create(AgentRunOptions options) {
         if (options != null && !options.isEmpty()) throw new IllegalArgumentException("AGENT_DOES_NOT_ACCEPT_SKILL_SELECTION");
         return create();

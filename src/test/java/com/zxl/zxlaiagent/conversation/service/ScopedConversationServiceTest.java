@@ -49,6 +49,8 @@ class ScopedConversationServiceTest {
                 .thenReturn(new AuthorizationDecision("test-decision", "test:1", true, "ALLOWED"));
         doAnswer(call -> ((Supplier<?>) call.getArgument(5)).get()).when(authorization)
                 .gate(any(), anyString(), any(), any(), nullable(String.class), any());
+        doAnswer(call -> ((Supplier<?>) call.getArgument(4)).get()).when(authorization)
+                .gateAll(any(), anyList(), any(), nullable(String.class), any());
     }
 
     private static Conversation empty(UUID id) {
@@ -152,6 +154,8 @@ class ScopedConversationServiceTest {
         verify(authorization).registerResource(eq(ACTOR), argThat(resource -> "run".equals(resource.type())));
         doThrow(new SecurityFailure("UNAUTHENTICATED", 401)).when(authorization)
                 .gate(eq(ACTOR), eq("conversation.writeOwn"), any(), eq(Phase.RESULT_PERSIST), anyString(), any());
+        doThrow(new SecurityFailure("UNAUTHENTICATED", 401)).when(authorization)
+                .gateAll(eq(ACTOR), anyList(), eq(Phase.RESULT_PERSIST), anyString(), any());
         assertThrows(SecurityFailure.class, agent::complete);
         assertFalse(guard.isBusy(id));
         verify(repository, times(1)).save(any());
@@ -171,7 +175,8 @@ class ScopedConversationServiceTest {
         coordinator.setAuthorizationService(authorization);
         coordinator.prepareChat(ACTOR, "问题", id.toString(), AgentRunOptions.NONE);
         agent.complete();
-        verify(authorization).gate(eq(ACTOR), eq("conversation.writeOwn"), any(), eq(Phase.RESULT_PERSIST), anyString(), any());
+        verify(authorization).gateAll(eq(ACTOR), argThat(required -> required.contains(new AuthorizationService.Permission("conversation.writeOwn",new ResourceRef("conversation",id.toString())))
+                && required.contains(new AuthorizationService.Permission("agent.execute",null))), eq(Phase.RESULT_PERSIST), anyString(), any());
         assertFalse(guard.isBusy(id));
         assertEquals("completed", stored.get().runs().get(0).status());
         assertEquals(2, stored.get().messages().size());

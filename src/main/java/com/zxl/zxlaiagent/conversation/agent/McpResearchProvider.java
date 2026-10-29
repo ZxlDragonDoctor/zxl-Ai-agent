@@ -13,6 +13,7 @@ import java.util.List;
 
 @Component
 public final class McpResearchProvider implements ConversationAgentProvider {
+    @Override public java.util.List<String> executionPermissions(){return java.util.List.of("knowledge.read");}
     private final ResearchRunner runner;
     private ScopedResearchFactory scopedFactory;
     @org.springframework.beans.factory.annotation.Autowired(required = false)

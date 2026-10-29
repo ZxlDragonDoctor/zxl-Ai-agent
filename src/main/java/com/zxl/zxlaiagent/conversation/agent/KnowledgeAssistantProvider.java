@@ -22,6 +22,7 @@ import java.util.concurrent.*;
 /** Registers a knowledge agent in the existing conversation engine. Database ownership stays in the isolated worker. */
 @Component
 public final class KnowledgeAssistantProvider implements ConversationAgentProvider {
+    @Override public java.util.List<String> executionPermissions(){return java.util.List.of("knowledge.read");}
     private final URI endpoint;
     private final String mode;
     private ScopedKnowledgeClient scopedClient;
