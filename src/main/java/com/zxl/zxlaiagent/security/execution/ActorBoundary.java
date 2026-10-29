@@ -26,4 +26,9 @@ public final class ActorBoundary implements OperationBoundary {
     @Override public <T> T start(Phase phase, Supplier<T> operation) {
         return authorization.gateAll(actor, permissions, phase, runId, operation);
     }
+
+    @Override public <T> SqlOutcome<T> sql(java.sql.Connection connection, Phase phase, SqlWork<T> operation)
+            throws java.sql.SQLException {
+        return authorization.sqlGate(connection, actor, permissions, phase, runId, operation);
+    }
 }

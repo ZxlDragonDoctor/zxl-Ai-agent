@@ -2,6 +2,7 @@ package com.zxl.zxlaiagent.security;
 import java.sql.*;
 import java.util.*;
 import java.util.function.Supplier;
+import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 /** PG epoch row is the shared linearization gate for decisions, revocations and action starts. */
 public final class AuthorizationService {
  private final SecurityDatabase db;
@@ -28,6 +29,43 @@ public final class AuthorizationService {
  public <T>T gate(ActorRef ref,String action,ResourceRef resource,Phase phase,String runId,Supplier<T> start){return gateAll(ref,List.of(new Permission(action,resource)),phase,runId,start);}
  /** All requirements share one epoch transaction. The callback only starts/enqueues an operation. */
  public record Permission(String action, ResourceRef resource) {}
+
+ /**
+  * A short local SQL gate on the caller-owned transaction, never around remote waits.
+  * Decisions precede a business savepoint: failures roll back business writes while
+  * retaining their audit, and epoch locks live until the caller commits.
+  */
+ public <T> OperationBoundary.SqlOutcome<T> sqlGate(Connection connection, ActorRef ref,
+   List<Permission> requirements, Phase phase, String runId, OperationBoundary.SqlWork<T> work)throws SQLException {
+  if(connection==null||connection.getAutoCommit()||requirements==null||requirements.isEmpty()
+    ||requirements.size()>8||requirements.stream().anyMatch(Objects::isNull)||work==null)
+   throw new SecurityFailure("ACTION_DENIED",403);
+  db.requireSameDatabase(connection);
+  String searchPath;
+  try(var s=connection.createStatement();var r=s.executeQuery("SHOW search_path")){r.next();searchPath=r.getString(1);}
+  var decisions=new ArrayList<AuthorizationDecision>();
+  try {
+   setSearchPath(connection,"lesson17,pg_catalog");
+   for(var permission:List.copyOf(requirements))
+    decisions.add(decide(connection,ref,permission.action(),permission.resource(),phase,runId));
+  } finally { setSearchPath(connection,searchPath); }
+  for(var decision:decisions)if(!decision.allowed()){
+   try{decision.requireAllowed();}catch(SecurityFailure denied){return new OperationBoundary.SqlOutcome<>(null,denied);}
+  }
+  Savepoint business=connection.setSavepoint();
+  try {
+   T value=work.run(connection);connection.releaseSavepoint(business);
+   return new OperationBoundary.SqlOutcome<>(value,null);
+  } catch(SQLException|RuntimeException failure) {
+   connection.rollback(business);connection.releaseSavepoint(business);
+   RuntimeException deferred=failure instanceof RuntimeException runtime?runtime:
+     new IllegalStateException("PostgreSQL authorized business transaction failed",failure);
+   return new OperationBoundary.SqlOutcome<>(null,deferred);
+  }
+ }
+ private static void setSearchPath(Connection connection,String searchPath)throws SQLException {
+  try(var s=connection.prepareStatement("SELECT set_config('search_path',?,true)")){s.setString(1,searchPath);s.execute();}
+ }
 
  public <T> T gateAll(ActorRef ref, List<Permission> requirements, Phase phase, String runId, Supplier<T> start) {
   if (requirements == null || requirements.isEmpty() || requirements.size() > 8 || start == null

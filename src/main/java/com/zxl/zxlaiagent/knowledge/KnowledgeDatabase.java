@@ -2,6 +2,8 @@ package com.zxl.zxlaiagent.knowledge;
 
 import org.flywaydb.core.Flyway;
 import java.sql.*;
+import com.zxl.zxlaiagent.security.Phase;
+import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 
 public final class KnowledgeDatabase {
     private static final java.util.concurrent.ScheduledExecutorService RETRIEVAL_CANCELLATION =
@@ -16,6 +18,13 @@ public final class KnowledgeDatabase {
                 .locations("classpath:db/lesson12").table("lesson12_schema_history").load().migrate();
     }
     @FunctionalInterface public interface Work<T>{T run(Connection c)throws SQLException;}
+    /** Authorization audit and business SQL use this one owned PG transaction. */
+    public <T> T tx(OperationBoundary boundary, Phase phase, Work<T> work) {
+        return tx(connection -> boundary.sql(connection, phase, work::run)).result();
+    }
+    public <T> T tx(OperationBoundary boundary, Phase phase, java.time.Duration remaining, Work<T> work) {
+        return tx(remaining, connection -> boundary.sql(connection, phase, work::run)).result();
+    }
     /** Retrieval uses its remaining end-to-end budget rather than the ingestion timeout. */
     public <T> T tx(java.time.Duration remaining, Work<T> work) {
         if (remaining.isNegative() || remaining.isZero() || Thread.currentThread().isInterrupted())
