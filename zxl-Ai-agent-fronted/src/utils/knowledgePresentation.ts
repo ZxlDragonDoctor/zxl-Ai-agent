@@ -1,4 +1,26 @@
 type BilingualText = { zh: string; en: string }
+export interface KnowledgeStorageInfo {
+  available?: boolean; scope?: string; postgresVersion?: string; vectorVersion?: string
+  tenantId?: string; embeddingMode?: string; dimensions?: number
+}
+/** Formal workspace identity comes from authentication, never from a storage response label. */
+export function knowledgeStoragePresentation(status: KnowledgeStorageInfo | null | undefined, trustedTenant?: string) {
+  const formal = !!trustedTenant || status?.scope === 'authenticated'
+  const databaseDetail = !status || status.available === false
+    ? { zh:'数据库连接尚未确认', en:'Database connection unconfirmed' }
+    : status.postgresVersion && status.vectorVersion
+      ? { zh:`PostgreSQL ${status.postgresVersion} · pgvector ${status.vectorVersion}`, en:`PostgreSQL ${status.postgresVersion} · pgvector ${status.vectorVersion}` }
+      : { zh:'数据库连接已确认；版本由服务端管理', en:'Connected; versions managed by the service' }
+  const dimension = typeof status?.dimensions === 'number' && Number.isInteger(status.dimensions) && status.dimensions > 0 ? ` · ${status.dimensions}D` : ''
+  return {
+    databaseDetail,
+    embeddingDetail: status?.embeddingMode ? `${status.embeddingMode}${dimension}` : '—',
+    workspace: trustedTenant || (formal ? '—' : status?.tenantId || '—'),
+    scopeDetail: formal
+      ? { zh:'当前租户知识范围 · 事实记忆属于当前用户', en:'Current tenant knowledge · personal confirmed facts' }
+      : { zh:'课堂演示范围', en:'Classroom demonstration scope' },
+  }
+}
 export interface EmbeddingPresentation {
   kind: 'unconfirmed' | 'demo' | 'http'
   title: BilingualText

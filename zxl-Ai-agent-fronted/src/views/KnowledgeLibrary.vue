@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { locale } from '../i18n'
-import { embeddingPresentation } from '../utils/knowledgePresentation'
+import { embeddingPresentation, knowledgeStoragePresentation } from '../utils/knowledgePresentation'
+import { sessionState } from '../utils/sessionRequest'
 import RetrievalLab from '../components/RetrievalLab.vue'
 import RetrievalEvaluation from '../components/RetrievalEvaluation.vue'
 import {
@@ -12,6 +13,11 @@ import type { KnowledgeDetail, KnowledgeDocument, KnowledgeSearch, KnowledgeStat
 
 const tr = (zh: string, en: string) => locale.value === 'zh-CN' ? zh : en
 const status = ref<KnowledgeStatus | null>(null)
+// AuthGate remounts business pages on every identity generation change.
+const auth = sessionState().status
+const formalMode = auth?.mode === 'required'
+const canManage = !formalMode || auth?.principal?.role === 'knowledge-maintainer'
+const storageView = computed(() => knowledgeStoragePresentation(status.value, auth?.principal?.tenantId))
 const embeddingView = computed(() => embeddingPresentation(status.value?.embeddingMode))
 const documents = ref<KnowledgeDocument[]>([])
 const detail = ref<KnowledgeDetail | null>(null)
@@ -113,7 +119,7 @@ onMounted(refresh)
 
 <template>
   <section class="knowledge-page" :aria-busy="!!busy">
-    <nav class="knowledge-shortcuts" :aria-label="tr('知识库功能入口', 'Knowledge tools')"><a href="#retrieval-lab-title">{{ tr('进入检索实验室 ↓', 'Open retrieval lab ↓') }}</a><a href="#evaluation-title">{{ tr('查看固定集评测 ↓', 'Open fixed-set evaluation ↓') }}</a></nav>
+    <nav class="knowledge-shortcuts" :aria-label="tr('知识库功能入口', 'Knowledge tools')"><a href="#retrieval-lab-title">{{ tr('进入检索实验室 ↓', 'Open retrieval lab ↓') }}</a><a v-if="!formalMode" href="#evaluation-title">{{ tr('查看固定集评测 ↓', 'Open fixed-set evaluation ↓') }}</a></nav>
     <header class="page-heading">
       <div><p class="eyebrow">{{ tr('第十二课 · 企业知识接入实验室', 'LESSON 12 · KNOWLEDGE INGESTION LAB') }}</p>
         <h1>{{ tr('让知识有来源、有版本', 'Knowledge with provenance') }}</h1>
@@ -125,17 +131,18 @@ onMounted(refresh)
     <p v-if="error" class="message error" role="alert">{{ error }}</p>
     <p v-if="notice" class="message success" role="status">{{ notice }}</p>
 
-    <section class="storage-strip" :class="{ connected: status }" :aria-label="tr('数据库状态', 'Database status')">
-      <div><span class="status-dot"></span><strong>{{ status?.storage || tr('数据库尚未确认连接', 'Database connection unconfirmed') }}</strong><small>{{ status ? `PostgreSQL ${status.postgresVersion} · pgvector ${status.vectorVersion}` : tr('连接失败时不会自动回退内存', 'No automatic in-memory fallback') }}</small></div>
+    <section class="storage-strip" :class="{ connected: status && status.available !== false }" :aria-label="tr('数据库状态', 'Database status')">
+      <div><span class="status-dot"></span><strong>{{ status?.storage || tr('数据库尚未确认连接', 'Database connection unconfirmed') }}</strong><small>{{ tr(storageView.databaseDetail.zh, storageView.databaseDetail.en) }}</small></div>
       <div><span class="metric">{{ status ? activeDocuments : '—' }}</span><small>{{ tr('有效文档', 'Active documents') }}</small></div>
-      <div><strong>{{ tr(embeddingView.title.zh, embeddingView.title.en) }}</strong><small>{{ status ? `${status.embeddingMode} · ${status.dimensions}D` : tr('等待服务端返回模型与维度', 'Waiting for the service model and dimensions') }}</small></div>
-      <div><strong>{{ status?.tenantId || 'demo-enterprise' }}</strong><small>{{ tr('固定教学租户 · 尚非权限隔离界面', 'Fixed teaching tenant · not an authorization UI') }}</small></div>
+      <div><strong>{{ tr(embeddingView.title.zh, embeddingView.title.en) }}</strong><small>{{ status ? storageView.embeddingDetail : tr('等待服务端返回模型与维度', 'Waiting for the service model and dimensions') }}</small></div>
+      <div><strong>{{ storageView.workspace }}</strong><small>{{ tr(storageView.scopeDetail.zh, storageView.scopeDetail.en) }}</small></div>
     </section>
 
     <div class="workspace">
       <section class="panel editor">
-        <div class="panel-heading"><div><span class="step">01</span><h2>{{ tr('导入与更新', 'Import & update') }}</h2></div><button class="text-button" type="button" :disabled="!!busy" @click="fillExample">{{ tr('填入 VPN 示例', 'Load VPN example') }}</button></div>
-        <form @submit.prevent="publish">
+        <div class="panel-heading"><div><span class="step">01</span><h2>{{ tr('导入与更新', 'Import & update') }}</h2></div><button v-if="canManage" class="text-button" type="button" :disabled="!!busy" @click="fillExample">{{ tr('填入 VPN 示例', 'Load VPN example') }}</button></div>
+        <p v-if="!canManage" class="hint">{{ tr('当前角色可检索和查看资料；导入、更新与删除需要知识维护权限。', 'Your role can search and read. Import, update and deletion require knowledge-maintainer permissions.') }}</p>
+        <form v-else @submit.prevent="publish">
           <label for="document-id">{{ tr('文档 ID（更新时保持不变）', 'Document ID (keep it for updates)') }}</label>
           <input id="document-id" v-model="documentId" required maxlength="128" :disabled="!!busy" autocomplete="off" />
           <label for="source-name">{{ tr('来源名称', 'Source name') }}</label>
@@ -157,14 +164,14 @@ onMounted(refresh)
             <code>{{ doc.documentId }}</code>
             <p class="doc-meta">{{ tr('版本', 'Version') }} {{ doc.version }} · {{ doc.chunkCount }} {{ tr('个分块', 'chunks') }}</p>
             <p v-if="doc.errorCode" class="error-code">{{ doc.errorCode }}</p>
-            <div class="actions"><button type="button" :disabled="!!busy" @click="openDocument(doc.documentId)">{{ tr('原文与分块', 'Source & chunks') }}</button><button v-if="doc.status !== 'DELETED'" type="button" class="danger-text" :disabled="!!busy" @click="deleteTarget = doc">{{ tr('删除', 'Delete') }}</button></div>
+            <div class="actions"><button type="button" :disabled="!!busy" @click="openDocument(doc.documentId)">{{ tr('原文与分块', 'Source & chunks') }}</button><button v-if="canManage && doc.status !== 'DELETED'" type="button" class="danger-text" :disabled="!!busy" @click="deleteTarget = doc">{{ tr('删除', 'Delete') }}</button></div>
           </article>
         </div>
       </section>
     </div>
 
     <section v-if="detail" class="panel detail-panel">
-      <div class="panel-heading"><div><span class="step">↳</span><h2>{{ detail.document.sourceName }}</h2></div><div class="actions"><button type="button" :disabled="!!busy || detail.document.status === 'DELETED'" @click="editDocument">{{ tr('载入编辑 / 重导入', 'Edit / reimport') }}</button><button type="button" @click="detail = null">{{ tr('关闭详情', 'Close details') }}</button></div></div>
+      <div class="panel-heading"><div><span class="step">↳</span><h2>{{ detail.document.sourceName }}</h2></div><div class="actions"><button v-if="canManage" type="button" :disabled="!!busy || detail.document.status === 'DELETED'" @click="editDocument">{{ tr('载入编辑 / 重导入', 'Edit / reimport') }}</button><button type="button" @click="detail = null">{{ tr('关闭详情', 'Close details') }}</button></div></div>
       <p class="hint"><code>{{ detail.document.documentId }}</code> · {{ tr('当前有效修订', 'Active revision') }} <code>{{ detail.document.activeRevision || '—' }}</code></p>
       <div class="tabs" :aria-label="tr('文档内容切换', 'Document content')"><button type="button" :aria-pressed="detailTab === 'chunks'" @click="detailTab = 'chunks'">{{ tr('分块与位置', 'Chunks & positions') }} ({{ detail.chunks.length }})</button><button type="button" :aria-pressed="detailTab === 'raw'" @click="detailTab = 'raw'">{{ tr('完整原文', 'Full source') }}</button></div>
       <pre v-if="detailTab === 'raw'" class="source-block">{{ detail.rawText || tr('无有效原文', 'No active source') }}</pre>
@@ -179,7 +186,8 @@ onMounted(refresh)
     </section>
 
     <RetrievalLab />
-    <RetrievalEvaluation />
+    <RetrievalEvaluation v-if="!formalMode" />
+    <p v-else class="hint">{{ tr('当前工作空间的固定集评测入口尚未开放。', 'Fixed-set evaluation is not yet available in this workspace.') }}</p>
 
     <div v-if="deleteTarget" class="modal-backdrop" @keydown.esc="!busy && (deleteTarget = null)" @keydown="keepDialogFocus">
       <section ref="deleteDialog" class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-title" tabindex="-1"><h2 id="delete-title">{{ tr('删除这份知识资料？', 'Delete this source?') }}</h2><p><strong>{{ deleteTarget.sourceName }}</strong></p><p>{{ tr('服务端确认删除后，该文档的旧分块不应再被检索。删除失败会保留此窗口和错误提示。', 'After server confirmation, old chunks must no longer be retrieved. On failure this dialog stays open with the error.') }}</p><p v-if="error" class="message error" role="alert">{{ error }}</p><div class="actions"><button type="button" :disabled="!!busy" @click="deleteTarget = null">{{ tr('取消', 'Cancel') }}</button><button class="danger" type="button" :disabled="!!busy" @click="removeDocument">{{ busy === 'delete' ? tr('正在删除…', 'Deleting…') : tr('确认删除', 'Confirm deletion') }}</button></div></section>
