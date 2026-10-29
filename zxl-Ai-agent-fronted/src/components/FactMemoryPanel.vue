@@ -3,9 +3,12 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { locale } from '../i18n'
 import { actOnFact, askKnowledge, correctFact, deleteFact, factIsLive, listFacts, proposeFact, recallFacts } from '../api/answer'
 import type { DemoProfile, Fact } from '../api/answer'
+import { sessionState } from '../utils/sessionRequest'
 import KnowledgeAnswerCard from './KnowledgeAnswerCard.vue'
 const props = defineProps<{ conversationId: string | null }>()
 const tr = (zh: string, en: string) => locale.value === 'zh-CN' ? zh : en
+const identity = sessionState().status
+const formal = identity?.mode === 'required'
 const profile = ref<DemoProfile>('alice'), facts = ref<Fact[]>([]), text = ref('我偏好中文回复'), ttl = ref(3600)
 const busy = ref(false), error = ref(''), notice = ref(''), editing = ref<Fact | null>(null), correction = ref('')
 const recalled = ref<Awaited<ReturnType<typeof recallFacts>> | null>(null), preview = ref(''), previewQuestion = ref('VPN报错401，应该如何处理？')
@@ -41,8 +44,9 @@ onMounted(() => { void run(load) })
   <details class="memory-panel">
     <summary>{{ tr('确认事实记忆', 'Confirmed fact memory') }} <span>{{ confirmedCount }} {{ tr('条有效', 'active') }}</span></summary>
     <div class="memory-body" :aria-busy="busy">
-      <p class="boundary">{{ tr('真实PG · 仅白名单偏好 · 先确认再召回。Alice / Bob 是固定演示身份，不代表生产登录授权。主聊天使用 Alice；下方可比较两个用户的上下文。', 'Real PG · Allowlisted preferences · Confirm before recall. Alice / Bob are fixed demo identities, not production authentication. Main chat uses Alice; compare both profiles below.') }}</p>
-      <div class="toolbar"><label>{{ tr('演示用户', 'Demo profile') }} <select v-model="profile" :disabled="busy"><option value="alice">Alice</option><option value="bob">Bob</option></select></label><button :disabled="busy" @click="run(load)">{{ tr('刷新记忆', 'Refresh memories') }}</button><button :disabled="busy" @click="recall">{{ tr('查看实际召回', 'Inspect recall') }}</button></div>
+      <p v-if="formal" class="boundary">{{ tr('真实PG · 记忆仅属于当前登录账号，先确认再召回。', 'Real PG · Memories belong to the signed-in account. Confirm before recall.') }}</p>
+      <p v-else class="boundary">{{ tr('真实PG · 仅白名单偏好 · 先确认再召回。Alice / Bob 是固定演示身份，不代表生产登录授权。主聊天使用 Alice；下方可比较两个用户的上下文。', 'Real PG · Allowlisted preferences · Confirm before recall. Alice / Bob are fixed demo identities, not production authentication. Main chat uses Alice; compare both profiles below.') }}</p>
+      <div class="toolbar"><span v-if="formal">{{ tr('当前账号', 'Current account') }} · {{ identity?.principal?.loginName }}</span><label v-else>{{ tr('演示用户', 'Demo profile') }} <select v-model="profile" :disabled="busy"><option value="alice">Alice</option><option value="bob">Bob</option></select></label><button :disabled="busy" @click="run(load)">{{ tr('刷新记忆', 'Refresh memories') }}</button><button :disabled="busy" @click="recall">{{ tr('查看实际召回', 'Inspect recall') }}</button></div>
       <form @submit.prevent="propose"><label class="field">{{ tr('明确的用户原话', 'Explicit user statement') }}<input v-model="text" maxlength="500" :disabled="busy" :placeholder="tr('我偏好中文回复', 'I prefer replies in Chinese')"></label><div class="toolbar"><label>{{ tr('有效期', 'Lifetime') }} <select v-model="ttl" :disabled="busy"><option :value="5">{{ tr('5秒（到期演示）', '5 seconds (expiry demo)') }}</option><option :value="3600">{{ tr('1小时', '1 hour') }}</option><option :value="86400">{{ tr('1天', '1 day') }}</option></select></label><button class="primary" :disabled="busy || !text.trim()">{{ tr('提议保存', 'Propose memory') }}</button></div></form>
       <p v-if="error" role="alert" class="error">{{ error }}</p><p v-if="notice" role="status">{{ notice }}</p><p v-if="busy" role="status">{{ tr('正在处理…', 'Working…') }}</p>
       <div v-if="recalled" class="recall" role="region" :aria-label="tr('实际召回结果', 'Actual recall result')"><strong>{{ tr('实际进入记忆预算', 'Selected for memory budget') }}</strong><p>{{ recalled.facts.length }} {{ tr('条', 'facts') }} · {{ recalled.usedChars }} / 800 {{ tr('字符', 'characters') }} · {{ tr('丢弃', 'Dropped') }} {{ recalled.droppedCount }}</p><p v-for="f in recalled.facts" :key="f.id">{{ f.factKey }} = {{ f.value }} · v{{ f.version }}</p></div>

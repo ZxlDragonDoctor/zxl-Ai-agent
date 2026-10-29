@@ -26,7 +26,7 @@ test('import sends original markdown as JSON without fetching local paths', asyn
   globalThis.fetch = async (url, options) => {
     assert.equal(url, '/api/ai/learning/knowledge/documents')
     assert.equal(options.method, 'POST')
-    assert.equal(options.headers['Content-Type'], 'application/json')
+    assert.equal(new Headers(options.headers).get('Content-Type'), 'application/json')
     assert.deepEqual(JSON.parse(options.body), payload)
     return Response.json({ outcome: 'UNCHANGED', document: { documentId: 'vpn' } })
   }

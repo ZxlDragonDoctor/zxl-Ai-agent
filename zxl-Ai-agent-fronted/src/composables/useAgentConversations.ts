@@ -2,14 +2,17 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { chatWithAgentSse } from '../api/chat'
 import { ConversationApiError, createConversation, deleteConversation, getConversation, listAgents, listConversations } from '../api/conversations'
+import { sessionStorageKey, SessionRequestError } from '../utils/sessionRequest'
+import { selectAvailableAgentType } from '../utils/agentSelection'
 import { locale, t } from '../i18n'
 import { applyAgentEvent, finishFlow, restoreChat } from '../utils/agentFlow'
 import type { AgentChatMessage, AgentStreamEvent } from '../types/agent'
 import type { AgentDefinition, ConversationDetail, ConversationSummary } from '../types/conversation'
 
-const STORAGE_KEY = 'zxl_agent_conversation'
+
 
 export function useAgentConversations() {
+  const STORAGE_KEY = sessionStorageKey('zxl_agent_conversation')
   const route = useRoute()
   const input = ref('')
   const messages = ref<AgentChatMessage[]>([])
@@ -34,11 +37,18 @@ export function useAgentConversations() {
     try { if (id) localStorage.setItem(STORAGE_KEY, id); else localStorage.removeItem(STORAGE_KEY) } catch { /* 会话仍保存在服务端。 */ }
   }
   function errorText(code: string) {
+    const identityErrors: Record<string, [string, string]> = {
+      UNAUTHENTICATED: ['登录已失效，请重新登录。', 'Your session expired. Sign in again.'],
+      FORBIDDEN: ['当前账号无权执行此操作。', 'Your account cannot perform this action.'],
+      NOT_FOUND: ['当前账号无法访问此资源。', 'This resource is not visible to your account.'],
+      DEPENDENCY_UNAVAILABLE: ['服务依赖暂不可用，请稍后重试。', 'A service dependency is unavailable. Try again later.'],
+    }
+    if (identityErrors[code]) return identityErrors[code][locale.value === 'zh-CN' ? 0 : 1]
     const key = `conversation.error.${code}`
     return t(key) === key ? t('conversation.error.REQUEST_FAILED') : t(key)
   }
   function showError(cause: unknown) {
-    error.value = errorText(cause instanceof ConversationApiError ? cause.code : 'REQUEST_FAILED')
+    error.value = errorText(cause instanceof ConversationApiError || cause instanceof SessionRequestError ? cause.code : 'REQUEST_FAILED')
   }
   function forgetMissing() {
     ++generation
@@ -211,10 +221,8 @@ export function useAgentConversations() {
       agents.value = catalog
       conversations.value = items
       const requestedType = typeof route.query.agentType === 'string' ? route.query.agentType : null
-      if (requestedType && catalog.some(agent => agent.id === requestedType)) {
-        newType.value = requestedType
-        selectedType.value = requestedType
-      }
+      newType.value = selectAvailableAgentType(catalog, newType.value, requestedType)
+      selectedType.value = newType.value
       let saved: string | null = null
       try { saved = localStorage.getItem(STORAGE_KEY) } catch { /* 可从列表手动恢复。 */ }
       const eligible = requestedType && catalog.some(agent => agent.id === requestedType)

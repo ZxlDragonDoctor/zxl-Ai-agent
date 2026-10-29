@@ -1,4 +1,5 @@
-import { KnowledgeApiError, knowledgeRequest } from './knowledge.ts'
+import { sessionFetch, SessionRequestError } from '../utils/sessionRequest.ts'
+import { KnowledgeApiError, knowledgeRequest, knowledgeBusinessRequest } from './knowledge.ts'
 
 export type DemoProfile = 'alice' | 'bob'
 export interface Evidence {
@@ -39,9 +40,10 @@ export function readKnowledgeAnswer(content: string): KnowledgeAnswer | null {
 }
 const json = (body: unknown, method = 'POST') => ({ method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 export const askKnowledge = async (body: { question: string; conversationId: string; mode: 'demo' | 'real'; budgetMs: number; profile: DemoProfile }): Promise<KnowledgeAnswer> => {
+  const business = knowledgeBusinessRequest('/api/ai/learning/knowledge/answers', json(body))
   let response: Response
-  try { response = await fetch('/api/ai/learning/knowledge/answers', json(body)) }
-  catch { throw new KnowledgeApiError('NETWORK_ERROR', 'Knowledge service is unavailable') }
+  try { response = await sessionFetch(business.path, business.options) }
+  catch (error) { if (error instanceof SessionRequestError) throw error; throw new KnowledgeApiError('NETWORK_ERROR', 'Knowledge service is unavailable') }
   const raw = await response.json().catch(() => null)
   const result = raw ? readKnowledgeAnswer(JSON.stringify(raw)) : null
   // A business failure is rendered as a failure card, never as a successful empty answer.

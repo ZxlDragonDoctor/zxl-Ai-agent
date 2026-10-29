@@ -1,3 +1,4 @@
+import { sessionFetch, SessionRequestError } from '../utils/sessionRequest.ts'
 import { mcpRequest } from './mcp.ts'
 
 export interface SkillTool { serverId: string; originalName: string; exposedName: string; schemaVersion: string; schemaSha256: string; readOnly: true }
@@ -57,8 +58,8 @@ export function readSkillEvent(type: string, content: string): SkillSnapshot | S
 }
 export async function skillsRequest(signal?: AbortSignal): Promise<unknown> {
   let response: Response
-  try { response = await fetch('/api/ai/learning/skills', { method: 'GET', signal }) }
-  catch { throw new Error(signal?.aborted ? 'CANCELLED' : 'SKILL_NETWORK_UNAVAILABLE') }
+  try { response = await sessionFetch('/api/ai/learning/skills', { method: 'GET', signal }) }
+  catch (error) { if (error instanceof SessionRequestError) throw error; throw new Error(signal?.aborted ? 'CANCELLED' : 'SKILL_NETWORK_UNAVAILABLE') }
   if (!response.ok) throw new Error(`SKILL_HTTP_${response.status}`)
   return response.json().catch(() => { throw new Error('SKILL_INVALID_RESPONSE') })
 }

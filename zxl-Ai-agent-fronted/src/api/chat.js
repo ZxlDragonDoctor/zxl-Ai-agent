@@ -1,3 +1,4 @@
+import { sessionFetch, sessionGeneration } from '../utils/sessionRequest.ts'
 import { API_BASE as BASE_URL } from './base'
 
 export function chatWithLoveAppSse(message, chatId, onMessage) {
@@ -17,6 +18,7 @@ export function chatWithLoveAppSse(message, chatId, onMessage) {
 }
 
 export function chatWithManusSse(message, onMessage, onError, onEvent, conversationId, skillSelection) {
+  const generation = sessionGeneration()
   const controller = new AbortController()
   let finished = false
   const connection = { close() { finished = true; controller.abort() } }
@@ -27,6 +29,7 @@ export function chatWithManusSse(message, onMessage, onError, onEvent, conversat
   }
 
   function dispatch(frame) {
+    if (generation !== sessionGeneration()) { connection.close(); return }
     let name = 'message'
     const data = []
     for (const line of frame.split(/\r?\n/)) {
@@ -51,7 +54,7 @@ export function chatWithManusSse(message, onMessage, onError, onEvent, conversat
   void (async () => {
     try {
       // POST avoids putting chat contents into a URL and exposes structured HTTP errors such as busy.
-      const response = await fetch(`${BASE_URL}/ai/agent/chat`, {
+      const response = await sessionFetch(`${BASE_URL}/ai/agent/chat`, {
         method: 'POST', signal: controller.signal,
         headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
         body: JSON.stringify({ message, conversationId, ...(skillSelection?.skillId ? { skillId: skillSelection.skillId, ...(skillSelection.skillVersion ? { skillVersion: skillSelection.skillVersion } : {}) } : {}) }),
@@ -70,6 +73,7 @@ export function chatWithManusSse(message, onMessage, onError, onEvent, conversat
       try {
         while (!finished) {
           const { value, done } = await reader.read()
+          if (generation !== sessionGeneration()) { connection.close(); break }
           if (done) break
           buffer += decoder.decode(value, { stream: true })
           let boundary
@@ -81,8 +85,8 @@ export function chatWithManusSse(message, onMessage, onError, onEvent, conversat
         }
       } finally { reader.releaseLock() }
       if (!finished) fail('connection_interrupted')
-    } catch {
-      if (!controller.signal.aborted) fail('connection_interrupted')
+    } catch (error) {
+      if (generation === sessionGeneration() && !controller.signal.aborted) fail(error?.code || 'connection_interrupted')
     }
   })()
   return connection

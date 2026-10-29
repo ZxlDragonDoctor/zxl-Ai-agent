@@ -1,3 +1,4 @@
+import { sessionFetch, SessionRequestError } from '../utils/sessionRequest.ts'
 import { API_BASE } from './base'
 import type { AgentDefinition, ConversationDetail, ConversationSummary } from '../types/conversation'
 
@@ -7,15 +8,15 @@ export class ConversationApiError extends Error {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   let response: Response
-  try { response = await fetch(`${API_BASE}${path}`, options) }
-  catch { throw new ConversationApiError('NETWORK_ERROR') }
+  try { response = await sessionFetch(`${API_BASE}${path}`, options) }
+  catch (error) { if (error instanceof SessionRequestError) throw error; throw new ConversationApiError('NETWORK_ERROR') }
   if (!response.ok) {
     const body = await response.json().catch(() => null)
     throw new ConversationApiError(body?.code || 'REQUEST_FAILED')
   }
   if (response.status === 204) return undefined as T
   try { return await response.json() as T }
-  catch { throw new ConversationApiError('INVALID_RESPONSE') }
+  catch (error) { if (error instanceof SessionRequestError) throw error; throw new ConversationApiError('INVALID_RESPONSE') }
 }
 
 export const listAgents = () => request<AgentDefinition[]>('/agent-types')

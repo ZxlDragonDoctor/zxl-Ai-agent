@@ -1,3 +1,4 @@
+import { sessionFetch, SessionRequestError } from '../utils/sessionRequest.ts'
 import type { KnowledgeDetail } from './knowledge.ts'
 
 export interface McpHit {
@@ -34,8 +35,8 @@ export function validateMcpSource(hit: McpHit, detail: KnowledgeDetail): boolean
 }
 export async function mcpRequest(path: string, body?: unknown, signal?: AbortSignal): Promise<unknown> {
   let response: Response
-  try { response = await fetch(`/api/ai/learning/mcp${path}`, { method: body === undefined ? 'GET' : 'POST', ...(body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), signal }) }
-  catch (cause) { if (signal?.aborted) throw new Error('CANCELLED'); throw new Error('MCP_NETWORK_UNAVAILABLE') }
+  try { response = await sessionFetch(`/api/ai/learning/mcp${path}`, { method: body === undefined ? 'GET' : 'POST', ...(body === undefined ? {} : { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), signal }) }
+  catch (cause) { if (cause instanceof SessionRequestError) throw cause; if (signal?.aborted) throw new Error('CANCELLED'); throw new Error('MCP_NETWORK_UNAVAILABLE') }
   const value = await response.json().catch(() => null)
   if (!response.ok && !readMcpResult(JSON.stringify(value))) throw new Error(value?.code || `MCP_HTTP_${response.status}`)
   if (value === null) throw new Error('MCP_INVALID_RESPONSE')

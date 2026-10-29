@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { RouterView, useRouter } from 'vue-router'
 import { locale, t, toggleLocale } from './i18n'
+import AuthGate from './components/AuthGate.vue'
 
 const router = useRouter()
 const currentYear = ref(new Date().getFullYear())
@@ -59,11 +60,13 @@ onMounted(() => {
     </nav>
 
     <main class="main">
+      <AuthGate v-slot="{ generation }">
       <router-view v-slot="{ Component }">
         <transition name="page" mode="out-in">
-          <component :is="Component" />
+          <component :is="Component" :key="generation" />
         </transition>
       </router-view>
+      </AuthGate>
     </main>
 
     <footer class="footer">
@@ -259,8 +262,8 @@ onMounted(() => {
 }
 
 @media (max-width: 720px) {
-  .nav { padding: 0 16px; }
-  .nav-links { gap: 0; }
+  .nav { padding: 10px 16px; height: auto; min-height: 60px; flex-wrap: wrap; gap: 10px; }
+  .nav-links { gap: 0; flex-wrap: wrap; }
   .nav-link { padding: 6px 10px; font-size: 12px; }
   .main { padding: 16px; }
   .footer { padding: 16px; }
