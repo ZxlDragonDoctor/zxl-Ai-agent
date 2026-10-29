@@ -2,8 +2,10 @@ package com.zxl.zxlaiagent.security.web;
 
 import com.zxl.zxlaiagent.conversation.controller.FormalConversationController;
 import com.zxl.zxlaiagent.conversation.controller.FormalAgentChatController;
+import com.zxl.zxlaiagent.conversation.controller.FormalAgentTypeController;
 import com.zxl.zxlaiagent.knowledge.gateway.FormalKnowledgeGatewayController;
 import com.zxl.zxlaiagent.agent.stream.PreparedAgentStreamInterceptor;
+import com.zxl.zxlaiagent.research.FormalMcpController;
 import com.zxl.zxlaiagent.security.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -52,7 +54,7 @@ public class FormalSecurityConfiguration implements WebMvcConfigurer {
         // Add a business handler only after all of its methods use the trusted scoped service.
         registry.addInterceptor(new TrustedHandlerInterceptor(Set.of(AuthController.class,
                 FormalConversationController.class, SecurityHealthController.class,
-                FormalAgentChatController.class, FormalKnowledgeGatewayController.class)));
+                FormalAgentChatController.class, FormalKnowledgeGatewayController.class, FormalAgentTypeController.class, FormalMcpController.class)));
         registry.addInterceptor(new PreparedAgentStreamInterceptor());
     }
 }

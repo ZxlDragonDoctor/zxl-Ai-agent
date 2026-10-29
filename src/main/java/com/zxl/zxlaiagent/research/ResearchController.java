@@ -10,6 +10,7 @@ import java.util.*;
 
 /** Local teaching controls, fixed read-only scope. Production authentication is a later lesson. */
 @RestController @RequestMapping("/ai/learning/mcp")
+@org.springframework.boot.autoconfigure.condition.ConditionalOnExpression("'${agent.security.mode:legacy-demo}' != 'required'")
 public class ResearchController {
     private final KnowledgeMcpClient client;private static final ObjectMapper JSON=new ObjectMapper();
     public ResearchController(KnowledgeMcpClient client){this.client=client;}
