@@ -7,7 +7,7 @@
     "dev": "vite",
     "test:auth": "node --experimental-strip-types --test src/api/__tests__/auth.test.mjs",
     "test:graph": "node --experimental-strip-types --test src/learning/graph/__tests__/graphPresentation.test.mjs src/learning/graph/__tests__/graph3DModel.test.mjs src/learning/graph/__tests__/graph3DMotion.test.mjs src/learning/graph/__tests__/graph3DFocus.test.mjs src/learning/graph/__tests__/progressRestore.test.mjs",
-    "test:knowledge": "node --experimental-strip-types --test src/api/__tests__/knowledge.test.mjs src/api/__tests__/knowledgePresentation.test.mjs src/api/__tests__/retrieval.test.mjs src/api/__tests__/evaluation.test.mjs src/api/__tests__/answer.test.mjs src/api/__tests__/knowledgeFlow.test.mjs src/api/__tests__/mcp.test.mjs src/api/__tests__/skills.test.mjs src/api/__tests__/skillFlow.test.mjs src/api/__tests__/skillChatRequest.test.mjs src/api/__tests__/skillPanelState.test.mjs",
+    "test:knowledge": "node --experimental-strip-types --test src/api/__tests__/knowledge.test.mjs src/api/__tests__/knowledgePresentation.test.mjs src/api/__tests__/retrieval.test.mjs src/api/__tests__/evaluation.test.mjs src/api/__tests__/answer.test.mjs src/api/__tests__/knowledgeFlow.test.mjs src/api/__tests__/mcp.test.mjs src/api/__tests__/mcpPresentation.test.mjs src/api/__tests__/agentSelection.test.mjs src/api/__tests__/skills.test.mjs src/api/__tests__/skillFlow.test.mjs src/api/__tests__/skillChatRequest.test.mjs src/api/__tests__/skillPanelState.test.mjs",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview"
   },

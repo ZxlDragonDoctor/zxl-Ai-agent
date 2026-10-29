@@ -4,11 +4,17 @@ import { locale } from '../i18n'
 import { mcpRequest, readMcpResult } from '../api/mcp'
 import type { McpStatus } from '../api/mcp'
 import McpToolEvidence from './McpToolEvidence.vue'
+import { mcpConnectionPresentation } from '../utils/mcpPresentation'
+import { sessionState } from '../utils/sessionRequest'
 const tr = (zh: string, en: string) => locale.value === 'zh-CN' ? zh : en
 const status = ref<McpStatus | null>(null), error = ref(''), loading = ref(false), querying = ref(false), payload = ref('')
 const query = ref('VPN报错401，应该如何处理？'), topK = ref(3), budgetMs = ref(10000), mode = ref('hybrid')
 let controller: AbortController | null = null, requestId = 0, disposed = false
-const state = computed(() => ({ READY: tr('服务已就绪', 'Ready'), UNAVAILABLE: tr('服务不可用', 'Unavailable'), CLOSED: tr('连接已关闭', 'Closed'), CONNECTING: tr('正在连接', 'Connecting'), DISCOVERING: tr('发现工具中', 'Discovering'), NEW: tr('尚未连接', 'Not connected') }[(status.value?.state || '').toUpperCase()] || status.value?.state || tr('正在读取状态', 'Loading status')))
+const auth = sessionState().status
+const formalMode = auth?.mode === 'required'
+const canRefresh = !formalMode || auth?.principal?.role === 'knowledge-maintainer'
+const connectionView = computed(() => mcpConnectionPresentation(status.value))
+const state = computed(() => tr(connectionView.value.title.zh, connectionView.value.title.en))
 async function refresh(rediscover = true) {
   loading.value = true; error.value = ''
   try {
@@ -36,12 +42,13 @@ onUnmounted(() => { disposed = true; ++requestId; controller?.abort() })
   <details class="mcp-panel">
     <summary><span class="status-dot" :class="{ ready: status?.state?.toUpperCase() === 'READY' }" aria-hidden="true"></span><strong>{{ tr('MCP 只读知识工具', 'MCP read-only knowledge tools') }}</strong><span role="status">{{ state }}</span></summary>
     <div class="panel-body">
-      <header><p>{{ tr('服务提供工具，Java 校验权限与预算；模型只能调用下方允许的工具。', 'The service exposes tools; Java checks scope and budgets. The model can call only the listed tools.') }}</p><button :disabled="loading || querying" @click="refresh(true)">{{ loading ? tr('发现中…', 'Discovering…') : tr('刷新工具发现', 'Refresh discovery') }}</button></header>
-      <p v-if="status?.lastError" class="error">{{ status.lastError }}</p>
+      <header><p>{{ tr('服务提供工具，Java 校验权限与预算；模型只能调用下方允许的工具。', 'The service exposes tools; Java checks scope and budgets. The model can call only the listed tools.') }}</p><button v-if="canRefresh" :disabled="loading || querying" @click="refresh(true)">{{ loading ? tr('发现中…', 'Discovering…') : tr('刷新工具发现', 'Refresh discovery') }}</button></header>
+      <p v-if="formalMode && !canRefresh">{{ tr('查询会自动发现工具；刷新共享连接需要知识维护权限。', 'Queries discover tools automatically; refreshing the shared connection requires knowledge-maintainer permissions.') }}</p>
+      <p v-if="connectionView.showError" class="error">{{ status?.lastError }}</p>
       <p v-if="status" class="metadata">{{ status.serverId }} · {{ status.protocolVersion || '—' }} · {{ tr('运行', 'Active') }} {{ status.active ?? 0 }} / {{ tr('等待', 'Queued') }} {{ status.queued ?? 0 }}</p>
       <p v-if="status && !status.tools.length">{{ tr('尚无可用工具；不能将此状态视为查询成功。', 'No available tools. This does not mean a lookup succeeded.') }}</p>
       <details v-for="tool in status?.tools || []" :key="tool.exposedName" class="tool-schema"><summary><code>{{ tool.exposedName }}</code> · {{ tr('只读', 'Read only') }}</summary><p>{{ tool.serverId }} / {{ tool.originalName }} · {{ tool.schemaVersion }}</p><p>SHA-256 {{ tool.schemaSha256 }}</p><pre>{{ JSON.stringify(tool.definition, null, 2) }}</pre></details>
-      <details class="experiment"><summary>{{ tr('只读协议实验（不调用模型）', 'Read-only protocol lab (no model call)') }}</summary><p>{{ tr('验证发现与调用；真实模型选择工具请使用下方对话。当前教学身份由服务端固定。', 'Verify discovery and calls. Use the conversation below for real model tool selection. Teaching identity is fixed by the server.') }}</p>
+      <details class="experiment"><summary>{{ tr('只读协议实验（不调用模型）', 'Read-only protocol lab (no model call)') }}</summary><p>{{ formalMode ? tr('在当前登录身份的知识范围内验证发现与调用；真实模型选择工具请使用下方对话。', 'Verify discovery and calls within the signed-in knowledge scope. Use the conversation below for real model tool selection.') : tr('验证发现与调用；真实模型选择工具请使用下方对话。当前教学身份由服务端固定。', 'Verify discovery and calls. Use the conversation below for real model tool selection. Teaching identity is fixed by the server.') }}</p>
         <p>{{ tr('合法范围：查询最多 2000 字符，topK 1–5，预算 100–10000 毫秒。', 'Allowed range: query up to 2000 characters, topK 1–5, budget 100–10000 ms.') }}</p><form @submit.prevent="lookup"><label>{{ tr('查询', 'Query') }}<input v-model="query" :disabled="querying" maxlength="2000" /></label><div class="fields"><label>topK<input v-model.number="topK" type="number" min="1" max="5" :disabled="querying" /></label><label>{{ tr('检索模式', 'Retrieval mode') }}<select v-model="mode" :disabled="querying"><option value="hybrid">hybrid</option><option value="vector">vector</option><option value="keyword">keyword</option></select></label><label>{{ tr('预算（毫秒）', 'Budget (ms)') }}<input v-model.number="budgetMs" type="number" min="100" max="10000" :disabled="querying" /></label></div><div class="actions"><button type="submit" :disabled="querying || loading">{{ querying ? tr('查询中…', 'Looking up…') : tr('执行只读查询', 'Run read-only lookup') }}</button><button v-if="querying" type="button" @click="cancel">{{ tr('停止接收查询', 'Stop receiving lookup') }}</button></div></form>
         <McpToolEvidence v-if="payload" :payload="payload" />
       </details>
