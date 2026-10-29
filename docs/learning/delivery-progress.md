@@ -28,7 +28,7 @@
 | 14 | 引用、拒答与确认事实 | 工程已实现并分层验证；原始真实 judge 门槛未过，已知注入守卫不等于独立留出通过 | [实现](14-implementation.md) |
 | 15 | MCP 工具契约与适配 | 已实现；47专项+194相关回归、真实SSE/PG/模型与逐状态截图分层验收，固定演示身份 | [实现与边界](15-implementation.md) |
 | 16 | Skill 与受控业务策略 | 已实现，97项专项/受影响回归、真实PG/MCP/模型、版本回滚及逐状态截图分层验收；固定课堂身份，无真实写入 | [任务](16-skills-business-policies-and-controlled-tools.md) / [证据与边界](16-implementation.md) |
-| 17 | 身份、权限与租户隔离 | **进行中**：组合授权、隔离知识worker、MCP v2、prepared流阶段整合92项、旧行为回归100项、内部网关13项通过（范围重叠）；11张图谱操作截图，个人备份已恢复。正式全部Provider/业务接线、真实模型和业务页面尚未整体验收 | [任务包](17-tenant-authorization-and-tool-policy.md) / [实现进度与边界](17-implementation.md) |
+| 17 | 身份、权限与租户隔离 | **进行中**：知识/研究正式Provider已接线，真实PG/HTTP Embedding/模型及双空间同ID资料分层取证；本批9类42项、前端10+50项与构建通过。已修共享MCP预算，保留真实失败。SQL同授权事务、跨标签身份、Skill/多Agent及旧历史迁移仍待补齐 | [任务包](17-tenant-authorization-and-tool-policy.md) / [实现进度与边界](17-implementation.md) / [页面证据](../images/lesson17-business-2026-10-30/README.md) |
 | 18 | 注入防护与运行隔离 | 完整六单元任务已发布，工程未实施；已有局部守卫不等于完成实际隔离与评估 | [任务包](18-prompt-injection-and-runtime-isolation.md) |
 | 19 | 人工审批与业务写入 | 路线已规划；只读查询与草稿不算实际审批写入 | [路线第 5 阶段](enterprise-agent-roadmap.md) |
 | 20 | 执行事件与断线恢复 | 路线已规划；已有流式事件不等于持久游标恢复完成 | [路线第 6 阶段](enterprise-agent-roadmap.md) |

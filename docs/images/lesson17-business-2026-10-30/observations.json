@@ -1,0 +1,56 @@
+[
+  {
+    "name": "01-b-history-isolated",
+    "action": "乙登录并读取会话目录",
+    "expected": "不显示甲的会话",
+    "actual": "乙工作空间历史0条"
+  },
+  {
+    "name": "02-b-empty-knowledge",
+    "action": "乙打开企业知识库",
+    "expected": "甲文档不可见",
+    "actual": "乙有效文档0，HTTP1024D，PG连接确认"
+  },
+  {
+    "name": "03-b-document-published",
+    "action": "乙发布与甲相同文档ID的资料",
+    "expected": "保持独立内容与版本",
+    "actual": "乙1有效文档、2分块、独立修订b006b42…、BOREALIS标记"
+  },
+  {
+    "name": "04-b-hybrid-own-source",
+    "action": "乙通过MCP执行真实混合检索",
+    "expected": "只返回乙同ID文档",
+    "actual": "OK，BOREALIS-B-20261030、设备重新登记，没有甲AURORA原文"
+  },
+  {
+    "name": "05-b-current-source",
+    "action": "乙打开当前引用原文",
+    "expected": "重新读取乙文档当前修订",
+    "actual": "b006b42…，UTF-16 19–115，BOREALIS标记"
+  },
+  {
+    "name": "06-b-real-research-answer",
+    "action": "乙真实模型驱动MCP并复核原文",
+    "expected": "工具成功，结论只引用乙资料",
+    "actual": "工具2102ms成功，回答设备重新登记和BOREALIS标记，C1行3–5"
+  },
+  {
+    "name": "07-a-shared-connection-own-source",
+    "action": "不刷新共享MCP连接，乙退出后甲登录并查询",
+    "expected": "不会沿用乙身份和同ID资料",
+    "actual": "READY连接直接查询，返回AURORA-A及重新登录，无乙BOREALIS原文"
+  },
+  {
+    "name": "08-cross-tab-logout-closes-private",
+    "action": "标签1甲查询中，标签2退出",
+    "expected": "标签1私有内容立即失效，旧结果不能重新出现",
+    "actual": "标签1已显示匿名登录表单，无甲原文或会话内容"
+  },
+  {
+    "name": "09-cross-tab-login-b-refresh",
+    "action": "标签2登录乙，保持标签1不手动刷新",
+    "expected": "标签1自动加载乙身份与乙会话",
+    "actual": "标签1自动成为乙，1条乙会话，BOREALIS答案，甲旧内容未回流"
+  }
+]

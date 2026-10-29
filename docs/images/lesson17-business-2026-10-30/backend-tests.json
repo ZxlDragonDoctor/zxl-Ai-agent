@@ -1,0 +1,74 @@
+[
+  {
+    "name": "com.zxl.zxlaiagent.conversation.ScopedMcpResearchProviderTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:07:29"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.knowledge.answer.AnswerFailureDiagnosticsTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:07:29"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.knowledge.mcp.FormalKnowledgeMcpContractTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:07:29"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.knowledge.mcp.FormalKnowledgeMcpPgTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:07:42"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.knowledge.mcp.FormalKnowledgeMcpTransportTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:07:43"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.knowledge.mcp.FormalMcpWorkerLookupTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:07:43"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.knowledge.scoped.ScopedKnowledgeStatusTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:07:43"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.research.FormalMcpControllerTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:07:43"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.research.ScopedResearchTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-10-30T00:07:43"
+  }
+]

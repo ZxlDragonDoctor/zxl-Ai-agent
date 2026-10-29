@@ -1,0 +1,98 @@
+[
+  {
+    "image": "01-anonymous-login.jpg",
+    "action": "刷新主应用重启后的对话页",
+    "expected": "匿名只能看到登录与公开课程入口",
+    "actual": "真实登录表单已显示"
+  },
+  {
+    "image": "02-authenticated-directory.jpg",
+    "action": "甲账号登录后加载统一对话",
+    "expected": "只显示可用的正式Agent类型，不加载其他租户历史",
+    "actual": "登录成功，正式类型目录包含知识助手、角色助手与MCP研究助手"
+  },
+  {
+    "image": "03-tenant-a-storage.jpg",
+    "action": "打开甲工作空间知识库",
+    "expected": "真实PG状态、HTTP Embedding和当前工作空间，初始无文档",
+    "actual": "已连接PG与1024维HTTP模型，甲租户文档为空，无undefined或默认演示租户"
+  },
+  {
+    "image": "04-tenant-a-import-pending.jpg",
+    "action": "提交甲租户合成资料",
+    "expected": "显示进行中，等待真实Embedding与PG发布",
+    "actual": "导入请求正在进行，未提前声称成功"
+  },
+  {
+    "image": "05-tenant-a-import-published.jpg",
+    "action": "等待真实导入完成",
+    "expected": "发布成功并重新读取当前版本与分块",
+    "actual": "真实Embedding调用及PG发布已完成，界面展示甲租户原文和分块"
+  },
+  {
+    "image": "06-invalid-default-agent.jpg",
+    "action": "首次进入正式类型目录后的空白会话",
+    "expected": "默认选中一个实际可用的正式Agent",
+    "actual": "发现旧manus默认值仍显示，选择框没有选中项；保留失败截图后修复"
+  },
+  {
+    "image": "07-formal-default-fixed.jpg",
+    "action": "修复后重新初始化正式类型目录",
+    "expected": "默认选中可执行知识助手，示例匹配当前能力",
+    "actual": "已选择企业知识助手，manus与时间工具示例不再作为默认"
+  },
+  {
+    "image": "08-knowledge-answer-running.jpg",
+    "action": "发送甲租户真实知识问答",
+    "expected": "显示实际执行中而非提前输出成功",
+    "actual": "已进入真实知识助手执行，等待检索、回答和引用校验"
+  },
+  {
+    "image": "09-knowledge-answer-failure.jpg",
+    "action": "展开真实模型问答执行结果",
+    "expected": "应有有效引用或明确业务拒答",
+    "actual": "实际服务未完成与执行异常；保留失败证据后诊断"
+  },
+  {
+    "image": "10-knowledge-answer-supported.jpg",
+    "action": "补安全诊断后同题再次请求",
+    "expected": "结论、标记与引用均来自当前租户资料",
+    "actual": "本次回答与两条结论支持性检查通过，引用E1含AURORA-A；首次失败仍保留，未据重跑宣称根因已修复"
+  },
+  {
+    "image": "11-knowledge-current-source.jpg",
+    "action": "点击E1后重新读取当前原文",
+    "expected": "引用仍属于甲工作空间且与当前版本一致",
+    "actual": "来源卡展示lesson17-tenant-a.md和AURORA-A原文；当前原文校验成功"
+  },
+  {
+    "image": "12-current-source-readable.jpg",
+    "action": "滚动对话内的来源卡",
+    "expected": "原文和核验标记进入实际视口",
+    "actual": "甲工作空间来源原文与AURORA-A标记可读"
+  },
+  {
+    "image": "13-mcp-discovery-ready.jpg",
+    "action": "甲维护者刷新工具发现",
+    "expected": "显示v2只读工具且服务就绪",
+    "actual": "服务已就绪，knowledge__knowledge_lookup_v2，协议2024-11-05"
+  },
+  {
+    "image": "14-mcp-keyword-a.jpg",
+    "action": "甲执行只读关键词查询",
+    "expected": "只返回甲资料和甲核验标记",
+    "actual": "OK，AURORA-A-20261029，lesson17-vpn-shared，行3–5"
+  },
+  {
+    "image": "15-research-tool-deadline.jpg",
+    "action": "甲真实模型选择MCP工具",
+    "expected": "显示真实工具执行及失败原因，不能把失败标为回答成功",
+    "actual": "工具调用5123ms后MCP_DEADLINE_EXCEEDED，21.9秒终态，无伪造结论"
+  },
+  {
+    "image": "16-research-timeout-details.jpg",
+    "action": "展开真实工具参数和返回",
+    "expected": "展示模型参数及受控失败，不能伪装成功",
+    "actual": "query/topK/mode，无身份票据；远程MCP_DEADLINE_EXCEEDED"
+  }
+]
