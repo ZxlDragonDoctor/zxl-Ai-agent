@@ -1,5 +1,17 @@
 import { assertSessionGeneration, replaceSession, requireSuccessfulResponse, sessionGeneration, sessionState, SessionRequestError } from '../utils/sessionRequest.ts'
 import type { AuthStatus } from '../utils/sessionRequest.ts'
+import { browserSessionTransport, createSessionSync } from '../utils/sessionSync.ts'
+import type { SessionSignalTransport } from '../utils/sessionSync.ts'
+let crossTab: ReturnType<typeof createSessionSync> | null = null
+/** AuthGate owns the listener lifetime; tests can supply a deterministic transport. */
+export function startAuthSessionSync(transport: SessionSignalTransport | null = browserSessionTransport()): () => void {
+  crossTab?.close()
+  if (!transport) { crossTab = null; return () => undefined }
+  const instance = createSessionSync({ sender: crypto.randomUUID(), transport,
+    invalidate: () => replaceSession(null, null, true), refresh: refreshAuth })
+  crossTab = instance
+  return () => { instance.close(); if (crossTab === instance) crossTab = null }
+}
 export function readAuthStatus(raw: unknown): AuthStatus {
   if (!raw || typeof raw !== 'object') throw new SessionRequestError('INVALID_AUTH_RESPONSE')
   const value = raw as AuthStatus
@@ -27,14 +39,16 @@ export async function login(credentials: {loginName:string; password:string; ten
   const csrf = sessionState().status?.csrfToken
   if (!csrf) throw new SessionRequestError('CSRF_REQUIRED')
   replaceSession(null, null, true)
+  crossTab?.publish('invalidate')
   const generation=sessionGeneration()
-  try { replaceSession(await authRequest('login', generation, credentials, csrf)) }
-  catch(error) { if (generation===sessionGeneration()) { await refreshAuth().catch(()=>undefined) }; throw error }
+  try { replaceSession(await authRequest('login', generation, credentials, csrf)); crossTab?.publish('refresh') }
+  catch(error) { if (generation===sessionGeneration()) { await refreshAuth().catch(()=>undefined); crossTab?.publish('refresh') }; throw error }
 }
 export async function logout(): Promise<void> {
   const csrf=sessionState().status?.csrfToken
   replaceSession(null, null, true)
+  crossTab?.publish('invalidate')
   const generation=sessionGeneration()
-  try { await authRequest('logout', generation, {}, csrf); await refreshAuth() }
+  try { await authRequest('logout', generation, {}, csrf); await refreshAuth(); crossTab?.publish('refresh') }
   catch(error) { if(generation===sessionGeneration()) replaceSession(null,error instanceof SessionRequestError ? error.code : 'AUTH_CONNECTION_ERROR'); throw error }
 }

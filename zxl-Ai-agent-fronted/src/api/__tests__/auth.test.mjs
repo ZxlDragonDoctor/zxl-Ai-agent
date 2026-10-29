@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { readAuthStatus, refreshAuth, login, logout } from '../auth.ts'
+import { readAuthStatus, refreshAuth, login, logout, startAuthSessionSync } from '../auth.ts'
 import { sessionFetch, sessionState, sessionGeneration, replaceSession } from '../../utils/sessionRequest.ts'
 const anonymous = { mode: 'required', authenticated: false, csrfToken: 'anonymous-csrf' }
 const actor = id => ({ mode: 'required', authenticated: true, csrfToken: `csrf-${id}`, principal: { subjectId:id, tenantId:'tenant-a', loginName:id, role:'employee' } })
@@ -113,4 +113,116 @@ test('a rejected login refreshes anonymous CSRF so credentials can be corrected 
     await assert.rejects(login({loginName:'alice',password:'wrong',tenantId:'tenant-a'}),/UNAUTHENTICATED/)
     assert.equal(sessionState().status.csrfToken,'retry-csrf')
   } finally {globalThis.fetch=original}
+})
+
+test('cross-tab signals invalidate synchronously, ignore reordered messages and dispose subscription', async () => {
+  const { createSessionSync } = await import('../../utils/sessionSync.ts')
+  let receive; let closed=false; const sent=[]; const applied=[]
+  const sync=createSessionSync({sender:'tab-a',transport:{send:value=>sent.push(value),listen:callback=>{receive=callback;return()=>{closed=true}}},invalidate:()=>applied.push('invalidated'),refresh:async()=>{applied.push('refreshed')}})
+  receive({version:1,sender:'tab-b',sequence:2,action:'refresh'})
+  assert.deepEqual(applied,['invalidated','refreshed'])
+  receive({version:1,sender:'tab-b',sequence:1,action:'invalidate'})
+  receive({version:1,sender:'tab-b',sequence:2,action:'refresh'})
+  receive({version:1,sender:'tab-a',sequence:9,action:'refresh'})
+  receive({version:1,sender:'tab-b',sequence:3,action:'refresh',principal:'forged'})
+  assert.equal(applied.length,2)
+  sync.publish('invalidate'); sync.publish('refresh')
+  assert.deepEqual(sent,[{version:1,sender:'tab-a',sequence:1,action:'invalidate'},{version:1,sender:'tab-a',sequence:2,action:'refresh'}])
+  sync.close(); assert.equal(closed,true)
+  receive({version:1,sender:'tab-b',sequence:4,action:'refresh'});sync.publish('refresh')
+  assert.equal(applied.length,2);assert.equal(sent.length,2)
+})
+
+test('remote identity change discards late body before refreshing the shared cookie identity', async () => {
+  const { createSessionSync } = await import('../../utils/sessionSync.ts')
+  replaceSession(actor('alice'));const original=globalThis.fetch;let receive;let resolveStatus
+  globalThis.fetch=async url=>url==='/api/private'?reply({private:'alice'}):new Promise(resolve=>{resolveStatus=resolve})
+  try {
+    const old=await sessionFetch('/api/private')
+    const sync=createSessionSync({sender:'tab-a',transport:{send:()=>{},listen:callback=>{receive=callback;return()=>{}}},invalidate:()=>replaceSession(null,null,true),refresh:refreshAuth})
+    receive({version:1,sender:'tab-b',sequence:1,action:'refresh'})
+    assert.equal(sessionState().status,null)
+    await assert.rejects(old.json(),/STALE_SESSION/)
+    resolveStatus(reply(actor('bob')))
+    await new Promise(resolve=>setImmediate(resolve))
+    assert.equal(sessionState().status.principal.subjectId,'bob');sync.close()
+  } finally {globalThis.fetch=original}
+})
+
+test('login and logout notify other tabs without publishing credentials or identity', async () => {
+  const original=globalThis.fetch;const sent=[]
+  const stop=startAuthSessionSync({send:value=>sent.push(value),listen:()=>()=>{}})
+  replaceSession(anonymous)
+  globalThis.fetch=async url=>reply(url.endsWith('/login')?actor('alice'):anonymous)
+  try {
+    await login({loginName:'alice',password:'secret-test-password',tenantId:'tenant-a'})
+    await logout()
+    assert.deepEqual(sent.map(value=>value.action),['invalidate','refresh','invalidate','refresh'])
+    assert.deepEqual(sent.map(value=>value.sequence),[1,2,3,4])
+    for(const value of sent) assert.deepEqual(Object.keys(value).sort(),['action','sender','sequence','version'])
+    assert.doesNotMatch(JSON.stringify(sent),/alice|secret-test-password|tenant-a|csrf/)
+  } finally {stop();globalThis.fetch=original}
+})
+
+test('failed logout leaves all notified tabs invalidated instead of restoring their previous actor', async () => {
+  const original=globalThis.fetch;const sent=[]
+  const stop=startAuthSessionSync({send:value=>sent.push(value),listen:()=>()=>{}})
+  replaceSession(actor('alice'));globalThis.fetch=async()=>reply({code:'DEPENDENCY_UNAVAILABLE'},503)
+  try {
+    await assert.rejects(logout(),/DEPENDENCY_UNAVAILABLE/)
+    assert.equal(sessionState().status,null)
+    assert.deepEqual(sent.map(value=>value.action),['invalidate'])
+  } finally {stop();globalThis.fetch=original}
+})
+
+test('a newer invalidate blocks a pending remote refresh and never echoes a received signal', async () => {
+  const original=globalThis.fetch;const sent=[];let receive;let resolve
+  replaceSession(actor('alice'));globalThis.fetch=()=>new Promise(done=>{resolve=done})
+  const stop=startAuthSessionSync({send:value=>sent.push(value),listen:callback=>{receive=callback;return()=>{}}})
+  try {
+    receive({version:1,sender:'other-tab',sequence:1,action:'refresh'})
+    receive({version:1,sender:'other-tab',sequence:2,action:'invalidate'})
+    resolve(reply(actor('bob')));await new Promise(done=>setImmediate(done))
+    assert.equal(sessionState().status,null);assert.equal(sent.length,0)
+    stop();receive({version:1,sender:'other-tab',sequence:3,action:'refresh'})
+    assert.equal(sessionState().status,null)
+  } finally {stop();globalThis.fetch=original}
+})
+
+test('browser transport uses exactly one BroadcastChannel and releases it on unsubscribe', async () => {
+  const { browserSessionTransport } = await import('../../utils/sessionSync.ts')
+  const original=globalThis.window;let channel;const sent=[];const received=[]
+  class Channel {
+    constructor(name){this.name=name;channel=this}
+    postMessage(value){sent.push(value)}
+    addEventListener(name,listener){this.listener=listener}
+    removeEventListener(name,listener){assert.equal(this.listener,listener);this.listener=null}
+    close(){this.closed=true}
+  }
+  globalThis.window={BroadcastChannel:Channel,localStorage:{setItem:()=>assert.fail('must not duplicate BroadcastChannel via storage')}}
+  try {
+    const transport=browserSessionTransport();const stop=transport.listen(value=>received.push(value))
+    const signal={version:1,sender:'tab-a',sequence:1,action:'invalidate'}
+    transport.send(signal);channel.listener({data:signal})
+    assert.deepEqual(sent,[signal]);assert.deepEqual(received,[signal]);assert.equal(channel.name,'zxl-auth-session-v1')
+    stop();assert.equal(channel.closed,true);assert.equal(channel.listener,null)
+  } finally {if(original===undefined)delete globalThis.window;else globalThis.window=original}
+})
+
+test('storage fallback accepts only its own localStorage event and never reads persisted notifications at startup', async () => {
+  const { browserSessionTransport } = await import('../../utils/sessionSync.ts')
+  const original=globalThis.window;let listener;const sent=[];const received=[]
+  const storage={setItem:(key,value)=>sent.push([key,JSON.parse(value)]),getItem:()=>assert.fail('stale persisted message must not be replayed')}
+  globalThis.window={localStorage:storage,addEventListener:(name,callback)=>{assert.equal(name,'storage');listener=callback},removeEventListener:(name,callback)=>{assert.equal(callback,listener);listener=null}}
+  try {
+    const transport=browserSessionTransport();const stop=transport.listen(value=>received.push(value))
+    const signal={version:1,sender:'tab-a',sequence:1,action:'refresh'}
+    transport.send(signal)
+    listener({storageArea:storage,key:'unrelated',newValue:JSON.stringify(signal)})
+    listener({storageArea:{},key:'zxl-auth-session-v1',newValue:JSON.stringify(signal)})
+    listener({storageArea:storage,key:'zxl-auth-session-v1',newValue:'broken'})
+    listener({storageArea:storage,key:'zxl-auth-session-v1',newValue:JSON.stringify(signal)})
+    assert.deepEqual(received,[signal]);assert.deepEqual(sent,[['zxl-auth-session-v1',signal]])
+    stop();assert.equal(listener,null)
+  } finally {if(original===undefined)delete globalThis.window;else globalThis.window=original}
 })

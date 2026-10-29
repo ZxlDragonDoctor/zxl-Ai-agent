@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { locale } from '../i18n'
-import { login, logout, refreshAuth } from '../api/auth'
+import { login, logout, refreshAuth, startAuthSessionSync } from '../api/auth'
 import { sessionState, subscribeSession, SessionRequestError } from '../utils/sessionRequest'
 const route = useRoute()
 const state = ref(sessionState())
@@ -27,7 +27,9 @@ async function run(action:()=>Promise<void>) {
   try { await action() } catch(error) { issue.value=error instanceof SessionRequestError ? error.code : 'AUTH_CONNECTION_ERROR' }
   finally { busy.value=false; password.value='' }
 }
-onMounted(() => { void run(refreshAuth) })
+let stopSessionSync = () => {}
+onMounted(() => { stopSessionSync = startAuthSessionSync(); void run(refreshAuth) })
+onUnmounted(() => stopSessionSync())
 </script>
 <template>
   <section class="identity-bar" aria-label="Account workspace">
