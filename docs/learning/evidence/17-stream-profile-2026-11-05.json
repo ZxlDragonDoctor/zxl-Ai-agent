@@ -1,0 +1,9 @@
+{
+  "samplesMs" : [ 121.4466, 94.2678, 112.226, 126.6623, 132.7759, 125.4877, 116.5434, 150.7912, 149.1665, 135.4929, 154.2781, 124.7701, 141.2476, 157.75, 158.0956, 145.5095, 157.4475, 141.5067, 154.7034, 157.6914 ],
+  "totalMs" : 2757.8602,
+  "date" : "2026-11-05",
+  "permissions" : 3,
+  "layer" : "real local PostgreSQL, sequential three-action gate, no model or browser",
+  "medianMs" : 141.5067,
+  "limitations" : "No conversation/run ownership checks; not the five-action Skill workload or proof of the historical timeout cause"
+}

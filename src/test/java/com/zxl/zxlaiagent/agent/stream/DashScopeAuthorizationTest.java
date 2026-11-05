@@ -20,13 +20,18 @@ class DashScopeAuthorizationTest {
         final AtomicInteger requests = new AtomicInteger();
         final HttpServer server;
         Fixture() throws Exception {
+            this(1);
+        }
+        Fixture(int frameCount) throws Exception {
             server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
             server.createContext("/chat/completions", exchange -> {
                 requests.incrementAndGet(); arrived.countDown();
                 try {
                     if (!release.await(8, TimeUnit.SECONDS)) return;
-                    byte[] bytes = ("data: {\"choices\":[{\"delta\":{\"content\":\"safe\"},\"finish_reason\":\"stop\"}]}\n\n"
-                            + "data: [DONE]\n\n").getBytes(StandardCharsets.UTF_8);
+                    var frames = new StringBuilder();
+                    for (int i = 0; i < frameCount; i++) frames.append("data: {\"choices\":[{\"delta\":{\"content\":\"safe\"},\"finish_reason\":")
+                            .append(i == frameCount - 1 ? "\"stop\"" : "null").append("}]}\n\n");
+                    byte[] bytes = frames.append("data: [DONE]\n\n").toString().getBytes(StandardCharsets.UTF_8);
                     exchange.getResponseHeaders().set("Content-Type", "text/event-stream");
                     exchange.sendResponseHeaders(200, bytes.length); exchange.getResponseBody().write(bytes);
                 } catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); }
@@ -105,6 +110,24 @@ class DashScopeAuthorizationTest {
             assertThrows(NullPointerException.class, () -> fixture.streamer().stream("system", List.of(), new ToolCallback[0],
                     (type, text) -> {}, () -> false, null));
             assertEquals(0, fixture.requests.get());
+        }
+    }
+
+    @Test void authorizationWorkScalesWithEveryFrameEvenForAnInternalNoopConsumer() throws Exception {
+        try (var fixture = new Fixture(64)) {
+            var checks = new AtomicInteger(); var starts = new AtomicInteger();
+            OperationBoundary boundary = new OperationBoundary() {
+                public void check(Phase phase) { assertEquals(Phase.RESULT_PUBLISH, phase); checks.incrementAndGet(); }
+                public <T> T start(Phase phase, Supplier<T> action) {
+                    assertEquals(Phase.MODEL_DISPATCH, phase); starts.incrementAndGet(); return action.get();
+                }
+            };
+            fixture.release.countDown();
+            var response = fixture.streamer().stream("system", List.of(), new ToolCallback[0],
+                    (type, text) -> {}, () -> false, boundary);
+            assertEquals("safe".repeat(64), response.getResult().getOutput().getText());
+            assertEquals(66, checks.get(), "64 content frames + DONE + final response each check current authority");
+            assertEquals(1, starts.get());
         }
     }
 }

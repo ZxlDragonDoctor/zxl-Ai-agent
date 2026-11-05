@@ -1,0 +1,30 @@
+[
+  {
+    "name": "com.zxl.zxlaiagent.agent.stream.DashScopeAuthorizationTest",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.research.ScopedResearchTest",
+    "tests": "8",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.research.StreamingResearchModelTest",
+    "tests": "6",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.skills.FormalSkillTest",
+    "tests": "13",
+    "failures": "0",
+    "errors": "0",
+    "skipped": "0"
+  }
+]
