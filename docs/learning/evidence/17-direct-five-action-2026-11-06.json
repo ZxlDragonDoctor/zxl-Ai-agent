@@ -1,0 +1,10 @@
+{
+  "date" : "2026-11-06",
+  "samplesMs" : [ 137.7462, 135.4665, 118.2907, 124.2387, 102.5742, 113.0536, 120.4303, 133.5053, 131.6253, 113.2289, 135.913, 124.0671, 115.7316, 113.4173, 109.3521, 121.6667, 102.8921, 123.1244, 104.3781, 125.8111 ],
+  "medianMs" : 121.6667,
+  "connectionMode" : "direct",
+  "layer" : "real local PostgreSQL, sequential five-action gate including conversation/run ownership, no model or browser",
+  "permissions" : 5,
+  "limitations" : "No model traffic, contention, or proof of the historical timeout cause; only synthetic owner records created and removed, session revoked",
+  "totalMs" : 2406.5132
+}

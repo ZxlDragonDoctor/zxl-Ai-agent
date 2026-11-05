@@ -1,0 +1,58 @@
+[
+  {
+    "name": "com.zxl.zxlaiagent.knowledge.scoped.AuthorizedKnowledgeTransactionPgTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T00:15:32"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.security.AuthorizationDecisionTest",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T00:16:18"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.security.GateAllPgTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T00:16:31"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.security.SecurityDatabaseIdentityPgTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T00:16:34"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.security.SecurityDatabasePoolPgTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T00:16:41"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.security.web.FormalGatewayActivationTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T00:16:43"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.security.web.FormalPooledAuthorityTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T00:16:43"
+  }
+]
