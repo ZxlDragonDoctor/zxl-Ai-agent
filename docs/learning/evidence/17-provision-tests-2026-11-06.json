@@ -1,0 +1,34 @@
+[
+  {
+    "name": "com.zxl.zxlaiagent.security.ProvisionAccountCommandPgTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T00:34:39"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.security.ProvisionAccountCommandTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T00:34:39"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.security.SecurityDatabasePoolPgTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T00:34:47"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.security.web.FormalPooledAuthorityTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T00:34:47"
+  }
+]
