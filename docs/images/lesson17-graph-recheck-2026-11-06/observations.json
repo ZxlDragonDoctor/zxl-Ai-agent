@@ -1,0 +1,55 @@
+{
+  "date": "2026-11-06",
+  "profile": "Fresh IAB profile with initially 0/28 mastered; not the historical 2026-10-30 profile",
+  "steps": [
+    {
+      "action": "Search 身份; open lesson17",
+      "expected": "Filter and read without hang",
+      "actual": "21 nodes/15 edges; course in progress, personal not started",
+      "screenshot": "01-filter-reader.png"
+    },
+    {
+      "action": "Click 1 hop",
+      "expected": "Direct neighborhood after active filter",
+      "actual": "5 nodes/6 edges; image verified as 1 hop",
+      "screenshot": "02-one-hop.png"
+    },
+    {
+      "action": "Click 2 hop, then 2D",
+      "expected": "Expanded neighborhood; responsive view switch",
+      "actual": "9 nodes/11 edges; curved edges and node circles visible",
+      "screenshot": "03-two-hop-two-d.png"
+    },
+    {
+      "action": "Switch English",
+      "expected": "Translated reading and view controls",
+      "actual": "English reading card and two-dimensional graph",
+      "screenshot": "04-english.png"
+    },
+    {
+      "action": "Return 3D, full graph, clear search",
+      "expected": "All nodes return",
+      "actual": "116 nodes/164 edges; screenshot verified after a first stale painted frame",
+      "screenshot": "05-full-three-d.png"
+    },
+    {
+      "action": "Switch Chinese, restore current-start backup, export again",
+      "expected": "No changes to personal progress/notes",
+      "actual": "Parsed JSON deep comparison equal; historical backup never imported",
+      "screenshot": "06-progress-restored.png"
+    }
+  ],
+  "progressComparison": {
+    "equal": true,
+    "scope": "Current fresh profile only; schemaVersion and records compared, personal values not published"
+  },
+  "notCovered": [
+    "Historical hung browser profile",
+    "Full-screen",
+    "Relayout",
+    "Dragging reader or nodes",
+    "Progress mastery edits",
+    "All node/edge types",
+    "Long-duration or memory pressure stress"
+  ]
+}

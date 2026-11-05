@@ -1,0 +1,29 @@
+{
+  "checks" : [ {
+    "passed" : true,
+    "check" : "formal provider directory includes skill"
+  }, {
+    "passed" : true,
+    "check" : "formal skill versions v3 v4 and default v3"
+  }, {
+    "passed" : true,
+    "check" : "new SQL worker returns only A document"
+  }, {
+    "passed" : true,
+    "check" : "new SQL worker returns only B document"
+  }, {
+    "passed" : true,
+    "check" : "formal prepared Skill clarifies with no tool dispatch"
+  }, {
+    "passed" : true,
+    "check" : "real formal Skill model MCP source verification and scoped draft"
+  }, {
+    "passed" : true,
+    "check" : "B cannot read A synthetic Skill conversation"
+  }, {
+    "passed" : true,
+    "check" : "temporary Skill conversation removed"
+  } ],
+  "layer" : "real HTTP separate cookie containers, not browser screenshots",
+  "date" : "2026-11-06"
+}

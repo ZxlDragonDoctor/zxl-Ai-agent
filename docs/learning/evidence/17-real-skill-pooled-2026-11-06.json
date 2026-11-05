@@ -1,0 +1,36 @@
+{
+  "date": "2026-11-06",
+  "layer": "real model and MCP HTTP, not browser screenshots",
+  "status": "SUCCEEDED",
+  "draftPresent": true,
+  "draftCreated": false,
+  "steps": [
+    {
+      "step": "CLARIFY",
+      "status": "SUCCEEDED",
+      "elapsedMs": 27,
+      "code": "OK"
+    },
+    {
+      "step": "LOOKUP",
+      "status": "SUCCEEDED",
+      "elapsedMs": 7672,
+      "code": "OK"
+    },
+    {
+      "step": "VERIFY_ADVISE",
+      "status": "SUCCEEDED",
+      "elapsedMs": 14582,
+      "code": "OK"
+    },
+    {
+      "step": "DRAFT",
+      "status": "SUCCEEDED",
+      "elapsedMs": 65,
+      "code": "OK"
+    }
+  ],
+  "ownMarker": true,
+  "otherMarker": false,
+  "endReason": "ANSWER_READY"
+}
