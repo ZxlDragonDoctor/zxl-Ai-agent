@@ -32,7 +32,7 @@ public class FormalSecurityConfiguration implements WebMvcConfigurer {
             throw new IllegalStateException("Formal authorization cannot enable unscoped classroom profiles");
     }
 
-    @Bean public SecurityDatabase securityDatabase() { return SecurityDatabase.fromEnvironment(); }
+    @Bean(destroyMethod = "close") public SecurityDatabase securityDatabase() { return SecurityDatabase.pooledFromEnvironment(); }
     @Bean public AuthenticationService authenticationService(SecurityDatabase db) { return new AuthenticationService(db); }
     @Bean public AuthorizationService authorizationService(SecurityDatabase db) { return new AuthorizationService(db); }
     @Bean public ServiceCallAuthorizer serviceCallAuthorizer(SecurityDatabase db, AuthorizationService authorization) {

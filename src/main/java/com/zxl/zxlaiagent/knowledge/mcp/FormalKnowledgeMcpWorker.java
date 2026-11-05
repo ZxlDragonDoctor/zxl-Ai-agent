@@ -33,13 +33,19 @@ public final class FormalKnowledgeMcpWorker {
     }
     public static void main(String[] args) {
         String token = System.getenv("LESSON17_INTERNAL_SERVICE_TOKEN");
-        var authority = SecurityDatabase.fromEnvironment();
+        var authority = SecurityDatabase.pooledFromEnvironment();
+        try {
         var authorization = new AuthorizationService(authority);
         var tickets = new ServiceCallAuthorizer(authority, authorization);
         var knowledge = new ScopedKnowledgeClient(URI.create(System.getenv().getOrDefault(
                 "LESSON17_KNOWLEDGE_WORKER_ORIGIN", "http://127.0.0.1:18132")), token, tickets, authorization);
         int port = Integer.parseInt(System.getenv().getOrDefault("LESSON17_MCP_PORT", "18135"));
         var server = FormalKnowledgeMcpServer.start(port, new FormalKnowledgeMcpTool(tickets, authorization, lookup(knowledge)), token);
-        Runtime.getRuntime().addShutdownHook(new Thread(server::close, "authorized-mcp-shutdown"));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try { server.close(); } finally { authority.close(); }
+        }, "authorized-mcp-shutdown"));
+        } catch (RuntimeException | Error failure) {
+            authority.close(); throw failure;
+        }
     }
 }
