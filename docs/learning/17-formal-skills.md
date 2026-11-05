@@ -31,4 +31,6 @@ Java Provider 通过 `executionPermissions()` 声明额外动作，统一会话�
 
 此前空证据测试的 fixture 漏掉 ToolResult 必填 message，严格校验正确拒绝；修正 fixture 后仍保留 NO_EVIDENCE 和 0 草稿断言，没有放宽生产契约。发布/保存 3 项也先复现旧服务忽略 Provider 动作，再修实现。
 
-这些是自动化证据；新常驻主应用、真实模型下的正式 Skill 和页面逐按钮截图仍需独立验收。早先研究助手截图不是 Skill 的截图。课程保持进行中，个人掌握状态不自动改变。
+常驻服务已重启，7 项真实 HTTP 检查覆盖正式目录、v3/v4、双空间知识、澄清不调用工具与临时会话隔离/清理。随后真实模型 Skill 完成 MCP、取到甲标记，但复核时耗尽总预算，返回 TIMED_OUT 且无草稿；全局 Agent 仍归为 EXECUTION_ERROR。正向草稿验收未通过，不能把这次超时当成功能成功。见 [实际超时证据](../images/lesson17-business-2026-10-30/real-skill-deadline.json)。
+
+页面逐按钮截图与稳定的正向实际模型流程仍需补验，早先研究助手截图不是 Skill 截图。正式 Provider 当前固定所选版本，但运行前若本地程序停用该版本仍会重新拒绝；「停用前在途运行继续」尚未验证。课程保持进行中，个人掌握状态不自动改变。

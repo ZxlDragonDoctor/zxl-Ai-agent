@@ -1,6 +1,8 @@
 # 第十七课实现与分层证据
 
-更新：2026-10-27。**工程进行中，尚未完成本课整体验收。** 个人学习进度、笔记和掌握状态不变。完整目标见[课程任务](17-tenant-authorization-and-tool-policy.md)与[实施设计](../superpowers/plans/2026-10-25-lesson17-authorization.md)。
+更新：2026-11-05（整理截至 10 月 30 日的运行证据）。**工程进行中，尚未完成本课整体验收。** 未自动修改个人掌握状态与笔记；图谱验收前导出的备份仍需恢复并深比较。完整目标见[课程任务](17-tenant-authorization-and-tool-policy.md)与[实施设计](../superpowers/plans/2026-10-25-lesson17-authorization.md)。
+
+11 月 5 日恢复工作后重新运行 16 类 83 项 Skill/发布相关测试，0 失败、错误、跳过，图谱 34 项及生产构建通过。此次未重跑真实 PG/模型或页面；10 月 30 日实际运行证据不改写成当天通过。精确复检范围见业务证据目录 `skill-recheck-2026-11-05.json`。正式 Skill 正向超时与图谱响应故障仍未解决。
 
 ## 1. 当前已实现的基础单元
 
@@ -112,6 +114,14 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 
 ## 5. 尚未完成的本课范围
 
+### 后续同批：SQL 与正式 Skill 的自动化进展
+
+同连接事务已实现并迁移知识、记忆、检索、答案 SQL，相关 **8 类 65 项**通过。授权 Decision、审计和业务 SQL 共用事务，业务失败保存点回滚后延期抛错；数据库身份在启动核验，请求不再额外开核验连接。见 [事务导读](17-authorized-sql.md)。
+
+正式 Skill 注册 v3/v4 并固定知识工具 v2 摘要；Provider 声明权限贯穿实际发布/保存，拒绝时不落敏感输出。先复现后修复中途超时/取消终态；**16 类 83 项**正式/旧 Skill、发布、会话与相关 Provider 回归通过。见 [正式 Skill 导读](17-formal-skills.md)。两组与此前范围重叠，不简单相加。
+
+新代码已重启在 loopback 三端口。**7 项真实 HTTP 检查通过**：目录/版本、双空间资料、Skill 澄清无工具、跨空间会话 404、临时会话清理；两个独立 HTTP Cookie 容器不是浏览器截图。随后真实模型 Skill 已完成 MCP 并仅返回甲标记，但复核阶段耗尽 30 秒策略总预算，返回 `TIMED_OUT/SKILL_DEADLINE`、无草稿；全局 Agent 终态仍为 `EXECUTION_ERROR`。该成功分支验收**未通过**，只验证实际超时归并，不能由自动化绿灯推断完整业务已通过。首次辅助验收退出失败曾掩盖原错误，修正辅助程序后保留这次明确结果。证据见业务目录 `live-new-sql-http.json`、`real-skill-deadline.json`。
+
 ### 2026-10-29～30：正式 Provider 与真实业务阶段
 
 正式目录只列出支持可信身份执行的 Provider。企业知识助手将 ActorRef、会话和运行归属传给 scoped gateway；研究助手将同一份 Java 权限范围传到模型、MCP 实际异步发送及原文复核。`runWithAuthorizedPublisher` 复用 BaseAgent 实际发布保护，避免授权事务嵌套等待。正式 MCP 管理接口要求 `knowledge.manage`，只读查询要求 `knowledge.read`；独立 MCP worker 不把权限失败或知识不可用伪装成成功空结果。
@@ -132,8 +142,8 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 
 图谱更新后的筛选与文字已读到，但后续 DOM/CDP 和截图操作超时；恢复标签切到二维后取证也超时，本批没有新图谱截图，不标为全部视图通过。个人进度已先完整导出，未修改掌握/笔记；恢复及再次导出深比较待浏览器恢复后补做。详情见业务证据 README。
 
-1. 企业知识/恋爱/研究 Provider 已接线；继续正式 Skill、其他执行器及旧历史受控迁移，补全部业务动作与故障验收。
-2. 常驻进程已验收双工作空间知识与原文；须补事实记忆隔离、全部 SQL 同授权事务及实时撤销竞争。
+1. 企业知识/恋爱/研究/Skill Provider 已接线；须补正式 Skill 正向真实模型流程与页面、其他执行器及旧历史受控迁移。
+2. 常驻进程已验收双工作空间知识；同事务 SQL 已有真实 PG 回归与新服务 HTTP 证据，仍需事实记忆页面隔离及完整撤销竞争业务验收。
 3. MCP v2 调用级票据和共享连接已有分项证据；须接通全部业务执行器的模型排队/工具执行/保存/发布边界，并验证实时撤销。
 4. 多 Agent 运行归属、旧入口和独立实验配置的完整封闭；不得仅隐藏前端按钮。
 5. 登录界面与实际接口集成、两组独立浏览器身份、逐按钮/连续状态/语言与图谱截图。

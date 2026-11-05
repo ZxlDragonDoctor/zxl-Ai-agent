@@ -1,0 +1,32 @@
+{
+  "date": "2026-10-30",
+  "layer": "real HTTP model and MCP, not browser screenshots",
+  "actualStatus": "TIMED_OUT",
+  "code": "SKILL_DEADLINE",
+  "draftPresent": false,
+  "steps": [
+    {
+      "step": "CLARIFY",
+      "status": "SUCCEEDED",
+      "code": "OK"
+    },
+    {
+      "step": "LOOKUP",
+      "status": "SUCCEEDED",
+      "code": "OK"
+    },
+    {
+      "step": "VERIFY_ADVISE",
+      "status": "FAILED",
+      "code": "SKILL_DEADLINE"
+    }
+  ],
+  "toolCompleted": true,
+  "containsOwnMarker": true,
+  "containsOtherMarker": false,
+  "terminalEvent": "timed_out",
+  "runEnd": "EXECUTION_ERROR",
+  "limit": "Positive full Skill model/draft acceptance did not pass; deadline branch and no draft are observed",
+  "intendedAcceptance": "SUCCEEDED with scoped draft",
+  "acceptancePassed": false
+}
