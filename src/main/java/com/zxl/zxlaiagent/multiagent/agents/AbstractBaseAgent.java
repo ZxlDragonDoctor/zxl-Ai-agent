@@ -31,6 +31,13 @@ public abstract class AbstractBaseAgent implements AgentInterface {
     protected ChatClient chatClient;
     protected ChatModel chatModel;
     private volatile ExecutionRuntime runtime;
+    private volatile boolean scopedExecutionRequired;
+    public void requireScopedExecution() { scopedExecutionRequired=true; }
+    private volatile com.zxl.zxlaiagent.agent.stream.DashScopeAgentStreamer scopedStreamer;
+    public void attachScopedStreamer(com.zxl.zxlaiagent.agent.stream.DashScopeAgentStreamer streamer) { this.scopedStreamer=java.util.Objects.requireNonNull(streamer); }
+    protected ExecutionRuntime.ExecutionScope executionScope(Task task) {
+        return runtime==null?new ExecutionRuntime.ExecutionScope(null):runtime.executionScope(task);
+    }
     private static final ExecutorService STANDALONE = new ThreadPoolExecutor(4, 4, 30, TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(16), r -> { Thread t = new Thread(r, "agent-standalone"); t.setDaemon(true); return t; }, new ThreadPoolExecutor.AbortPolicy());
     public void attachRuntime(ExecutionRuntime runtime) { this.runtime = runtime; }
@@ -38,7 +45,10 @@ public abstract class AbstractBaseAgent implements AgentInterface {
         return runtime == null ? CompletableFuture.supplyAsync(action, STANDALONE) : runtime.async(task, action);
     }
     /** 新增工具/副作用时，必须在动作开始前调用该入口。控制对象不进入模型输入。 */
-    protected void checkExecution(Task task) { if (runtime != null) runtime.check(task); }
+    protected void checkExecution(Task task) {
+        if(scopedExecutionRequired&&!executionScope(task).scoped())throw new com.zxl.zxlaiagent.security.SecurityFailure("SCOPED_EXECUTION_CONTEXT_REQUIRED",403);
+        if (runtime != null) runtime.check(task);
+    }
     protected java.time.Duration remainingExecution(Task task,java.time.Duration cap) {
         var control=runtime==null?null:runtime.control(task);
         return control==null?cap:java.time.Duration.ofMillis(control.waitMillis(cap));
@@ -180,7 +190,30 @@ public abstract class AbstractBaseAgent implements AgentInterface {
     }
 
     protected String callLlm(Task task, String systemPrompt, String userMessage) {
-        return controlledModelCall(task, () -> callLlm(systemPrompt,userMessage));
+        var scope=executionScope(task);
+        if(scopedExecutionRequired&&!scope.scoped())throw new com.zxl.zxlaiagent.security.SecurityFailure("SCOPED_EXECUTION_CONTEXT_REQUIRED",403);
+        if(!scope.scoped())return controlledModelCall(task, () -> callLlm(systemPrompt,userMessage));
+        var streamer=scopedStreamer;
+        if(streamer==null)throw new com.zxl.zxlaiagent.security.SecurityFailure("SCOPED_MODEL_UNAVAILABLE",503);
+        var transportBoundary=new com.zxl.zxlaiagent.security.execution.OperationBoundary(){
+            public void check(com.zxl.zxlaiagent.security.Phase phase){scope.control().check();scope.boundary().check(phase);}
+            public <T>T start(com.zxl.zxlaiagent.security.Phase phase,Supplier<T> operation){
+                // Authority gate first, then a short control admission. Never hold either over the response wait.
+                return scope.boundary().start(phase,()->scope.control().admit(operation));
+            }
+        };
+        return runtime.modelCall(task,scope,()->{
+            scope.control().check();
+            var response=streamer.stream(systemPrompt,java.util.List.of(new org.springframework.ai.chat.messages.UserMessage(userMessage)),
+                    new org.springframework.ai.tool.ToolCallback[0],(type,text)->{},
+                    ()->Thread.currentThread().isInterrupted()||scope.control().stopReason()!=null||task.snapshot().status()!=TaskStatus.IN_PROGRESS,
+                    transportBoundary);
+            scope.control().check();
+            var output=response.getResult().getOutput();
+            if(!output.getToolCalls().isEmpty())throw new WorkflowException("UNEXPECTED_MODEL_TOOL","model","当前步骤没有授权工具");
+            if(output.getText()==null||output.getText().isBlank())throw new WorkflowException("EMPTY_MODEL_RESULT","model","模型没有返回内容");
+            return output.getText();
+        });
     }
     protected <T>T controlledModelCall(Task task,Supplier<T> action) {
         if (runtime != null) return runtime.modelCall(task, action);

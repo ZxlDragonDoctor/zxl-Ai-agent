@@ -6,11 +6,17 @@
 
 ## 1. 当前已实现的基础单元
 
+### 2026-11-06：工作 Agent 的模型发送边界
+
+正式工作 Agent 的模型步骤改用 DashScopeAgentStreamer，统一捕获同一 Entry 的权限、控制与模型租约，防止捕获后解绑导致模型记账脱离原运行。实际订阅在权限 gate 内执行短取消准入，远程等待在锁外；无可信上下文或无 streamer 均拒绝执行，不退回旧 ChatClient。ResearchAgent 在可信工厂及私有事件接通前明确拒绝 scoped 运行，仍未完成正式研究迁移。
+
+新增专项9项及相关24项共33项通过；本机合成 HTTP 覆盖实际发送和拒绝时零请求，取消 gate 与解绑租约均有先失败证据。没有重跑真实 PG/付费模型或正式多 Agent 整体业务。[模型传输导读与证据](17-multi-agent-runtime-boundary.md)。
+
 ### 2026-11-06：多 Agent 运行时身份键与捕获边界
 
 修复共享执行器以模型 task.id 绑定控制的缺陷：改用内部对象身份键，模型 ID 相同或变化不再覆盖/丢失运行控制。每次模型调用捕获可信 scope/control，调用中解绑后仍按原 scope 拒绝已撤销的敏感结果。每个 RunRegistry.Entry 明确携带 OperationBoundary，旧注册重载仅保留课堂对照。6项专项及13项相关回归通过，精确范围和红灯见[运行时导读](17-multi-agent-runtime-boundary.md)。
 
-实际发送仍须接已有Streamer订阅gate；供应函数前后check不等于网络发送原子授权。正式submit/owner、状态/events/cancel、Orchestrator全局任务和observer隔离尚未接完，不据本批声明正式多Agent完成。新版知识卡双语、2D切换及导读路径实际核实，[截图记录](../images/lesson17-cli-runtime-2026-11-06/README.md)。截图滚动产生了阅读位置记录，最终再次恢复本轮原备份并导出深比较相等，个人掌握/笔记保留。
+该单元当时尚未接通实际发送；后续传输进度见上节，不能把供应函数前后check当成网络发送原子授权。正式submit/owner、状态/events/cancel、Orchestrator全局任务和observer隔离仍未接完，不据本批声明正式多Agent完成。新版知识卡双语、2D切换及导读路径实际核实，[截图记录](../images/lesson17-cli-runtime-2026-11-06/README.md)。截图滚动产生了阅读位置记录，最终再次恢复本轮原备份并导出深比较相等，个人掌握/笔记保留。
 
 ### 2026-11-06：可交付的离线账号初始化
 

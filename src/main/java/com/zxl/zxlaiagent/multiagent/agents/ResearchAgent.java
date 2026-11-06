@@ -52,6 +52,8 @@ public class ResearchAgent extends AbstractBaseAgent {
     @Override
     public CompletableFuture<String> processTask(Task task) {
         return async(task, () -> {
+            checkExecution(task);
+            if(executionScope(task).scoped())throw new com.zxl.zxlaiagent.security.SecurityFailure("SCOPED_RESEARCH_INTEGRATION_PENDING",503);
             log.info("ResearchAgent executing: {}", task.getDescription());
             String result = research==null?callLlm(task, RESEARCH_SYSTEM_PROMPT, renderer.render(task)):
                 research.run(renderer.render(task),remainingExecution(task,java.time.Duration.ofSeconds(30)),

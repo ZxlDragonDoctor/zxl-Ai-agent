@@ -19,9 +19,12 @@ public final class RunRegistry {
         return register(run, control, System.nanoTime());
     }
     public synchronized Entry register(WorkflowRun run, ExecutionControl control, long queueStartedNanos) {
-        return register(run, control, queueStartedNanos, OperationBoundary.unrestricted());
+        return registerInternal(run, control, queueStartedNanos, OperationBoundary.unrestricted(), false);
     }
     public synchronized Entry register(WorkflowRun run, ExecutionControl control, long queueStartedNanos, OperationBoundary boundary) {
+        return registerInternal(run,control,queueStartedNanos,boundary,true);
+    }
+    private Entry registerInternal(WorkflowRun run, ExecutionControl control, long queueStartedNanos, OperationBoundary boundary, boolean scoped) {
         Objects.requireNonNull(boundary, "Explicit run boundary required");
         prune();
         if (entries.size() >= settings.getRegistryCapacity()) {
@@ -29,7 +32,7 @@ public final class RunRegistry {
             if (evict != null) entries.remove(evict);
         }
         if (entries.size() >= settings.getRegistryCapacity()) throw new WorkflowException("AGENT_CAPACITY_EXCEEDED", "runs", "运行登记容量已满，请等待实际调用清理");
-        Entry entry = new Entry(run, control, boundary);
+        Entry entry = new Entry(run, control, boundary, scoped);
         entry.queueStartedNanos = queueStartedNanos;
         entry.waitingFor = "run";
         entries.put(run.id, entry);
@@ -53,13 +56,14 @@ public final class RunRegistry {
         public final WorkflowRun run;
         public final ExecutionControl control;
         public final OperationBoundary boundary;
+        public final boolean scoped;
         public final CompletableFuture<WorkflowOutcome> result = new CompletableFuture<>();
         private final AtomicInteger tasks = new AtomicInteger(), models = new AtomicInteger();
         public volatile boolean coordinating;
         public volatile Runnable queuedWork;
         public volatile long queueStartedNanos;
         public volatile String waitingFor;
-        private Entry(WorkflowRun run, ExecutionControl control, OperationBoundary boundary) { this.run = run; this.control = control; this.boundary = boundary; }
+        private Entry(WorkflowRun run, ExecutionControl control, OperationBoundary boundary, boolean scoped) { this.run = run; this.control = control; this.boundary = boundary; this.scoped = scoped; }
         public ExecutionLease taskLease() { tasks.incrementAndGet(); return new ExecutionLease(tasks::decrementAndGet); }
         public ExecutionLease modelLease() { models.incrementAndGet(); return new ExecutionLease(models::decrementAndGet); }
         public int activeTasks() { return tasks.get(); }

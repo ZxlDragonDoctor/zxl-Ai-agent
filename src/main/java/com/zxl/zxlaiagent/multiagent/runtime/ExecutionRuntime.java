@@ -88,9 +88,21 @@ public final class ExecutionRuntime implements AutoCloseable {
         var entry = bindings.get(key(task));
         return entry == null ? OperationBoundary.unrestricted() : entry.boundary;
     }
+    public record ExecutionScope(RunRegistry.Entry entry) {
+        public boolean scoped() { return entry != null && entry.scoped; }
+        public OperationBoundary boundary() { return entry == null ? OperationBoundary.unrestricted() : entry.boundary; }
+        public ExecutionControl control() { return entry == null ? null : entry.control; }
+    }
+    public ExecutionScope executionScope(Task task) {
+        var entry=bindings.get(key(task));
+        return new ExecutionScope(entry);
+    }
     public void check(Task task) { ExecutionControl control = control(task); if (control != null) control.check(); boundary(task).check(Phase.DEQUEUE); }
     public <T> T modelCall(Task task, Supplier<T> call) {
-        RunRegistry.Entry entry = bindings.get(key(task));
+        return modelCall(task,executionScope(task),call);
+    }
+    public <T> T modelCall(Task task, ExecutionScope captured, Supplier<T> call) {
+        RunRegistry.Entry entry = Objects.requireNonNull(captured).entry();
         OperationBoundary scope = entry == null ? OperationBoundary.unrestricted() : entry.boundary;
         ExecutionControl control = entry == null ? null : entry.control;
         boolean acquired = false;
