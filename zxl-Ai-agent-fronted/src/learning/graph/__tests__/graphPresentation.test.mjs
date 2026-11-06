@@ -1,8 +1,44 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { createFitCamera } from '../graphFitCamera.ts'
+import { forceSimulation, forceManyBody, forceCenter } from 'd3-force'
 import { discoverScene, edgeGeometry, captionLines, revealSelection, incidentSelection } from '../graphPresentation.ts'
 
 const edges = [{ from: 'A', to: 'B' }, { from: 'A', to: 'C' }, { from: 'B', to: 'D' }, { from: 'C', to: 'D' }, { from: 'D', to: 'E' }]
+test('fit tracks fresh world bounds while the initial force layout spreads', () => {
+  const nodes=Array.from({length:40},(_,i)=>({id:String(i),x:500+Math.cos(i*2.4)*100,y:350+Math.sin(i*2.4)*100}))
+  const camera=createFitCamera(1000,700);camera.request('all')
+  const initial=camera.target(nodes,new Set())
+  const simulation=forceSimulation(nodes).force('charge',forceManyBody().strength(-1150)).force('center',forceCenter(500,350)).stop()
+  let staleClips=false
+  for(let i=0;i<200;i++){
+    simulation.tick()
+    const current=camera.target(nodes,new Set())
+    for(const node of nodes){
+      const x=node.x*current.scale+current.x,y=node.y*current.scale+current.y
+      assert.ok(x>=0&&x<=1000&&y>=0&&y<=700,'each later layout frame remains in view')
+      if(node.x*initial.scale+initial.x<0||node.x*initial.scale+initial.x>1000||node.y*initial.scale+initial.y<0||node.y*initial.scale+initial.y>700)staleClips=true
+    }
+  }
+  assert.ok(staleClips,'the old one-shot target must reproduce the clipping')
+})
+test('manual camera ownership survives ticks and simulation end until another explicit fit', () => {
+  const camera=createFitCamera(1000,700),nodes=[{id:'A',x:0,y:0},{id:'B',x:1500,y:1000}]
+  for(const gesture of ['pan','zoom','drag']){
+    camera.request('all');assert.ok(camera.target(nodes,new Set()))
+    camera.cancel();nodes[0].x-=100
+    assert.equal(camera.target(nodes,new Set()),undefined,gesture+' owns the camera during ticks')
+    assert.equal(camera.target(nodes,new Set()),undefined,gesture+' still owns it at layout end')
+  }
+  camera.request('all');assert.ok(camera.target(nodes,new Set()))
+})
+test('focus follows only the selected neighborhood and explicit all replaces focus intent', () => {
+  const camera=createFitCamera(1000,700),nodes=[{id:'A',x:100,y:100},{id:'B',x:6000,y:6000}]
+  camera.request('focus');const focus=camera.target(nodes,new Set(['A']))
+  assert.equal(100*focus.scale+focus.x,500)
+  camera.request('all');assert.ok(camera.target(nodes,new Set(['A'])).scale<focus.scale)
+  assert.equal(camera.target([],new Set()),undefined)
+})
 test('hop neighborhoods use shortest distance and deduplicate cyclic and shared paths', () => {
   const cyclic = [...edges, {from:'B',to:'C'}, {from:'D',to:'A'}]
   assert.deepEqual([...discoverScene('A',1,cyclic,new Set(),new Set())].sort(), ['A','B','C','D'])

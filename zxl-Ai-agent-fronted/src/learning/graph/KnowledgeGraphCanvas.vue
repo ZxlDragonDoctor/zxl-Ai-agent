@@ -3,6 +3,7 @@ import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation } 
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, triggerRef, useId, watch } from 'vue'
 import type { GraphEdge, GraphNode } from './model'
 import { captionLines, edgeGeometry, incidentSelection } from './graphPresentation'
+import { createFitCamera } from './graphFitCamera'
 import { locale, t } from '../../i18n'
 
 interface LayoutNode extends GraphNode { x: number; y: number; vx?: number; vy?: number; fx?: number | null; fy?: number | null }
@@ -33,7 +34,9 @@ const kinds = ['lesson', 'topic', 'concept', 'evidence', 'source'] as const
 let simulation: ReturnType<typeof forceSimulation<LayoutNode>> | undefined
 let drag: { node: LayoutNode; start: { x: number; y: number }; moved: boolean } | undefined
 let pan: { x: number; y: number; tx: number; ty: number } | undefined
-let suppressClick = false, cameraFrame = 0, autoFitted = false, pendingFocus = false
+let suppressClick = false
+const fitCamera = createFitCamera(width, height)
+fitCamera.request('all')
 
 function radius(node: GraphNode) { return node.kind === 'topic' ? 38 : node.kind === 'lesson' ? 33 : 30 }
 function color(kind: GraphNode['kind']) { return ({ lesson: '#68bdf6', topic: '#ffc454', concept: '#a5abb6', evidence: '#fb95af', source: '#b6d982' })[kind] }
@@ -73,74 +76,49 @@ watch(() => [props.nodes.map(n => n.id).join('|'), props.edges.map(e => e.id).jo
     .force('center', forceCenter(width / 2, height / 2).strength(.045))
     .force('collision', forceCollide<LayoutNode>(node => radius(node) + 23).iterations(3))
     .velocityDecay(.38).alphaDecay(.035)
-    .on('tick', () => triggerRef(layoutNodes))
-    .on('end', () => {
-      if (pendingFocus) { fitFocused(); pendingFocus = false }
-      else if (!autoFitted) { fit(); autoFitted = true }
-    })
-  if (props.reducedMotion) { simulation.stop().tick(200); triggerRef(layoutNodes); fit(); autoFitted = true }
+    .on('tick', () => { triggerRef(layoutNodes); updateFitCamera() })
+    .on('end', updateFitCamera)
+  if (props.reducedMotion) { simulation.stop().tick(200); triggerRef(layoutNodes); updateFitCamera() }
 }, { immediate: true })
 watch(() => props.reducedMotion, reduced => {
-  if (reduced) { simulation?.stop().tick(200); triggerRef(layoutNodes) }
+  if (reduced) { simulation?.stop().tick(200); triggerRef(layoutNodes); updateFitCamera() }
   else simulation?.alpha(.5).restart()
 })
 watch(() => props.selectedId, () => {
   selectedEdge.value = undefined
   if (menuId.value !== props.selectedId) menuId.value = ''
-  pendingFocus = true
-  nextTick(fitFocused)
+  fitCamera.request('focus')
+  nextTick(updateFitCamera)
 }, { immediate: true })
 
 function point(event: { clientX: number; clientY: number }) {
   const matrix = svgRef.value?.getScreenCTM()
   return matrix ? new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse()) : { x: 0, y: 0 }
 }
-function animateCamera(target: typeof transform.value) {
-  cancelAnimationFrame(cameraFrame)
-  if (props.reducedMotion) { transform.value = target; return }
-  const from = { ...transform.value }, start = performance.now()
-  function frame(now: number) {
-    const p = Math.min(1, (now - start) / 240), eased = 1 - Math.pow(1 - p, 3)
-    transform.value = { x: from.x + (target.x - from.x) * eased, y: from.y + (target.y - from.y) * eased, scale: from.scale + (target.scale - from.scale) * eased }
-    if (p < 1) cameraFrame = requestAnimationFrame(frame)
-  }
-  cameraFrame = requestAnimationFrame(frame)
+function updateFitCamera() {
+  const target = fitCamera.target(layoutNodes.value, incidentSelection(props.selectedId, props.edges).nodeIds)
+  if (target) transform.value = target
 }
 function fit() {
-  pendingFocus = false
-  fitGroup(layoutNodes.value)
-}
-function fitFocused() {
-  const ids = incidentSelection(props.selectedId, props.edges).nodeIds
-  fitGroup(layoutNodes.value.filter(node => ids.has(node.id)), 115)
-}
-function fitGroup(nodes: LayoutNode[], padding = 85) {
-  if (!nodes.length) return
-  const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y)
-  const minX = Math.min(...xs) - padding, maxX = Math.max(...xs) + padding
-  const minY = Math.min(...ys) - padding, maxY = Math.max(...ys) + padding
-  const scale = Math.max(.08, Math.min(1.6, width / Math.max(500, maxX - minX), (height - 140) / Math.max(350, maxY - minY)))
-  animateCamera({ scale, x: width / 2 - (minX + maxX) / 2 * scale, y: (height - 50) / 2 - (minY + maxY) / 2 * scale })
+  fitCamera.request('all')
+  updateFitCamera()
 }
 function zoom(factor: number, center = { x: width / 2, y: height / 2 }) {
-  pendingFocus = false
-  cancelAnimationFrame(cameraFrame)
+  fitCamera.cancel()
   const old = transform.value, scale = Math.max(.08, Math.min(4, old.scale * factor)), ratio = scale / old.scale
   transform.value = { scale, x: center.x - (center.x - old.x) * ratio, y: center.y - (center.y - old.y) * ratio }
 }
 function wheel(event: WheelEvent) { event.preventDefault(); zoom(Math.exp(-event.deltaY * .0015), point(event)) }
 function downNode(event: PointerEvent, node: LayoutNode) {
   if (event.button !== 0) return
-  event.stopPropagation(); cancelAnimationFrame(cameraFrame)
-  pendingFocus = false
+  event.stopPropagation(); fitCamera.cancel()
   ;(event.currentTarget as SVGElement).setPointerCapture(event.pointerId)
   drag = { node, start: point(event), moved: false }
   node.fx = node.x; node.fy = node.y
 }
 function downBackground(event: PointerEvent) {
   if (event.button !== 0) return
-  cancelAnimationFrame(cameraFrame); menuId.value = ''; selectedEdge.value = undefined
-  pendingFocus = false
+  fitCamera.cancel(); menuId.value = ''; selectedEdge.value = undefined
   svgRef.value?.setPointerCapture(event.pointerId)
   const p = point(event)
   pan = { x: p.x, y: p.y, tx: transform.value.x, ty: transform.value.y }
@@ -168,7 +146,7 @@ function up() {
 function select(node: LayoutNode) {
   if (suppressClick) { suppressClick = false; return }
   emit('select', node.id); menuId.value = node.id; selectedEdge.value = undefined
-  pendingFocus = true; nextTick(fitFocused)
+  fitCamera.request('focus'); nextTick(updateFitCamera)
 }
 function togglePin(node: LayoutNode) {
   const next = new Set(pinned.value)
@@ -179,7 +157,7 @@ function togglePin(node: LayoutNode) {
 }
 function relayout() {
   for (const node of cache.values()) { node.fx = null; node.fy = null }
-  pinned.value = new Set(); menuId.value = ''; emit('reset'); autoFitted = false
+  pinned.value = new Set(); menuId.value = ''; emit('reset'); fitCamera.request('all')
   simulation?.alpha(.9)
   if (props.reducedMotion) { simulation?.stop().tick(200); triggerRef(layoutNodes); fit() }
   else simulation?.restart()
@@ -213,7 +191,7 @@ function keyMove(event: KeyboardEvent, node: LayoutNode) {
   const id = edge && (edge.from === node.id ? edge.to : edge.from)
   if (id) { emit('select', id); svgRef.value?.querySelector<SVGGElement>(`[data-node-id="${id}"]`)?.focus() }
 }
-onBeforeUnmount(() => { simulation?.stop(); cancelAnimationFrame(cameraFrame) })
+onBeforeUnmount(() => { simulation?.stop() })
 </script>
 
 <template>
@@ -276,7 +254,7 @@ onBeforeUnmount(() => { simulation?.stop(); cancelAnimationFrame(cameraFrame) })
 .graph-canvas:fullscreen{width:100vw;height:100vh;border:0;border-radius:0}
 .graph-labels{position:absolute;z-index:2;top:0;left:0;right:0;display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:13px 16px;background:#fffffff5;border-bottom:1px solid #f1f2f4;font-size:11px;pointer-events:none}
 .graph-labels__all{font-weight:600;color:#555d66}.graph-label-chip{padding:4px 9px;border-radius:14px;color:#26323e}.graph-labels__relations{margin-left:auto;color:#7b818a}
-.graph-canvas svg{display:block;flex:1;width:100%;height:100%;min-height:470px;touch-action:none;cursor:grab}.graph-canvas svg:active{cursor:grabbing}
+.graph-canvas svg{display:block;flex:1;width:100%;height:100%;min-height:470px;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}.graph-canvas svg:active{cursor:grabbing}
 .graph-edge{cursor:pointer;transition:opacity .15s}.graph-edge__line{fill:none;stroke:#a5abb6;stroke-width:1.2}.graph-edge__hit{fill:none;stroke:transparent;stroke-width:14}.graph-edge text{fill:#5f6570;font-size:10px;text-anchor:middle;paint-order:stroke;stroke:white;stroke-width:5px;stroke-linejoin:round}
 .graph-edge.is-path .graph-edge__line{stroke:#d89f47;stroke-width:2}.graph-edge.is-selected .graph-edge__line,.graph-edge:hover .graph-edge__line{stroke:#4e6a88;stroke-width:2.5}
 .is-dim{opacity:.18}.graph-node{cursor:pointer;outline:none;transition:opacity .15s}.graph-node__circle{stroke:#00000020;stroke-width:1.5}.graph-node__halo{fill:none;stroke-width:7;opacity:0}.graph-node.is-selected .graph-node__halo{opacity:.3}.graph-node:hover .graph-node__halo,.graph-node:focus-visible .graph-node__halo{opacity:.5}
