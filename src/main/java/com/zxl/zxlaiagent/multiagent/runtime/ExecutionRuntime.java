@@ -6,6 +6,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.*;
+import com.zxl.zxlaiagent.security.Phase;
+import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 
 /** 协调线程只等待，工作线程负责阻塞 I/O；两者不会互相占满同一个池。 */
 public final class ExecutionRuntime implements AutoCloseable {
@@ -13,8 +15,13 @@ public final class ExecutionRuntime implements AutoCloseable {
     private final LongSupplier clock;
     private final ThreadPoolExecutor coordinators, workers;
     private final Semaphore modelPermits;
-    private final Map<String, RunRegistry.Entry> bindings = new ConcurrentHashMap<>();
-    private final Map<String, QueuedWork<?>> queuedWork = new ConcurrentHashMap<>();
+    private record TaskKey(Task task) {
+        @Override public boolean equals(Object other) { return other instanceof TaskKey key && task == key.task; }
+        @Override public int hashCode() { return System.identityHashCode(task); }
+    }
+    private static TaskKey key(Task task) { return new TaskKey(Objects.requireNonNull(task)); }
+    private final Map<TaskKey, RunRegistry.Entry> bindings = new ConcurrentHashMap<>();
+    private final Map<TaskKey, QueuedWork<?>> queuedWork = new ConcurrentHashMap<>();
     private final Set<String> leasedAgents = new HashSet<>();
     private final Map<String, Deque<Object>> roleWaiters = new HashMap<>();
     private final AtomicInteger models = new AtomicInteger(), peakModels = new AtomicInteger(), rejected = new AtomicInteger(), peakQueue = new AtomicInteger();
@@ -41,23 +48,23 @@ public final class ExecutionRuntime implements AutoCloseable {
     public boolean removeQueued(Runnable work) { return coordinators.remove(work); }
     public <T> CompletableFuture<T> async(Task task, Supplier<T> action) {
         QueuedWork<T> work = new QueuedWork<>(task, action);
-        queuedWork.put(task.getId(), work);
+        queuedWork.put(key(task), work);
         try { workers.execute(work); return work.result; }
-        catch (RejectedExecutionException e) { queuedWork.remove(task.getId(), work); throw capacity("workers.queue"); }
+        catch (RejectedExecutionException e) { queuedWork.remove(key(task), work); throw capacity("workers.queue"); }
     }
     private final class QueuedWork<T> implements Runnable {
         final Task task; final Supplier<T> action; final long queuedAt = clock.getAsLong();
         final CompletableFuture<T> result = new CompletableFuture<>();
         QueuedWork(Task task, Supplier<T> action) { this.task = task; this.action = action; }
         @Override public void run() {
-            queuedWork.remove(task.getId(), this);
+            queuedWork.remove(key(task), this);
             try { check(task); checkQueue(queuedAt, "workers.queue"); result.complete(action.get()); }
             catch (Throwable error) { result.completeExceptionally(error); }
         }
     }
     public void removeStoppedWork(RunRegistry.Entry entry) {
-        for (QueuedWork<?> work : queuedWork.values()) if (bindings.get(work.task.getId()) == entry && workers.remove(work)) {
-            queuedWork.remove(work.task.getId(), work);
+        for (QueuedWork<?> work : queuedWork.values()) if (bindings.get(key(work.task)) == entry && workers.remove(work)) {
+            queuedWork.remove(key(work.task), work);
             work.result.completeExceptionally(new WorkflowException(entry.control.stopReason()));
         }
     }
@@ -65,7 +72,7 @@ public final class ExecutionRuntime implements AutoCloseable {
         for (QueuedWork<?> work : queuedWork.values()) {
             if (clock.getAsLong() - work.queuedAt < TimeUnit.MILLISECONDS.toNanos(settings.getQueueTimeoutMs())) continue;
             if (workers.remove(work)) {
-                queuedWork.remove(work.task.getId(), work);
+                queuedWork.remove(key(work.task), work);
                 work.result.completeExceptionally(new WorkflowException("CAPACITY_QUEUE_TIMEOUT", "workers.queue", "工作线程排队时间已达上限"));
             }
         }
@@ -74,18 +81,24 @@ public final class ExecutionRuntime implements AutoCloseable {
         if (clock.getAsLong() - start >= TimeUnit.MILLISECONDS.toNanos(settings.getQueueTimeoutMs()))
             throw new WorkflowException("CAPACITY_QUEUE_TIMEOUT", path, "等待执行容量超时");
     }
-    public void bind(Task task, RunRegistry.Entry entry) { bindings.put(task.getId(), entry); }
-    public void unbind(Task task) { bindings.remove(task.getId()); }
-    public ExecutionControl control(Task task) { var entry = bindings.get(task.getId()); return entry == null ? null : entry.control; }
-    public void check(Task task) { ExecutionControl control = control(task); if (control != null) control.check(); }
+    public void bind(Task task, RunRegistry.Entry entry) { bindings.put(key(task), Objects.requireNonNull(entry)); }
+    public void unbind(Task task) { bindings.remove(key(task)); }
+    public ExecutionControl control(Task task) { var entry = bindings.get(key(task)); return entry == null ? null : entry.control; }
+    public OperationBoundary boundary(Task task) {
+        var entry = bindings.get(key(task));
+        return entry == null ? OperationBoundary.unrestricted() : entry.boundary;
+    }
+    public void check(Task task) { ExecutionControl control = control(task); if (control != null) control.check(); boundary(task).check(Phase.DEQUEUE); }
     public <T> T modelCall(Task task, Supplier<T> call) {
-        RunRegistry.Entry entry = bindings.get(task.getId());
+        RunRegistry.Entry entry = bindings.get(key(task));
+        OperationBoundary scope = entry == null ? OperationBoundary.unrestricted() : entry.boundary;
         ExecutionControl control = entry == null ? null : entry.control;
         boolean acquired = false;
         try {
             long queued = clock.getAsLong();
             while (!acquired) {
-                check(task);
+                if (control != null) control.check();
+                scope.check(Phase.DEQUEUE);
                 checkQueue(queued, "models");
                 acquired = modelPermits.tryAcquire(25, TimeUnit.MILLISECONDS);
             }
@@ -96,7 +109,14 @@ public final class ExecutionRuntime implements AutoCloseable {
                 return entry == null ? new ExecutionLease(() -> {}) : entry.modelLease();
             };
             try (ExecutionLease ignored = control == null ? begin.get() : control.admit(begin)) {
-                try { return call.get(); } finally { models.decrementAndGet(); }
+                try {
+                    // The transport owns actual subscription authorization. Never hold a PG gate
+                    // around this blocking wait; check its current run scope before and after it.
+                    scope.check(Phase.MODEL_DISPATCH);
+                    T value = call.get();
+                    scope.check(Phase.RESULT_PUBLISH);
+                    return value;
+                } finally { models.decrementAndGet(); }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt(); throw new WorkflowException("EXECUTION_INTERRUPTED", "models", "模型容量等待被中断", e);

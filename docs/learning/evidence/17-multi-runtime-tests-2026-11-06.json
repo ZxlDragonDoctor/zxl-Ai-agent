@@ -1,0 +1,34 @@
+[
+  {
+    "name": "com.zxl.zxlaiagent.multiagent.bus.AgentMessageBusCapacityTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T22:30:09"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.multiagent.ExecutionRuntimeIntegrationTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T22:30:13"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.multiagent.runtime.ScopedMultiAgentRuntimeTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T22:30:13"
+  },
+  {
+    "name": "com.zxl.zxlaiagent.multiagent.RuntimeCapacityTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "time": "2026-11-06T22:30:13"
+  }
+]
