@@ -92,6 +92,7 @@ public final class ExecutionRuntime implements AutoCloseable {
         public boolean scoped() { return entry != null && entry.scoped; }
         public OperationBoundary boundary() { return entry == null ? OperationBoundary.unrestricted() : entry.boundary; }
         public ExecutionControl control() { return entry == null ? null : entry.control; }
+        public TrustedRunContext trustedContext() { return entry == null ? null : entry.trustedContext; }
     }
     public ExecutionScope executionScope(Task task) {
         var entry=bindings.get(key(task));

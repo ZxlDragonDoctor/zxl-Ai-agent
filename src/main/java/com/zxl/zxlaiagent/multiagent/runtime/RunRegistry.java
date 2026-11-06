@@ -19,12 +19,17 @@ public final class RunRegistry {
         return register(run, control, System.nanoTime());
     }
     public synchronized Entry register(WorkflowRun run, ExecutionControl control, long queueStartedNanos) {
-        return registerInternal(run, control, queueStartedNanos, OperationBoundary.unrestricted(), false);
+        return registerInternal(run, control, queueStartedNanos, OperationBoundary.unrestricted(), false, null);
     }
     public synchronized Entry register(WorkflowRun run, ExecutionControl control, long queueStartedNanos, OperationBoundary boundary) {
-        return registerInternal(run,control,queueStartedNanos,boundary,true);
+        return registerInternal(run,control,queueStartedNanos,boundary,true,null);
     }
-    private Entry registerInternal(WorkflowRun run, ExecutionControl control, long queueStartedNanos, OperationBoundary boundary, boolean scoped) {
+    public synchronized Entry register(WorkflowRun run, ExecutionControl control, long queueStartedNanos, OperationBoundary boundary, TrustedRunContext context) {
+        Objects.requireNonNull(context,"Trusted run context required");
+        if(!context.runId().equals(run.id))throw new IllegalArgumentException("Trusted context must belong to this run");
+        return registerInternal(run,control,queueStartedNanos,boundary,true,context);
+    }
+    private Entry registerInternal(WorkflowRun run, ExecutionControl control, long queueStartedNanos, OperationBoundary boundary, boolean scoped, TrustedRunContext context) {
         Objects.requireNonNull(boundary, "Explicit run boundary required");
         prune();
         if (entries.size() >= settings.getRegistryCapacity()) {
@@ -32,7 +37,7 @@ public final class RunRegistry {
             if (evict != null) entries.remove(evict);
         }
         if (entries.size() >= settings.getRegistryCapacity()) throw new WorkflowException("AGENT_CAPACITY_EXCEEDED", "runs", "运行登记容量已满，请等待实际调用清理");
-        Entry entry = new Entry(run, control, boundary, scoped);
+        Entry entry = new Entry(run, control, boundary, scoped, context);
         entry.queueStartedNanos = queueStartedNanos;
         entry.waitingFor = "run";
         entries.put(run.id, entry);
@@ -57,13 +62,14 @@ public final class RunRegistry {
         public final ExecutionControl control;
         public final OperationBoundary boundary;
         public final boolean scoped;
+        public final TrustedRunContext trustedContext;
         public final CompletableFuture<WorkflowOutcome> result = new CompletableFuture<>();
         private final AtomicInteger tasks = new AtomicInteger(), models = new AtomicInteger();
         public volatile boolean coordinating;
         public volatile Runnable queuedWork;
         public volatile long queueStartedNanos;
         public volatile String waitingFor;
-        private Entry(WorkflowRun run, ExecutionControl control, OperationBoundary boundary, boolean scoped) { this.run = run; this.control = control; this.boundary = boundary; this.scoped = scoped; }
+        private Entry(WorkflowRun run, ExecutionControl control, OperationBoundary boundary, boolean scoped, TrustedRunContext trustedContext) { this.run = run; this.control = control; this.boundary = boundary; this.scoped = scoped; this.trustedContext = trustedContext; }
         public ExecutionLease taskLease() { tasks.incrementAndGet(); return new ExecutionLease(tasks::decrementAndGet); }
         public ExecutionLease modelLease() { models.incrementAndGet(); return new ExecutionLease(models::decrementAndGet); }
         public int activeTasks() { return tasks.get(); }
