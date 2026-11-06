@@ -1,0 +1,12 @@
+{
+  "firstFit": {
+    "nodeCount": 11,
+    "outside": []
+  },
+  "svgTextSelection": "none",
+  "panMoved": true,
+  "panHeld": true,
+  "zoomMoved": true,
+  "dragMovedNode": true,
+  "dragKeptCamera": true
+}
