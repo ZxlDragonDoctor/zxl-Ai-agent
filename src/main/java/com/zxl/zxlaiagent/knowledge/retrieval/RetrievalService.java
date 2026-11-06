@@ -27,6 +27,7 @@ public final class RetrievalService {
     private final String tenant;
     private final KnowledgeEmbedding embedding;
     private final Reranker reranker;
+    // Shared bounded capacity for optional vector/rerank work; no nested waits inside this pool.
     private static final ThreadPoolExecutor RERANK_WORKERS=new ThreadPoolExecutor(2,2,30,TimeUnit.SECONDS,
             new ArrayBlockingQueue<>(8),task->{var thread=new Thread(task,"retrieval-rerank");thread.setDaemon(true);return thread;},new ThreadPoolExecutor.AbortPolicy());
     public RetrievalService(KnowledgeDatabase db,String tenant,KnowledgeEmbedding embedding) { this(db,tenant,embedding,Reranker.rules()); }
@@ -51,18 +52,16 @@ public final class RetrievalService {
         if (!"keyword".equals(request.mode())) {
             long phase=System.nanoTime();
             try {
-                // Original semantic query is always retained; supplement only enriches the keyword route.
-                String literal=KnowledgeEmbedding.vectorLiteral(embedding.embed(request.query(),deadline.remaining(),boundary),embedding.dimensions());
-                vector=vector(literal,request.candidateLimit(),deadline); successful++;
+                vector=boundedVector(request,deadline); successful++;
                 stages.add(stage("vector","OK",phase,vector.size()));
             } catch (RuntimeException failure) {
-                propagateCancellation(failure); degradations.add("VECTOR_CHANNEL_FAILED"); stages.add(stage("vector","FAILED",phase,0));
+                propagateCancellation(failure); deadline.remaining(); degradations.add("VECTOR_CHANNEL_FAILED"); stages.add(stage("vector","FAILED",phase,0));
             }
         }
         if (!"vector".equals(request.mode())) {
             long phase=System.nanoTime();
             try { keyword=keyword(lexical,request.candidateLimit(),deadline); successful++; stages.add(stage("keyword","OK",phase,keyword.size())); }
-            catch (RuntimeException failure) { propagateCancellation(failure); degradations.add("KEYWORD_CHANNEL_FAILED"); stages.add(stage("keyword","FAILED",phase,0)); }
+            catch (RuntimeException failure) { propagateCancellation(failure); deadline.remaining(); degradations.add("KEYWORD_CHANNEL_FAILED"); stages.add(stage("keyword","FAILED",phase,0)); }
         }
         if(successful==0) throw new Failure("ALL_RETRIEVAL_CHANNELS_FAILED");
         var candidates=RankFusion.fuse(vector,keyword,request.candidateLimit());
@@ -79,7 +78,7 @@ public final class RetrievalService {
                         .sorted(Comparator.comparingDouble((Hit h)->h.rerankScore()).reversed().thenComparing(Comparator.comparingDouble(Hit::fusionScore).reversed()).thenComparing(Hit::chunkId)).toList();
                 usedReranker=reranker.identity(); stages.add(stage("rerank","OK",phase,candidates.size()));
             } catch(RuntimeException failure) {
-                propagateCancellation(failure); degradations.add("RERANK_FAILED_OR_BUDGET_EXHAUSTED"); usedReranker="fallback-rrf"; stages.add(stage("rerank","DEGRADED",phase,candidates.size()));
+                propagateCancellation(failure); deadline.remaining(); degradations.add("RERANK_FAILED_OR_BUDGET_EXHAUSTED"); usedReranker="fallback-rrf"; stages.add(stage("rerank","DEGRADED",phase,candidates.size()));
             }
         }
         phase=System.nanoTime(); candidates=current(candidates,deadline);
@@ -87,12 +86,46 @@ public final class RetrievalService {
         List<Hit> result=candidates.stream().limit(request.topK()).toList();
         String shortage=result.size()<request.topK()?(result.isEmpty()?"NO_CURRENT_MATCHES":"INSUFFICIENT_CURRENT_CANDIDATES"):null;
         boundary.check(Phase.RESULT_PUBLISH);
+        deadline.remaining();
         return new Response(UUID.randomUUID().toString(),request.query(),rewritten,request.mode(),embedding.identity(),usedReranker,
                 elapsed(started),List.copyOf(stages),List.copyOf(degradations),shortage,result);
     }
     private static void propagateCancellation(RuntimeException failure) {
         if(failure instanceof com.zxl.zxlaiagent.security.SecurityFailure)throw failure;
-        if(Thread.currentThread().isInterrupted() || failure instanceof RetrievalDeadline.Cancelled) throw new RetrievalDeadline.Cancelled();
+        if(failure instanceof RetrievalDeadline.Expired)throw failure;
+        if(Thread.currentThread().isInterrupted() || failure instanceof RetrievalDeadline.Cancelled || failure instanceof CancellationException) throw new RetrievalDeadline.Cancelled();
+    }
+    private List<Hit> boundedVector(Request request,RetrievalDeadline deadline){
+        long remaining=deadline.remaining().toMillis();
+        // Hybrid must retain time for keyword SQL and both visibility checks, not just HTTP response delivery.
+        long reserved=request.mode().equals("hybrid")?Math.max(250,remaining/3):Math.max(50,remaining/10);
+        long optional=remaining-reserved;
+        if(optional<10)throw new IllegalStateException("Insufficient vector channel budget");
+        var channel=new RetrievalDeadline(optional);
+        Future<List<Hit>> future=RERANK_WORKERS.submit(()->{
+            deadline.remaining();channel.remaining();boundary.check(Phase.DEQUEUE);
+            // Queue and authorization time consume the same child deadline as embedding and vector SQL.
+            String literal=KnowledgeEmbedding.vectorLiteral(embedding.embed(request.query(),channel.remaining(),boundary),embedding.dimensions());
+            deadline.remaining();channel.remaining();
+            return vector(literal,request.candidateLimit(),channel);
+        });
+        try{
+            while(true){
+                deadline.remaining();
+                try{return future.get(Math.min(channel.remaining().toNanos(),TimeUnit.MILLISECONDS.toNanos(25)),TimeUnit.NANOSECONDS);}
+                catch(TimeoutException polling){/* Child deadline includes queue time; a slow provider cannot consume the reserve. */}
+            }
+        }catch(InterruptedException stopped){Thread.currentThread().interrupt();throw new RetrievalDeadline.Cancelled();}
+        catch(ExecutionException failed){
+            if(failed.getCause() instanceof com.zxl.zxlaiagent.security.SecurityFailure denied)throw denied;
+            deadline.remaining();
+            if(failed.getCause() instanceof RetrievalDeadline.Expired)throw new IllegalStateException("Vector channel budget exhausted");
+            if(failed.getCause() instanceof RuntimeException runtime)throw runtime;
+            throw new IllegalStateException("Vector channel failed",failed);
+        }catch(RetrievalDeadline.Expired exhausted){
+            deadline.remaining(); // A global deadline is fatal, while only a child timeout may degrade hybrid.
+            throw new IllegalStateException("Vector channel budget exhausted");
+        }finally{future.cancel(true);RERANK_WORKERS.purge();}
     }
     private List<Reranker.Score> boundedRerank(String query,List<Hit> candidates,RetrievalDeadline deadline) {
         long remaining=deadline.remaining().toMillis();
