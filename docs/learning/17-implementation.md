@@ -6,6 +6,12 @@
 
 ## 1. 当前已实现的基础单元
 
+### 2026-11-06：多 Agent 运行时身份键与捕获边界
+
+修复共享执行器以模型 task.id 绑定控制的缺陷：改用内部对象身份键，模型 ID 相同或变化不再覆盖/丢失运行控制。每次模型调用捕获可信 scope/control，调用中解绑后仍按原 scope 拒绝已撤销的敏感结果。每个 RunRegistry.Entry 明确携带 OperationBoundary，旧注册重载仅保留课堂对照。6项专项及13项相关回归通过，精确范围和红灯见[运行时导读](17-multi-agent-runtime-boundary.md)。
+
+实际发送仍须接已有Streamer订阅gate；供应函数前后check不等于网络发送原子授权。正式submit/owner、状态/events/cancel、Orchestrator全局任务和observer隔离尚未接完，不据本批声明正式多Agent完成。新版知识卡双语、2D切换及导读路径实际核实，[截图记录](../images/lesson17-cli-runtime-2026-11-06/README.md)。截图滚动产生了阅读位置记录，最终再次恢复本轮原备份并导出深比较相等，个人掌握/笔记保留。
+
 ### 2026-11-06：可交付的离线账号初始化
 
 增加 `ProvisionAccountCommand` 和 `tools/provision-account.ps1`，复用现有事务/哈希创建账号，密码通过隐藏控制台读取，不接收密码命令行参数；既有账号不会覆盖。参数先校验，成功/失败清除输入字符缓冲并关闭数据库，异常消息不直出。5项专项（含真实PG重复创建）与6项相关回归通过，脚本解析检查通过；人工控制台交互仍需独立验证。[使用与边界](17-account-provisioning.md)。不会因为交付命令而自动创建任何人的真实账号、升级角色或把旧会话绑定给新账号。
