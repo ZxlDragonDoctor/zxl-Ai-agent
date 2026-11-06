@@ -1,0 +1,19 @@
+{
+  "date" : "2026-11-06",
+  "layer" : "real PG + real MCP and worker + actual qwen-plus, direct trusted ResearchAgent; formal orchestrator HTTP entry not implemented",
+  "results" : [ {
+    "tenantFixture" : "A",
+    "budgetMs" : 30000,
+    "executionElapsedMs" : 21078,
+    "taskStatus" : "COMPLETED",
+    "modelCalls" : 2,
+    "toolCompleted" : true,
+    "ownMarker" : true,
+    "foreignMarker" : false,
+    "citation" : true,
+    "privateEvents" : 5,
+    "allEventsBoundToRun" : true,
+    "passed" : true,
+    "elapsedMs" : 22092
+  } ]
+}
