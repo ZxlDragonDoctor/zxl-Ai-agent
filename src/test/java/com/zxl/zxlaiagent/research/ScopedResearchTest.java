@@ -22,6 +22,28 @@ import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.*;
 
 class ScopedResearchTest {
+ @Test void runCancellationInsideActualAuthorityStartPreventsResearchSubscription(){
+  var mcp=mock(FormalKnowledgeMcpClient.class);var worker=mock(ScopedKnowledgeClient.class);var streamer=mock(DashScopeAgentStreamer.class);var auth=mock(AuthorizationService.class);
+  var atTransport=new AtomicBoolean();var cancelled=new AtomicBoolean();var subscriptions=new AtomicInteger();
+  var definition=FormalKnowledgeMcpProtocol.modelDefinition();
+  when(mcp.discover(any(),any())).thenReturn(List.of(new FormalKnowledgeMcpClient.DiscoveredTool("knowledge",FormalKnowledgeMcpProtocol.NAME,FormalKnowledgeMcpProtocol.EXPOSED_NAME,"v2","model-digest","wire-digest",definition)));
+  when(auth.gateAll(any(),anyList(),any(),any(),any())).thenAnswer(invocation->{
+   if(atTransport.get())cancelled.set(true);
+   return ((Supplier<?>)invocation.getArgument(4)).get();
+  });
+  when(streamer.stream(anyString(),anyList(),any(ToolCallback[].class),any(),any(),any())).thenAnswer(invocation->{
+   atTransport.set(true);OperationBoundary boundary=invocation.getArgument(5);
+   return boundary.start(Phase.MODEL_DISPATCH,()->{subscriptions.incrementAndGet();return new ChatResponse(List.of(new Generation(new AssistantMessage("late"))));});
+  });
+  OperationBoundary admission=new OperationBoundary(){
+   public void check(Phase phase){if(cancelled.get())throw new java.util.concurrent.CancellationException("synthetic cancellation");}
+   public <T>T start(Phase phase,Supplier<T> operation){check(phase);return operation.get();}
+  };
+  var factory=new ScopedResearchFactory(mcp,worker,streamer,auth);
+  var runner=factory.create(new ActorRef("a","ta","sa",1),"synthetic-run",List.of(),admission);
+  assertThrows(java.util.concurrent.CancellationException.class,()->runner.run("VPN",Duration.ofSeconds(3),()->false,event->{}));
+  assertEquals(0,subscriptions.get());verify(mcp,never()).call(any(),anyString(),anyMap(),any(),any(),anyList(),any());
+ }
  private static final Duration BUDGET=Duration.ofSeconds(3);
  private static final ObjectMapper JSON=new ObjectMapper();
  private static final String HIT="{\"documentId\":\"vpn\",\"revisionId\":\"r1\",\"generation\":1,\"chunkId\":\"c1\",\"text\":\"SSO\",\"startUtf16\":0,\"endUtf16\":3,\"startLine\":1,\"endLine\":1}";

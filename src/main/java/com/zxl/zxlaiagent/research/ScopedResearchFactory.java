@@ -24,10 +24,22 @@ public final class ScopedResearchFactory {
  }
  /** All additional permissions are chosen by Java, not deserialized from model or browser arguments. */
  public ResearchRunner create(ActorRef actor,String runId,List<AuthorizationService.Permission> additional){
+  return create(actor,runId,additional,OperationBoundary.unrestricted());
+ }
+ /** Admission is Java-owned cancellation/deadline control, never another remote authorization transaction. */
+ public ResearchRunner create(ActorRef actor,String runId,List<AuthorizationService.Permission> additional,OperationBoundary admission){
+  Objects.requireNonNull(admission);
   if(additional==null||additional.size()>6||additional.stream().anyMatch(Objects::isNull))throw new IllegalArgumentException("Bounded Java permissions required");
   var required=new LinkedHashSet<AuthorizationService.Permission>();required.add(new AuthorizationService.Permission("agent.execute",null));required.addAll(additional);
   var dispatch=List.copyOf(required);required.add(new AuthorizationService.Permission("knowledge.read",null));
-  return build(actor,new ActorBoundary(authorization,Objects.requireNonNull(actor),List.copyOf(required),runId),dispatch,runId);
+  var authority=new ActorBoundary(authorization,Objects.requireNonNull(actor),List.copyOf(required),runId);
+  OperationBoundary boundary=new OperationBoundary(){
+   public void check(Phase phase){admission.check(phase);authority.check(phase);}
+   public <T>T start(Phase phase,java.util.function.Supplier<T> operation){
+    return authority.start(phase,()->admission.start(phase,operation));
+   }
+  };
+  return build(actor,boundary,dispatch,runId);
  }
  /** Package-only seam for deterministic boundary tests; production callers use the explicit permission list. */
  ResearchRunner create(ActorRef actor,OperationBoundary boundary){return build(actor,boundary,List.of(new AuthorizationService.Permission("agent.execute",null)),null);}

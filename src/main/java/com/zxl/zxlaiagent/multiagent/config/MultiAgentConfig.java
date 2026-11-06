@@ -32,6 +32,7 @@ public class MultiAgentConfig {
                             PlanParser parser, PlanValidator validator, TaskInputBuilder inputs, TaskPromptRenderer renderer,
                             com.zxl.zxlaiagent.research.ResearchRunner researchRunner,
                             com.zxl.zxlaiagent.agent.stream.DashScopeAgentStreamer scopedStreamer,
+                            org.springframework.beans.factory.ObjectProvider<com.zxl.zxlaiagent.research.ScopedResearchFactory> scopedResearch,
                             org.springframework.core.env.Environment environment) {
         this.messageBus = messageBus;
         ChatModel chatModel = MultiAgentModelFactory.create(connection, chat, limits);
@@ -39,6 +40,8 @@ public class MultiAgentConfig {
         this.plannerAgent = new PlannerAgent(chatModel, parser, mapper);
         this.codeAgent = new CodeAgent(chatModel, renderer);
         this.researchAgent = new ResearchAgent(chatModel, renderer,researchRunner);
+        var researchFactory=scopedResearch.getIfAvailable();
+        if(researchFactory!=null)researchAgent.attachScopedResearchFactory(researchFactory);
         this.supervisorAgent = new SupervisorAgent(chatModel, renderer);
         // Orchestrator owns scheduling; model calls belong to these worker agents.
         for(AbstractBaseAgent agent:java.util.List.of(plannerAgent,codeAgent,researchAgent,supervisorAgent)) {

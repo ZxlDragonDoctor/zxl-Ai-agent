@@ -28,7 +28,7 @@ Planner、Code、Research、Supervisor 由 MultiAgentConfig 手动创建，所�
 
 实际订阅由原授权 boundary.start(MODEL_DISPATCH) 包裹短 ExecutionControl.admit，再启动订阅。若取消在权限 gate 内发生，订阅动作不执行；取消在订阅已经获准后发生，流会停止等待，但这不等于撤回已经发出的远程请求。远程响应等待位于两种锁之外，逐帧及最终返回仍检查原边界与控制。
 
-ResearchAgent 当前对 scoped 运行返回 SCOPED_RESEARCH_INTEGRATION_PENDING（503），防止旧 v1 工具与全局事件总线被正式任务调用。这只是迁移期间的拒绝策略，**不是正式研究能力已经实现**。
+该单元初次交付时，ResearchAgent 对 scoped 运行返回 SCOPED_RESEARCH_INTEGRATION_PENDING（503）。后续已补[可信研究执行单元](17-private-research.md)：具备上下文和工厂时使用正式v2路径及私有队列，缺失时仍拒绝。正式编排入口与完整业务验收仍未完成，不能由该单元推断整课完成。
 
 2026-11-06：新增专项9项（含实际本机 HTTP 成功/拒绝发送），相关5类24项，合计6类33项通过，0失败、错误、跳过。[精确测试范围](evidence/17-model-transport-tests-2026-11-06.json)。撤掉修复后，原租约丢失与研究降级两项均失败；取消 gate 竞态用例也先失败再修复。本机 HTTP 使用合成响应，不是付费模型；本批没有重跑真实 PG 授权或整条正式多 Agent 业务，运行中的旧 JVM 也不会因编译自动更新。
 

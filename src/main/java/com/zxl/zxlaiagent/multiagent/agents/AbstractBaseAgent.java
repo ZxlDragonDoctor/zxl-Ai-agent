@@ -90,15 +90,18 @@ public abstract class AbstractBaseAgent implements AgentInterface {
     @Override
     public CompletableFuture<String> executeTask(Task task) {
         try { checkExecution(task); } catch (Exception e) { return CompletableFuture.failedFuture(e); }
-        if (!compareAndSetState(AgentState.IDLE, AgentState.BUSY))
+        var scope=executionScope(task);
+        if(scope.scoped()&&scope.trustedContext()==null)
+            return CompletableFuture.failedFuture(new com.zxl.zxlaiagent.security.SecurityFailure("SCOPED_RUN_CONTEXT_REQUIRED",403));
+        if (!changeTaskState(scope,AgentState.IDLE, AgentState.BUSY))
             return CompletableFuture.failedFuture(new WorkflowException("AGENT_BUSY", "agents." + agentId, "Agent 当前不可领取任务：" + state.get()));
         try {
             if (!TaskLifecycle.start(task, agentId).applied()) {
-                compareAndSetState(AgentState.BUSY, AgentState.IDLE);
+                changeTaskState(scope,AgentState.BUSY, AgentState.IDLE);
                 return CompletableFuture.failedFuture(new WorkflowException("TASK_ALREADY_STARTED", "tasks." + task.getId(), "任务已领取或已结束"));
             }
         } catch (Throwable error) {
-            compareAndSetState(AgentState.BUSY, AgentState.IDLE);
+            changeTaskState(scope,AgentState.BUSY, AgentState.IDLE);
             return CompletableFuture.failedFuture(error);
         }
         CompletableFuture<String> result = new CompletableFuture<>();
@@ -107,38 +110,61 @@ public abstract class AbstractBaseAgent implements AgentInterface {
             if (!once.compareAndSet(false, true)) return;
             TaskSnapshot snapshot;
             try {
-                ExecutionControl control = runtime == null ? null : runtime.control(task);
-                WorkflowError stop = control == null ? null : control.stopReason();
-                TaskLifecycle.Transition transition;
-                if (stop != null) transition = stop.code().equals("RUN_CANCELLED") ? TaskLifecycle.cancel(task, stop.forTask(task.getId())) : TaskLifecycle.fail(task, stop);
-                else {
-                    Supplier<TaskLifecycle.Transition> decide = () -> error == null ? TaskLifecycle.complete(task, output) : TaskLifecycle.fail(task, WorkflowError.from(error));
-                    try { transition = control == null ? decide.get() : control.admit(decide); }
-                    catch (WorkflowException stopped) { transition = stopped.getCode().equals("RUN_CANCELLED") ? TaskLifecycle.cancel(task, stopped.getError().forTask(task.getId())) : TaskLifecycle.fail(task, stopped.getError()); }
-                }
-                snapshot = transition.snapshot();
-                if (transition.applied()) publishSafely(AgentEvent.of(agentId,
-                        snapshot.status() == TaskStatus.COMPLETED ? EventType.TASK_COMPLETED : snapshot.status() == TaskStatus.CANCELLED ? EventType.TASK_CANCELLED : EventType.TASK_FAILED,
-                        Map.of("taskId", task.getId(), "execution", snapshot)));
-                else log.debug("Ignored late completion for task {} in {}", task.getId(), snapshot.status());
+                Supplier<TaskSnapshot> completion=()->finishTask(task,scope,output,error);
+                snapshot=scope.scoped()?scope.boundary().start(com.zxl.zxlaiagent.security.Phase.RESULT_PUBLISH,completion):completion.get();
             } catch (Throwable finishError) {
                 TaskLifecycle.fail(task, WorkflowError.from(finishError));
-                snapshot = task.snapshot();
+                result.completeExceptionally(finishError);
+                return;
             } finally {
-                compareAndSetState(AgentState.BUSY, AgentState.IDLE);
+                changeTaskState(scope,AgentState.BUSY, AgentState.IDLE);
             }
             if (snapshot.status() == TaskStatus.COMPLETED) result.complete(snapshot.result());
             else result.completeExceptionally(new WorkflowException(snapshot.failure() == null
                     ? new WorkflowError("INVALID_TASK_STATE", "tasks." + task.getId(), "任务无法完成") : snapshot.failure()));
         };
         try {
-            publishSafely(AgentEvent.of(agentId, EventType.TASK_STARTED, Map.of("taskId", task.getId(), "description", task.getDescription())));
+            publishTaskEvent(scope,AgentEvent.of(agentId, EventType.TASK_STARTED, Map.of("taskId", task.getId(), "description", task.getDescription())));
             CompletableFuture<String> work = processTask(task);
             if (work == null) finish.accept(null, new WorkflowException("NULL_TASK_FUTURE", "tasks." + task.getId(), "Agent 返回了 null Future"));
             else work.whenComplete(finish);
         } catch (Throwable error) { finish.accept(null, error); }
         // Cancelling the returned waiting future does not detach ownership cleanup from the underlying work.
         return result;
+    }
+
+    private boolean changeTaskState(ExecutionRuntime.ExecutionScope scope,AgentState expected,AgentState update){
+        // A scoped task must not disclose even its task activity through the legacy observer bus.
+        return scope.scoped()?state.compareAndSet(expected,update):compareAndSetState(expected,update);
+    }
+    private TaskSnapshot finishTask(Task task,ExecutionRuntime.ExecutionScope scope,String output,Throwable error){
+        ExecutionControl control=scope.scoped()?scope.control():runtime==null?null:runtime.control(task);
+        WorkflowError stop=control==null?null:control.stopReason();
+        TaskLifecycle.Transition transition;
+        if(stop!=null)transition=stop.code().equals("RUN_CANCELLED")?TaskLifecycle.cancel(task,stop.forTask(task.getId())):TaskLifecycle.fail(task,stop);
+        else{
+            Supplier<TaskLifecycle.Transition> decide=()->error==null?TaskLifecycle.complete(task,output):TaskLifecycle.fail(task,WorkflowError.from(error));
+            try{transition=control==null?decide.get():control.admit(decide);}
+            catch(WorkflowException stopped){transition=stopped.getCode().equals("RUN_CANCELLED")?TaskLifecycle.cancel(task,stopped.getError().forTask(task.getId())):TaskLifecycle.fail(task,stopped.getError());}
+        }
+        var snapshot=transition.snapshot();
+        if(transition.applied())deliverTaskEvent(scope,AgentEvent.of(agentId,
+                snapshot.status()==TaskStatus.COMPLETED?EventType.TASK_COMPLETED:snapshot.status()==TaskStatus.CANCELLED?EventType.TASK_CANCELLED:EventType.TASK_FAILED,
+                Map.of("taskId",task.getId(),"execution",snapshot)));
+        return snapshot;
+    }
+    /** Scoped sinks only enqueue locally; callers must never block on a remote observer in this gate. */
+    protected void publishTaskEvent(ExecutionRuntime.ExecutionScope scope,AgentEvent event){
+        if(!scope.scoped()){publishSafely(event);return;}
+        scope.boundary().start(com.zxl.zxlaiagent.security.Phase.RESULT_PUBLISH,()->{deliverTaskEvent(scope,event);return null;});
+    }
+    /** Only call directly when the caller already owns this operation's authorization gate. */
+    protected final void deliverTaskEvent(ExecutionRuntime.ExecutionScope scope,AgentEvent event){
+        if(!scope.scoped()){publishSafely(event);return;}
+        var context=java.util.Objects.requireNonNull(scope.trustedContext(),"Trusted event sink required");
+        var data=new java.util.LinkedHashMap<String,Object>(event.getData()==null?Map.of():event.getData());
+        data.put("executionId",context.runId());event.setData(java.util.Collections.unmodifiableMap(data));
+        context.events().accept(event);
     }
 
     protected void publishSafely(AgentEvent event) {
@@ -220,6 +246,9 @@ public abstract class AbstractBaseAgent implements AgentInterface {
         if (!TaskLifecycle.recordModelCall(task))
             throw new WorkflowException("TASK_ALREADY_TERMINAL", "tasks." + task.getId(), "任务已经结束，不能继续调用模型");
         return action.get();
+    }
+    protected <T>T controlledModelCall(Task task,ExecutionRuntime.ExecutionScope captured,Supplier<T> action){
+        return captured.scoped()?runtime.modelCall(task,captured,action):controlledModelCall(task,action);
     }
 
     protected String callLlm(String systemPrompt, String userMessage) {

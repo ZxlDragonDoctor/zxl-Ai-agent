@@ -6,6 +6,12 @@
 
 ## 1. 当前已实现的基础单元
 
+### 2026-11-06：可信研究执行与私有任务事件
+
+新增[可信上下文与私有队列](17-trusted-run-context.md)，研究工作Agent已接ScopedResearchFactory四参接口，同一Actor/run进入MCP和原文复核，取消准入接到实际订阅前。scoped任务/工具事件不再进入全局总线，任务完成先经过运行发布授权；固定本地队列禁止外部观察者回调异常，不改TaskLifecycle终态不变量。
+
+11类90项自动化及2项真实PG测试通过，覆盖私有路由、两次模型记账、工具返回后撤权/取消、实际owner与membership撤销审计。PG用例的模型与工具仍为合成响应，没有新增真实模型/MCP业务链路。完整权限集合必须由正式运行入口固定，submit/状态/取消、编排报告隔离仍未接通。[实现导读、失败记录与精确范围](17-private-research.md)。
+
 ### 2026-11-06：工作 Agent 的模型发送边界
 
 正式工作 Agent 的模型步骤改用 DashScopeAgentStreamer，统一捕获同一 Entry 的权限、控制与模型租约，防止捕获后解绑导致模型记账脱离原运行。实际订阅在权限 gate 内执行短取消准入，远程等待在锁外；无可信上下文或无 streamer 均拒绝执行，不退回旧 ChatClient。ResearchAgent 在可信工厂及私有事件接通前明确拒绝 scoped 运行，仍未完成正式研究迁移。

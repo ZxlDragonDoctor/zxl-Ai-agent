@@ -27,6 +27,10 @@ public class ResearchAgent extends AbstractBaseAgent {
 
     private final TaskPromptRenderer renderer;
     private final com.zxl.zxlaiagent.research.ResearchRunner research;
+    private volatile com.zxl.zxlaiagent.research.ScopedResearchFactory scopedResearchFactory;
+    public void attachScopedResearchFactory(com.zxl.zxlaiagent.research.ScopedResearchFactory factory){
+        scopedResearchFactory=java.util.Objects.requireNonNull(factory);
+    }
 
     public ResearchAgent(ChatModel chatModel) {
         this(chatModel, new TaskPromptRenderer(new ObjectMapper()));
@@ -51,9 +55,10 @@ public class ResearchAgent extends AbstractBaseAgent {
 
     @Override
     public CompletableFuture<String> processTask(Task task) {
+        var captured=executionScope(task);
         return async(task, () -> {
             checkExecution(task);
-            if(executionScope(task).scoped())throw new com.zxl.zxlaiagent.security.SecurityFailure("SCOPED_RESEARCH_INTEGRATION_PENDING",503);
+            if(captured.scoped())return runScoped(task,captured);
             log.info("ResearchAgent executing: {}", task.getDescription());
             String result = research==null?callLlm(task, RESEARCH_SYSTEM_PROMPT, renderer.render(task)):
                 research.run(renderer.render(task),remainingExecution(task,java.time.Duration.ofSeconds(30)),
@@ -65,5 +70,28 @@ public class ResearchAgent extends AbstractBaseAgent {
             log.info("ResearchAgent completed: {}", task.getDescription());
             return result;
         });
+    }
+    private String runScoped(Task task,com.zxl.zxlaiagent.multiagent.runtime.ExecutionRuntime.ExecutionScope scope){
+        var context=scope.trustedContext();var factory=scopedResearchFactory;
+        if(context==null||factory==null)throw new com.zxl.zxlaiagent.security.SecurityFailure("SCOPED_RESEARCH_UNAVAILABLE",503);
+        scope.control().check();scope.boundary().check(com.zxl.zxlaiagent.security.Phase.DEQUEUE);
+        var admission=new com.zxl.zxlaiagent.security.execution.OperationBoundary(){
+            public void check(com.zxl.zxlaiagent.security.Phase phase){scope.control().check();}
+            public <T>T start(com.zxl.zxlaiagent.security.Phase phase,java.util.function.Supplier<T> action){return scope.control().admit(action);}
+        };
+        var runner=factory.create(context.actor(),context.runId(),java.util.List.of(
+                new com.zxl.zxlaiagent.security.AuthorizationService.Permission("run.readOwn",new com.zxl.zxlaiagent.security.ResourceRef("run",context.runId()))),admission);
+        return runner.run(renderer.render(task),java.time.Duration.ofMillis(scope.control().waitMillis(java.time.Duration.ofSeconds(30))),
+                ()->Thread.currentThread().isInterrupted()||scope.control().stopReason()!=null||task.snapshot().status()!=com.zxl.zxlaiagent.multiagent.model.TaskStatus.IN_PROGRESS,
+                event->scope.control().admit(()->{
+                    // ResearchRunner already holds its actor + knowledge + run publication gate.
+                    // Never open a second PG gate inside that transaction.
+                    deliverTaskEvent(scope,com.zxl.zxlaiagent.multiagent.model.AgentEvent.of(agentId,
+                            event.type().equals("TOOL_REQUESTED")||event.type().equals("TOOL_STARTED")?com.zxl.zxlaiagent.multiagent.model.EventType.TOOL_CALLED:com.zxl.zxlaiagent.multiagent.model.EventType.TOOL_RESULT,
+                            java.util.Map.of("taskId",task.getId(),"event",event.withIdentity(null,context.runId()))));
+                    return null;
+                }),new com.zxl.zxlaiagent.research.ResearchRunner.ModelGate(){
+                    public <T>T call(java.util.function.Supplier<T> action){return controlledModelCall(task,scope,action);}
+                });
     }
 }

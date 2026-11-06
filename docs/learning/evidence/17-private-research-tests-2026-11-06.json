@@ -1,0 +1,122 @@
+{
+  "date": "2026-11-06",
+  "logs": [
+    "target/lesson17-private-research-final-20261106.log",
+    "target/lesson17-private-research-pg-final-20261106.log"
+  ],
+  "suites": [
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.AgentCompletionBoundaryTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "offline-controlled-regression"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ExecutionRuntimeIntegrationTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "offline-controlled-regression"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.MultiAgentOrchestrationTest",
+      "tests": "24",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "offline-controlled-regression"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.PrivateRunEventsTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "offline-controlled-regression"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.runtime.ScopedMultiAgentRuntimeTest",
+      "tests": "6",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "offline-controlled-regression"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ScopedAgentModelTransportTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "offline-controlled-regression"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.TrustedRunContextTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "offline-controlled-regression"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.WorkflowOutcomeTest",
+      "tests": "11",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "offline-controlled-regression"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ResearchAgentIntegrationTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "offline-controlled-regression"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ScopedResearchAgentPgTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "real-pg-with-synthetic-model-tools"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ScopedResearchAgentTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "offline-controlled-regression"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ScopedResearchTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "offline-controlled-regression"
+    }
+  ],
+  "offlineTests": 90,
+  "realPgTests": 2,
+  "redEvidence": [
+    {
+      "log": "target/lesson17-scoped-research-behavior-red-20261106.log",
+      "tests": 3,
+      "failures": 2,
+      "errors": 1
+    },
+    {
+      "log": "target/lesson17-research-admission-behavior-red-20261106.log",
+      "tests": 1,
+      "failures": 1
+    }
+  ],
+  "retainedFailure": "target/lesson17-private-research-regression-20261106.log: stale AbstractBaseAgent bytecode expected Consumer instead of PrivateRunEvents; two owned generated classes rebuilt before final regression.",
+  "boundary": "Actual PG authority/owner/revocation; model, tool and knowledge responses synthetic. Formal submit/status/cancel and full UI business flow remain incomplete."
+}
