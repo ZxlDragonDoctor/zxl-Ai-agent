@@ -89,6 +89,31 @@ public final class AuthorizationService {
  /** Trusted administration primitive; caller authentication/administrative policy belongs at the entry boundary. */
  public void setMembershipActive(ActorRef ref,boolean active){db.tx(c->{AuthenticationService.lockEpoch(c,ref);try(var s=SecurityDatabase.statement(c,"UPDATE membership SET status=?,version=version+1 WHERE tenant_id=? AND subject_id=?",active?"ACTIVE":"REVOKED",ref.tenantId(),ref.subjectId())){s.executeUpdate();}try(var s=SecurityDatabase.statement(c,"UPDATE authorization_epoch SET version=version+1 WHERE tenant_id=? AND subject_id=?",ref.tenantId(),ref.subjectId())){s.executeUpdate();}return null;});}
  public void registerResource(ActorRef ref,ResourceRef resource){db.tx(c->{AuthenticationService.resolve(c,ref);try(var s=SecurityDatabase.statement(c,"INSERT INTO resource_owner(resource_type,resource_id,tenant_id,subject_id) VALUES (?,?,?,?)",resource.type(),resource.id(),ref.tenantId(),ref.subjectId())){s.executeUpdate();}return null;});}
+ /** Register a server-created run with current admission Decisions on this same transaction. */
+ public void registerResourceAuthorized(ActorRef ref,ResourceRef resource,List<Permission> permissions,String runId){
+  if(resource==null||!"run".equals(resource.type())||!Objects.equals(resource.id(),runId)||!AuthenticationService.validId(runId))throw new IllegalArgumentException("Server run resource required");
+  db.tx(c->sqlGate(c,ref,permissions,Phase.ENTRY,runId,connection->{
+   try(var s=SecurityDatabase.statement(connection,"INSERT INTO resource_owner(resource_type,resource_id,tenant_id,subject_id) VALUES (?,?,?,?)",resource.type(),resource.id(),ref.tenantId(),ref.subjectId())){s.executeUpdate();}
+   return null;
+  })).result();
+ }
+ /** Server-only compensation after failed pre-dispatch registration, including a revoked submitting session. */
+ public void discardUnstartedRun(ActorRef ref,String runId){
+  Objects.requireNonNull(ref);if(!AuthenticationService.validId(runId)||!AuthenticationService.validId(ref.subjectId())||!AuthenticationService.validId(ref.tenantId()))throw new IllegalArgumentException("Exact run owner required");
+  db.tx(c->{try(var s=SecurityDatabase.statement(c,"DELETE FROM resource_owner WHERE resource_type='run' AND resource_id=? AND tenant_id=? AND subject_id=?",runId,ref.tenantId(),ref.subjectId())){s.executeUpdate();}return null;});
+ }
  public void requireOwned(ActorRef ref,ResourceRef resource,Phase phase){decide(ref,resource.type().equals("conversation")?"conversation.readOwn":"run.readOwn",resource,phase,null).requireAllowed();}
  public List<String> ownedResourceIds(ActorRef ref,String type){return db.tx(c->{AuthenticationService.resolve(c,ref);var ids=new ArrayList<String>();try(var s=SecurityDatabase.statement(c,"SELECT resource_id FROM resource_owner WHERE resource_type=? AND tenant_id=? AND subject_id=? AND state='ACTIVE' ORDER BY resource_id",type,ref.tenantId(),ref.subjectId());var r=s.executeQuery()){while(r.next())ids.add(r.getString(1));}return List.copyOf(ids);});}
+ /** Query only bounded retained candidates, never load every historical owner for a status request. */
+ public List<String> ownedResourceIds(ActorRef ref,String type,Collection<String> candidates){
+  if(candidates==null||candidates.size()>200||candidates.stream().anyMatch(id->!AuthenticationService.validId(id)))throw new IllegalArgumentException("At most 200 valid retained candidates required");
+  var selected=List.copyOf(new LinkedHashSet<>(candidates));
+  return db.tx(c->{
+   AuthenticationService.resolve(c,ref);if(selected.isEmpty())return List.of();
+   var array=c.createArrayOf("varchar",selected.toArray(String[]::new));
+   try(var statement=SecurityDatabase.statement(c,"SELECT resource_id FROM resource_owner WHERE resource_type=? AND tenant_id=? AND subject_id=? AND state='ACTIVE' AND resource_id=ANY(?) ORDER BY resource_id",type,ref.tenantId(),ref.subjectId())){
+    statement.setArray(4,array);var ids=new ArrayList<String>();try(var rows=statement.executeQuery()){while(rows.next())ids.add(rows.getString(1));}return List.copyOf(ids);
+   }finally{array.free();}
+  });
+ }
 }
