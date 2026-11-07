@@ -101,7 +101,12 @@ export function restoreChat(detail: ConversationDetail): AgentChatMessage[] {
     reply.content = answer
     reply.displayContent = answer
     reply.flow!.endReason = run.endReason || undefined
-    if (run.status !== 'running') {
+    if (detail.readOnly && run.status === 'running') {
+      // Only the display is frozen; keep the original run state and missing completion time.
+      finishFlow(reply, 'interrupted', run.error || undefined)
+      reply.flow!.archivedIncomplete = true
+      reply.flow!.finishedAt = undefined
+    } else if (run.status !== 'running') {
       finishFlow(reply, run.status, run.error || undefined)
       reply.flow!.finishedAt = run.finishedAt ? Date.parse(run.finishedAt) : Date.now()
     }

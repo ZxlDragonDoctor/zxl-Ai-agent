@@ -5,6 +5,7 @@ import { ConversationApiError, createConversation, deleteConversation, getConver
 import { sessionStorageKey, SessionRequestError } from '../utils/sessionRequest'
 import { selectAvailableAgentType } from '../utils/agentSelection'
 import { locale, t } from '../i18n'
+import { assertConversationWritable, conversationBusy, isReadOnlyConversation, ConversationWriteError } from '../utils/conversationAccess'
 import { applyAgentEvent, finishFlow, restoreChat } from '../utils/agentFlow'
 import type { AgentChatMessage, AgentStreamEvent } from '../types/agent'
 import type { AgentDefinition, ConversationDetail, ConversationSummary } from '../types/conversation'
@@ -20,6 +21,7 @@ export function useAgentConversations() {
   const running = ref(false)
   const loading = ref(false)
   const busy = ref(false)
+  const readOnly = ref(false)
   const selectedId = ref<string | null>(null)
   const selectedType = ref('manus')
   const newType = ref('manus')
@@ -37,7 +39,10 @@ export function useAgentConversations() {
     try { if (id) localStorage.setItem(STORAGE_KEY, id); else localStorage.removeItem(STORAGE_KEY) } catch { /* 会话仍保存在服务端。 */ }
   }
   function errorText(code: string) {
+    if (code === 'ARCHIVE_READ_ONLY') code = 'CONVERSATION_READ_ONLY'
     const identityErrors: Record<string, [string, string]> = {
+      CONVERSATION_READ_ONLY: ['这是只读归档，请新建会话继续交流。', 'This is a read-only archive. Start a new conversation to continue.'],
+      CONVERSATION_ARCHIVE_UNAVAILABLE: ['无法验证归档文件，请联系管理员检查归档。', 'This archive could not be verified. Ask an administrator to check it.'],
       UNAUTHENTICATED: ['登录已失效，请重新登录。', 'Your session expired. Sign in again.'],
       FORBIDDEN: ['当前账号无权执行此操作。', 'Your account cannot perform this action.'],
       NOT_FOUND: ['当前账号无法访问此资源。', 'This resource is not visible to your account.'],
@@ -48,12 +53,13 @@ export function useAgentConversations() {
     return t(key) === key ? t('conversation.error.REQUEST_FAILED') : t(key)
   }
   function showError(cause: unknown) {
-    error.value = errorText(cause instanceof ConversationApiError || cause instanceof SessionRequestError ? cause.code : 'REQUEST_FAILED')
+    error.value = errorText(cause instanceof ConversationApiError || cause instanceof SessionRequestError || cause instanceof ConversationWriteError ? cause.code : 'REQUEST_FAILED')
   }
   function forgetMissing() {
     ++generation
     loading.value = false
     selectedId.value = null
+    readOnly.value = false
     messages.value = []
     busy.value = false
     remember(null)
@@ -67,7 +73,8 @@ export function useAgentConversations() {
     selectedId.value = detail.id
     selectedType.value = detail.agentType
     messages.value = restoreChat(detail)
-    busy.value = detail.busy
+    readOnly.value = isReadOnlyConversation(detail)
+    busy.value = conversationBusy(detail)
     remember(detail.id)
   }
   async function refreshList() {
@@ -106,6 +113,7 @@ export function useAgentConversations() {
     finally { if (!disposed && token === generation) loading.value = false }
   }
   async function removeConversation(id: string) {
+    try { assertConversationWritable({readOnly:(selectedId.value===id&&readOnly.value)||isReadOnlyConversation(conversations.value.find(item=>item.id===id))}) } catch(cause) { showError(cause); return }
     if (working.value) return
     const token = ++generation
     loading.value = true
@@ -115,6 +123,7 @@ export function useAgentConversations() {
       if (disposed || token !== generation) return
       if (selectedId.value === id) {
         selectedId.value = null
+        readOnly.value = false
         messages.value = []
         busy.value = false
         remember(null)
@@ -148,6 +157,7 @@ export function useAgentConversations() {
   })
 
   async function sendMessage(message: string, skillSelection?: { skillId: string; skillVersion?: string }) {
+    try { assertConversationWritable({readOnly:readOnly.value}) } catch(cause) { showError(cause); return }
     if (disposed || !message.trim() || working.value || busy.value) return
     let id = selectedId.value
     if (!id) {
@@ -157,6 +167,7 @@ export function useAgentConversations() {
       if (!created || selectedId.value !== created.id) { input.value = message; return }
       id = created.id
     }
+    try { assertConversationWritable({readOnly:readOnly.value}) } catch(cause) { showError(cause); return }
     error.value = ''
     messages.value.push({ role: 'user', content: message })
     messages.value.push({ role: 'ai', content: '', isTyping: true,
@@ -241,6 +252,7 @@ export function useAgentConversations() {
       newType.value = type
       selectedType.value = type
       selectedId.value = null
+      readOnly.value = false
       messages.value = []
       busy.value = false
       loading.value = false
@@ -250,7 +262,7 @@ export function useAgentConversations() {
   onMounted(initialize)
   onUnmounted(() => { disposed = true; ++generation; connection?.close(); activeReply = null; clearInterval(timer) })
 
-  return { input, messages, error, running, loading, busy, selectedId, selectedType, newType, conversations,
+  return { input, messages, error, running, loading, busy, readOnly, selectedId, selectedType, newType, conversations,
     agents, working, agentName, openConversation, newConversation, removeConversation, sendMessage,
     stopReceiving, initialize, refreshCurrent: () => selectedId.value ? openConversation(selectedId.value) : initialize() }
 }

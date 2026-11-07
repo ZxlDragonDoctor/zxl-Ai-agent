@@ -37,12 +37,13 @@ function date(value: string) { return new Intl.DateTimeFormat(locale.value === '
         <button class="conversation-select" :disabled="disabled" :aria-current="selectedId === item.id ? 'true' : undefined" @click="deleteId = null; emit('select', item.id)">
           <span class="conversation-title">{{ item.title }}</span>
           <span class="conversation-meta"><span>{{ agentName(item.agentType) }}</span><time :datetime="item.updatedAt">{{ date(item.updatedAt) }}</time></span>
-          <span v-if="item.busy" class="busy-label">{{ t('action.running') }}</span>
+          <span v-if="item.readOnly" class="busy-label">{{ locale==='zh-CN'?'只读归档':'Read-only archive' }}</span>
+          <span v-if="item.busy && !item.readOnly" class="busy-label">{{ t('action.running') }}</span>
         </button>
-        <button class="delete-button" :disabled="disabled || item.busy" :aria-label="`${t('conversation.delete')}：${item.title}`" @click="deleteId = deleteId === item.id ? null : item.id">×</button>
+        <button class="delete-button" :disabled="disabled || item.busy || item.readOnly" :aria-label="`${t('conversation.delete')}：${item.title}`" @click="deleteId = deleteId === item.id ? null : item.id">×</button>
         <div v-if="deleteId === item.id" class="delete-confirm" role="group" :aria-label="t('conversation.deleteConfirm')">
           <p>{{ t('conversation.deleteConfirm') }}</p>
-          <button :disabled="disabled" @click="emit('remove', item.id); deleteId = null">{{ t('conversation.confirmDelete') }}</button>
+          <button :disabled="disabled || item.readOnly" @click="emit('remove', item.id); deleteId = null">{{ t('conversation.confirmDelete') }}</button>
           <button @click="deleteId = null">{{ t('conversation.cancel') }}</button>
         </div>
       </div>

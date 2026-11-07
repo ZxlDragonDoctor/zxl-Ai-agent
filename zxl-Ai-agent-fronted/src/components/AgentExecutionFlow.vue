@@ -4,7 +4,7 @@
       <span class="flow-symbol" :class="{ spinning: flow.status === 'running' }" aria-hidden="true">✦</span>
       <span class="flow-heading">{{ t('flow.title') }}</span>
       <span class="flow-state" role="status">{{ statusLabel }}</span>
-      <span class="flow-duration">{{ duration }}</span>
+      <span v-if="!flow.archivedIncomplete" class="flow-duration">{{ duration }}</span>
       <svg class="flow-chevron" aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m6 9 6 6 6-6"/></svg>
       <span v-if="toolNames.length" class="flow-tools-summary">
         <span v-for="name in toolNames" :key="name" class="tool-chip">{{ name }}</span>
@@ -14,7 +14,7 @@
     <div class="flow-body">
       <SkillRunEvidence v-if="flow.skill" :run="flow.skill" :receiving-ended="flow.status !== 'running'" />
       <p v-if="flow.restored" class="flow-waiting">{{ t('flow.restoredNote') }}</p>
-      <p v-if="!flow.steps.length && !flow.skill" class="flow-waiting">{{ t('flow.connecting') }}</p>
+      <p v-if="!flow.archivedIncomplete && !flow.steps.length && !flow.skill" class="flow-waiting">{{ t('flow.connecting') }}</p>
       <section v-for="step in flow.steps" :key="step.number" class="execution-step">
         <div class="step-heading">
           <span class="step-marker" :class="step.status" aria-hidden="true"></span>
@@ -71,7 +71,7 @@
 
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { t } from '../i18n'
+import { locale, t } from '../i18n'
 import type { AgentFlow, ToolResult } from '../types/agent'
 import McpToolEvidence from './McpToolEvidence.vue'
 import SkillRunEvidence from './SkillRunEvidence.vue'
@@ -89,6 +89,7 @@ onUnmounted(() => clearInterval(timer))
 const duration = computed(() => `${Math.max(0, ((props.flow.finishedAt ?? now.value) - props.flow.startedAt) / 1000).toFixed(1)} s`)
 const toolNames = computed(() => [...new Set(props.flow.steps.flatMap(step => step.tools.map(tool => tool.name)))])
 const statusLabel = computed(() => {
+  if (props.flow.archivedIncomplete) return locale.value === 'zh-CN' ? '历史未结束' : 'Unfinished in archive'
   if (props.flow.status !== 'running') {
     if (props.flow.endReason) return t(`flow.reason.${props.flow.endReason}`)
     return t(`flow.run.${props.flow.status}`)

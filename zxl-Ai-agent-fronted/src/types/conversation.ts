@@ -9,6 +9,7 @@ export interface AgentDefinition {
 }
 
 export interface ConversationSummary {
+  readOnly?: boolean
   id: string
   title: string
   updatedAt: string

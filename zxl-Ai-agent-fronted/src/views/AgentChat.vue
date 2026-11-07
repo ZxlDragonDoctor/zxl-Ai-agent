@@ -10,7 +10,7 @@ import SkillPanel from '../components/SkillPanel.vue'
 import { useAgentConversations } from '../composables/useAgentConversations'
 import { locale, t } from '../i18n'
 
-const { input, messages, error, running, loading, busy, selectedId, selectedType, newType, conversations,
+const { input, messages, error, running, loading, busy, readOnly, selectedId, selectedType, newType, conversations,
   agents, working, agentName, openConversation, newConversation, removeConversation, sendMessage,
   stopReceiving, refreshCurrent } = useAgentConversations()
 const title = computed(() => conversations.value.find(item => item.id === selectedId.value)?.title || t('conversation.newTitle'))
@@ -44,23 +44,24 @@ const examplePrompt = computed(() => activeType.value === 'enterprise-knowledge'
           <button v-else class="text-button" :disabled="loading" @click="refreshCurrent">{{ t('conversation.reload') }}</button>
         </div>
       </header>
+      <p v-if="readOnly" class="session-notice" role="status">{{ locale==='zh-CN'?'只读归档：历史运行不会自动恢复，不能发送或删除。请新建会话继续交流。':'Read-only archive: historical runs will not resume. Sending and deletion are disabled. Start a new conversation to continue.' }}</p>
       <p v-if="error" class="chat-error" role="alert">{{ error }}</p>
       <p v-if="loading" class="session-notice" role="status">{{ t('conversation.loading') }}</p>
       <p v-else-if="busy && !running" class="session-notice" role="status">{{ t('conversation.busyNote') }}</p>
-      <FactMemoryPanel v-if="activeType === 'enterprise-knowledge'" :key="selectedId || 'draft'" :conversation-id="selectedId" />
-      <McpToolsPanel v-if="activeType === 'mcp-research'" :key="selectedId || 'draft'" />
-      <SkillPanel v-if="activeType === 'it-ticket-skill'" :key="selectedId || 'draft'" v-model="skillVersion" :disabled="working || busy" />
-      <ChatRoom :key="selectedId || 'draft'" v-model="input" :messages="messages" :on-send="sendSelected" :disabled="working || busy || !agents.length">
+      <FactMemoryPanel v-if="!readOnly && activeType === 'enterprise-knowledge'" :key="selectedId || 'draft'" :conversation-id="selectedId" />
+      <McpToolsPanel v-if="!readOnly && activeType === 'mcp-research'" :key="selectedId || 'draft'" />
+      <SkillPanel v-if="!readOnly && activeType === 'it-ticket-skill'" :key="selectedId || 'draft'" v-model="skillVersion" :disabled="readOnly || working || busy" />
+      <ChatRoom :key="selectedId || 'draft'" v-model="input" :messages="messages" :on-send="sendSelected" :read-only="readOnly" :disabled="working || busy || !agents.length">
         <template #empty>
           <div class="conversation-welcome">
             <span class="welcome-symbol" aria-hidden="true">✦</span>
             <h2>{{ t('conversation.welcome') }}</h2>
             <p>{{ t('conversation.welcomeDescription') }}</p>
-            <div class="example-prompts">
+            <div v-if="!readOnly" class="example-prompts">
               <button @click="input = examplePrompt">
                 {{ examplePrompt }}<span aria-hidden="true">↗</span>
               </button>
-              <button v-if="activeType === 'manus'" @click="input = t('conversation.exampleTime')">{{ t('conversation.exampleTime') }}<span aria-hidden="true">↗</span></button>
+              <button v-if="!readOnly && activeType === 'manus'" @click="input = t('conversation.exampleTime')">{{ t('conversation.exampleTime') }}<span aria-hidden="true">↗</span></button>
             </div>
           </div>
         </template>

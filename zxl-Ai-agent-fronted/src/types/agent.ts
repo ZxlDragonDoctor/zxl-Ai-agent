@@ -53,6 +53,7 @@ export interface AgentFlow {
   error?: string
   endReason?: AgentEndReason
   restored?: boolean
+  archivedIncomplete?: boolean
   skill?: SkillRun
 }
 

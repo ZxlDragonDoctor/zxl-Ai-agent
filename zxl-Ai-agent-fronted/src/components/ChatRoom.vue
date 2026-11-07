@@ -25,10 +25,11 @@
         :value="modelValue"
         @input="e => emit('update:modelValue', (e.target as HTMLInputElement).value)"
         @keyup.enter="send"
-        :placeholder="t('chat.inputPlaceholder')"
+        :placeholder="readOnly ? (locale === 'zh-CN' ? '只读归档 · 新建会话后可继续交流' : 'Read-only archive · Start a new conversation to chat') : t('chat.inputPlaceholder')"
+        :disabled="readOnly"
         class="chat-input"
       />
-      <button @click="send" class="btn-send" :disabled="disabled" :aria-label="t('chat.send')" :title="t('chat.send')">
+      <button @click="send" class="btn-send" :disabled="disabled || readOnly" :aria-label="t('chat.send')" :title="t('chat.send')">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>
@@ -37,13 +38,14 @@
 
 <script setup lang="ts">
 import { nextTick, ref, watch } from 'vue'
-import { t } from '../i18n'
+import { locale, t } from '../i18n'
 
 const props = defineProps<{
   modelValue: string
   messages: any[]
   onSend: (msg: string) => void
   disabled?: boolean
+  readOnly?: boolean
 }>()
 
 const emit = defineEmits(['update:modelValue'])
@@ -56,7 +58,7 @@ function trackScroll() {
 }
 
 function send() {
-  if (!props.disabled && props.modelValue?.trim()) {
+  if (!props.disabled && !props.readOnly && props.modelValue?.trim()) {
     stickToBottom.value = true
     props.onSend(props.modelValue)
     emit('update:modelValue', '')
