@@ -1,0 +1,6 @@
+{
+  "date": "2026-11-07",
+  "method": "UI export -> restore full backup -> UI export -> deepEqual",
+  "equal": true,
+  "personalRecordsCommitted": false
+}
