@@ -33,4 +33,15 @@ class PrivateRunEventsTest {
         assertNotNull(TrustedRunContext.class.getConstructor(ActorRef.class,String.class,PrivateRunEvents.class));
         assertThrows(NoSuchMethodException.class,()->TrustedRunContext.class.getConstructor(ActorRef.class,String.class,Consumer.class));
     }
+    @Test void preparedEventIsInvisibleAndDoesNotEvictCommittedHistoryUntilCommit(){
+        var queue=new PrivateRunEvents(1);var committed=event();queue.accept(committed);
+        var candidate=event();var pending=queue.prepare(candidate);
+        assertEquals(List.of(committed),queue.snapshot());pending.commit();
+        assertEquals(List.of(candidate),queue.snapshot());pending.commit();assertEquals(List.of(candidate),queue.snapshot());
+    }
+    @Test void abortDoesNotLoseOrResurrectHistoryAndCannotBeCommittedLater(){
+        var queue=new PrivateRunEvents(1);var first=event();queue.accept(first);
+        var pending=queue.prepare(event());var later=event();queue.accept(later);
+        pending.discard();pending.commit();assertEquals(List.of(later),queue.snapshot());
+    }
 }

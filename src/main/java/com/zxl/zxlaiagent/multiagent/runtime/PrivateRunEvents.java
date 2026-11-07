@@ -23,6 +23,16 @@ public final class PrivateRunEvents implements Consumer<AgentEvent> {
         if(events.size()==capacity)events.removeFirst();
         events.addLast(event);
     }
+    /** Prepare under an authority gate. Pending entries occupy no visible-history slot. */
+    public Prepared prepare(AgentEvent event){return new Prepared(Objects.requireNonNull(event,"Event required"));}
+    public final class Prepared {
+        private final AgentEvent event;
+        private boolean resolved;
+        private Prepared(AgentEvent event){this.event=event;}
+        /** Release visibility only after the authority transaction successfully returns. No callbacks. */
+        public void commit(){synchronized(PrivateRunEvents.this){if(resolved)return;accept(event);resolved=true;}}
+        public void discard(){synchronized(PrivateRunEvents.this){resolved=true;}}
+    }
     /** 返回独立、不可增删的列表；事件对象沿用现有 AgentEvent 契约。 */
     public synchronized List<AgentEvent> snapshot(){return List.copyOf(events);}
 }

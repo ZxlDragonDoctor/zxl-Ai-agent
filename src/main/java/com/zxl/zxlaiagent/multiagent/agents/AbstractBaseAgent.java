@@ -96,7 +96,9 @@ public abstract class AbstractBaseAgent implements AgentInterface {
         if (!changeTaskState(scope,AgentState.IDLE, AgentState.BUSY))
             return CompletableFuture.failedFuture(new WorkflowException("AGENT_BUSY", "agents." + agentId, "Agent 当前不可领取任务：" + state.get()));
         try {
-            if (!TaskLifecycle.start(task, agentId).applied()) {
+            Supplier<TaskLifecycle.Transition> claim=()->TaskLifecycle.start(task,agentId);
+            var transition=scope.scoped()?scope.boundary().start(com.zxl.zxlaiagent.security.Phase.DEQUEUE,()->scope.control().admit(claim)):claim.get();
+            if (!transition.applied()) {
                 changeTaskState(scope,AgentState.BUSY, AgentState.IDLE);
                 return CompletableFuture.failedFuture(new WorkflowException("TASK_ALREADY_STARTED", "tasks." + task.getId(), "任务已领取或已结束"));
             }

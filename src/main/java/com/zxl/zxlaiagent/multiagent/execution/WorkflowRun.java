@@ -6,6 +6,10 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import com.zxl.zxlaiagent.multiagent.runtime.RuntimeView;
+import com.zxl.zxlaiagent.multiagent.runtime.TrustedRunContext;
+import com.zxl.zxlaiagent.multiagent.runtime.ExecutionControl;
+import com.zxl.zxlaiagent.security.Phase;
+import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 
 @Slf4j
 public final class WorkflowRun {
@@ -18,19 +22,53 @@ public final class WorkflowRun {
     private long sequence;
     private volatile WorkflowOutcome outcome;
     private volatile Report latest;
+    private record Published(Report report,WorkflowOutcome outcome){}
+    private volatile Published published=new Published(null,null);
+    private com.zxl.zxlaiagent.multiagent.runtime.PrivateRunEvents.Prepared preparedEvent;
+    private volatile boolean publicationFailed;
+    private OperationBoundary scopedBoundary;
+    private TrustedRunContext trustedContext;
+    private ExecutionControl scopedControl;
     private Supplier<RuntimeView> runtimeView = () -> null;
     public synchronized void setRuntimeView(Supplier<RuntimeView> view) { runtimeView = view; }
-    public WorkflowOutcome outcome() { return outcome; }
-    public Report latestReport() { return latest; }
+    public WorkflowOutcome outcome() { return published.outcome(); }
+    public Report latestReport() { return published.report(); }
+    public boolean publicationFailed(){return publicationFailed;}
     public WorkflowRun(String goal, Consumer<Report> consumer) {
         planningTask = Task.create(goal);
         this.consumer = Objects.requireNonNull(consumer);
+    }
+    public synchronized void configureScoped(OperationBoundary boundary,TrustedRunContext context){
+        configureScoped(boundary,context,null);
+    }
+    public synchronized void configureScoped(OperationBoundary boundary,TrustedRunContext context,ExecutionControl control){
+        if(latest!=null||outcome!=null||scopedBoundary!=null)throw new IllegalStateException("Run already published/configured");
+        Objects.requireNonNull(context);
+        if(!id.equals(context.runId()))throw new IllegalArgumentException("Run context mismatch");
+        scopedBoundary=Objects.requireNonNull(boundary);trustedContext=context;scopedControl=control;
+    }
+    private <T>T authorized(Supplier<T> operation){
+        if(scopedBoundary==null)return operation.get();
+        var beforeOutcome=outcome;var beforeLatest=latest;long beforeSequence=sequence;
+        var beforePlanStatus=plan==null?null:plan.getStatus();
+        try{
+            T result=scopedBoundary.start(Phase.RESULT_PUBLISH,operation);
+            // The data and event were prepared inside the gate. Release their visibility only after commit.
+            published=new Published(latest,outcome);
+            if(preparedEvent!=null){preparedEvent.commit();preparedEvent=null;}
+            return result;
+        }catch(RuntimeException failed){
+            if(preparedEvent!=null){preparedEvent.discard();preparedEvent=null;publicationFailed=true;}
+            outcome=beforeOutcome;latest=beforeLatest;sequence=beforeSequence;
+            if(plan!=null&&beforePlanStatus!=null)plan.setStatus(beforePlanStatus);
+            throw failed;
+        }
     }
     public synchronized void emit(String stage, String unusedResult, WorkflowError unusedError) {
         if (outcome != null) return;
         if (!Set.of("queued", "planning", "running", "synthesizing").contains(stage))
             throw new IllegalArgumentException("Use finishSuccess/finishFailure for terminal outcomes");
-        send(report(stage, null));
+        authorized(()->{send(report(stage,null));return null;});
     }
     public synchronized WorkflowOutcome finishSuccess(String result) {
         if (outcome != null) return outcome;
@@ -53,6 +91,11 @@ public final class WorkflowRun {
                 synthesisTask == null ? null : TaskExecutionView.from(synthesisTask, "supervisor"));
     }
     private WorkflowOutcome finish(String status, String result, WorkflowError error, List<TaskExecutionView> tasks, TaskExecutionView synthesis) {
+        return authorized(()->scopedControl!=null&&status.equals("completed")
+                ?scopedControl.admit(()->finishAuthorized(status,result,error,tasks,synthesis))
+                :finishAuthorized(status,result,error,tasks,synthesis));
+    }
+    private WorkflowOutcome finishAuthorized(String status,String result,WorkflowError error,List<TaskExecutionView> tasks,TaskExecutionView synthesis){
         TaskExecutionView planning = TaskExecutionView.from(planningTask, "planner");
         outcome = new WorkflowOutcome(id, plan == null ? null : plan.getId(), planningTask.getDescription(), status,
                 startedAt, System.currentTimeMillis(), tasks, planning, synthesis, planning.modelCalls(),
@@ -75,8 +118,23 @@ public final class WorkflowRun {
     }
     private void send(Report report) {
         latest = report;
+        if(trustedContext!=null){
+            preparedEvent=trustedContext.events().prepare(AgentEvent.of("orchestrator-1",EventType.TASK_PROGRESS,Map.of("executionId",id,"report",report)));
+            return;
+        }
+        published=new Published(latest,outcome);
         try { consumer.accept(report); }
         catch (Exception e) { log.debug("Report subscriber disconnected: {}", id); }
+    }
+    /** Denial cleanup retains only a neutral terminal value; it never publishes through the revoked sink. */
+    public synchronized WorkflowOutcome finishDenied(){
+        if(outcome!=null)return outcome;
+        var error=new WorkflowError("RUN_AUTHORIZATION_LOST","workflow","运行授权失效，已停止执行");
+        outcome=new WorkflowOutcome(id,null,null,"failed",startedAt,System.currentTimeMillis(),List.of(),null,null,0,0,0,null,error);
+        latest=new Report(id,null,++sequence,null,"failed",startedAt,outcome.finishedAt(),List.of(),0,0,0,null,error,null,null,outcome,runtimeView.get());
+        published=new Published(latest,outcome);
+        if(plan!=null)plan.setStatus(PlanStatus.FAILED);
+        return outcome;
     }
     public record Report(String executionId, String planId, long sequence, String goal, String status,
                          long startedAt, long finishedAt, List<TaskExecutionView> tasks, int planningModelCalls,

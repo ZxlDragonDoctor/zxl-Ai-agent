@@ -14,6 +14,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
 import java.util.stream.Collectors;
+import com.zxl.zxlaiagent.security.Phase;
+import com.zxl.zxlaiagent.security.SecurityFailure;
+import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 
 @Slf4j
 public class OrchestratorAgent implements AgentInterface {
@@ -33,7 +36,11 @@ public class OrchestratorAgent implements AgentInterface {
     });
     private AgentMessageBus messageBus;
     private final Map<String, Plan> activePlans = new ConcurrentHashMap<>();
-    private final Map<String, CompletableFuture<String>> pendingTasks = new ConcurrentHashMap<>();
+    private record PendingKey(String runId,Task task){
+        @Override public boolean equals(Object other){return other instanceof PendingKey key&&runId.equals(key.runId)&&task==key.task;}
+        @Override public int hashCode(){return 31*runId.hashCode()+System.identityHashCode(task);}
+    }
+    private final Map<PendingKey, CompletableFuture<String>> pendingTasks = new ConcurrentHashMap<>();
     private final Map<String, AgentInterface> agentDirectory = new ConcurrentHashMap<>();
     public OrchestratorAgent(ChatModel model) { this(model, new RuntimeSettings(), System::nanoTime); }
     public OrchestratorAgent(ChatModel model, RuntimeSettings settings, LongSupplier clock) {
@@ -66,14 +73,28 @@ public class OrchestratorAgent implements AgentInterface {
     }
     public record RunHandle(String executionId, CompletableFuture<WorkflowOutcome> result) {}
     public record CancelReceipt(String status, RunRegistry.View run) {}
+    public record ScopedSubmission(OperationBoundary boundary,TrustedRunContext context){
+        public ScopedSubmission{Objects.requireNonNull(boundary);Objects.requireNonNull(context);}
+    }
+    public record ScopedRunView(RunRegistry.View run,List<AgentEvent> events){public ScopedRunView{events=List.copyOf(events);}}
+    public RunHandle submitScoped(String goal,Map<String,Object> context,Long timeoutMs,Function<String,ScopedSubmission> trustedFactory){
+        return submitInternal(goal,context,timeoutMs,report->{},Objects.requireNonNull(trustedFactory));
+    }
     public RunHandle submit(String goal, Map<String, Object> context, Long timeoutMs, Consumer<WorkflowRun.Report> reports) {
+        return submitInternal(goal,context,timeoutMs,reports,null);
+    }
+    private RunHandle submitInternal(String goal,Map<String,Object> context,Long timeoutMs,Consumer<WorkflowRun.Report> reports,Function<String,ScopedSubmission> trustedFactory){
+        Map<String,Object> validatedScopedInput=null;
+        if(trustedFactory!=null){validateGoal(goal);validatedScopedInput=inputs.snapshotUserInput(context);}
         ExecutionControl control = new ExecutionControl(System.currentTimeMillis(), Duration.ofMillis(settings.budget(timeoutMs)), clock);
         WorkflowRun run = new WorkflowRun(goal, reports);
-        RunRegistry.Entry entry = registry.register(run, control, clock.getAsLong());
-        run.emit("queued", null, null);
+        ScopedSubmission trusted=trustedFactory==null?null:Objects.requireNonNull(trustedFactory.apply(run.id));
+        if(trusted!=null)run.configureScoped(trusted.boundary(),trusted.context(),control);
+        RunRegistry.Entry entry = trusted==null?registry.register(run, control, clock.getAsLong()):registry.register(run,control,clock.getAsLong(),trusted.boundary(),trusted.context());
         try {
-            if (goal == null || goal.isBlank() || goal.length() > 12000) throw new WorkflowException("INVALID_GOAL", "goal", "目标不能为空且不能超过 12000 字符");
-            Map<String, Object> userInput = inputs.snapshotUserInput(context);
+            run.emit("queued", null, null);
+            validateGoal(goal);
+            Map<String, Object> userInput = trustedFactory==null?inputs.snapshotUserInput(context):validatedScopedInput;
             Runnable work = () -> {
                 synchronized (run) {
                     if (run.outcome() != null) return;
@@ -84,12 +105,16 @@ public class OrchestratorAgent implements AgentInterface {
                     entry.coordinating = true; entry.waitingFor = null;
                 }
                 try { executeRun(entry, userInput); }
-                finally { entry.coordinating = false; if (run.plan != null) activePlans.remove(run.plan.getId()); }
+                finally { entry.coordinating = false; activePlans.remove(run.id); }
             };
             entry.queuedWork = work;
-            synchronized (run) { control.admit(() -> { runtime.dispatch(work); return null; }); }
+            if(entry.scoped)entry.boundary.start(Phase.DEQUEUE,()->control.admit(()->{runtime.dispatch(work);return null;}));
+            else synchronized (run) { control.admit(() -> { runtime.dispatch(work); return null; }); }
         } catch (Exception e) { finishError(entry, WorkflowError.from(e)); }
         return new RunHandle(run.id, entry.result);
+    }
+    private void validateGoal(String goal){
+        if(goal==null||goal.isBlank()||goal.length()>12000)throw new WorkflowException("INVALID_GOAL","goal","目标不能为空且不能超过 12000 字符");
     }
     public String orchestrate(String goal, Map<String, Object> context) { return orchestrate(goal, context, r -> {}); }
     public String orchestrate(String goal, Map<String, Object> context, Consumer<WorkflowRun.Report> reports) {
@@ -106,7 +131,7 @@ public class OrchestratorAgent implements AgentInterface {
         WorkflowRun run = entry.run;
         try {
             entry.control.check(); run.emit("planning", null, null);
-            publish(EventType.PLAN_STARTED, Map.of("executionId", run.id, "goal", run.planningTask.getDescription()));
+            publish(entry,EventType.PLAN_STARTED, Map.of("executionId", run.id, "goal", run.planningTask.getDescription()));
             run.planningTask.setInput(userInput);
             String json = executePhase(run.planningTask, "planner", settings.getPlanningTimeoutMs(), "planning", entry);
             Plan candidate;
@@ -115,14 +140,14 @@ public class OrchestratorAgent implements AgentInterface {
             validator.validate(candidate, agentDirectory.values().stream().map(AgentInterface::getAgentType).collect(Collectors.toSet()));
             if (!run.planningTask.getDescription().equals(candidate.getGoal())) throw new WorkflowException("INVALID_PLAN_FIELD", "goal", "规划目标与原始目标不一致");
             synchronized (run) {
-                entry.control.check(); run.plan = candidate; activePlans.put(candidate.getId(), candidate); candidate.setStatus(PlanStatus.IN_PROGRESS);
+                entry.control.check(); run.plan = candidate; activePlans.put(run.id, candidate); candidate.setStatus(PlanStatus.IN_PROGRESS);
             }
             run.emit("running", null, null);
             executePlan(entry, userInput);
             String result = synthesize(entry, userInput);
             synchronized (run) {
                 entry.control.check(); WorkflowOutcome outcome = run.finishSuccess(result); entry.result.complete(outcome);
-                publish(outcome.successful() ? EventType.PLAN_COMPLETED : EventType.PLAN_FAILED, Map.of("executionId", run.id, "outcome", outcome));
+                publish(entry,outcome.successful() ? EventType.PLAN_COMPLETED : EventType.PLAN_FAILED, Map.of("executionId", run.id, "outcome", outcome));
             }
         } catch (Exception e) { finishError(entry, WorkflowError.from(e)); }
     }
@@ -175,18 +200,22 @@ public class OrchestratorAgent implements AgentInterface {
     private record Work(Task task, CompletableFuture<String> future, long startedNanos) {}
     private Work startWork(Task task, ExecutionRuntime.AgentLease agent, RunRegistry.Entry entry, String stage) {
         ExecutionLease occupancy = entry.taskLease(); runtime.bind(task, entry);
+        boolean cleanupAttached=false;
         try {
-            CompletableFuture<String> actual = entry.control.admit(() -> agent.agent().executeTask(task));
+            CompletableFuture<String> actual;
+            if(entry.scoped){entry.control.check();actual=agent.agent().executeTask(task);}
+            else actual=entry.control.admit(() -> agent.agent().executeTask(task));
             if (actual == null) throw new WorkflowException("NULL_TASK_FUTURE", stage, "Agent 返回了 null Future");
-            pendingTasks.put(task.getId(), actual);
+            var pendingKey=new PendingKey(entry.run.id,task);pendingTasks.put(pendingKey, actual);
             actual.whenComplete((value, error) -> {
-                try { pendingTasks.remove(task.getId(), actual); runtime.unbind(task); }
+                try { pendingTasks.remove(pendingKey, actual); runtime.unbind(task); }
                 finally { try { occupancy.close(); } finally { agent.close(); } }
             });
+            cleanupAttached=true;
             entry.run.emit(stage, null, null); return new Work(task, actual, clock.getAsLong());
         } catch (Exception e) {
-            runtime.unbind(task); occupancy.close(); agent.close();
-            if (entry.control.stopReason() == null) terminateTask(task, WorkflowError.from(e), false);
+            if(!cleanupAttached){runtime.unbind(task); occupancy.close(); agent.close();}
+            if (entry.control.stopReason() == null) terminateTask(entry,task, WorkflowError.from(e), false);
             throw e;
         }
     }
@@ -212,7 +241,7 @@ public class OrchestratorAgent implements AgentInterface {
             throw new WorkflowException(entry.control.stopReason(), e);
         } catch (Exception e) {
             WorkflowError error = WorkflowError.from(e).forTask(work.task.getId());
-            if (entry.control.stopReason() == null) terminateTask(work.task, error, false);
+            if (entry.control.stopReason() == null) terminateTask(entry,work.task, error, false);
             WorkflowError authoritative = work.task.snapshot().failure() == null ? error : work.task.snapshot().failure();
             if (path.equals("synthesis") || (path.equals("planning") && authoritative.path().equals("tasks." + work.task.getId())))
                 authoritative = new WorkflowError(authoritative.code(), path, authoritative.message(), authoritative.sourceTaskId(), authoritative.blockedByTaskIds(), authoritative.reason());
@@ -236,34 +265,47 @@ public class OrchestratorAgent implements AgentInterface {
         } catch (Exception e) {
             WorkflowError original = WorkflowError.from(e).forTask(synthesis.getId());
             WorkflowError failure = new WorkflowError(original.code(), "synthesis", original.message(), original.sourceTaskId(), original.blockedByTaskIds(), original.reason());
-            if (entry.control.stopReason() == null) terminateTask(synthesis, failure, false);
+            if (entry.control.stopReason() == null) terminateTask(entry,synthesis, failure, false);
             throw new WorkflowException(failure, e);
         }
     }
     private void finishError(RunRegistry.Entry entry, WorkflowError failure) {
         synchronized (entry.run) {
             if (entry.run.outcome() != null) return;
+            try {
+            if(entry.scoped&&entry.run.publicationFailed())throw new SecurityFailure("RUN_PUBLICATION_FAILED",503);
             WorkflowError stop = entry.control.stopReason(); boolean cancelled = stop != null && stop.code().equals("RUN_CANCELLED");
             failure = cancelled ? stop : FailurePropagation.firstFailure(entry.run.plan, stop == null ? failure : stop);
             if (stop != null) {
-                terminateTask(entry.run.planningTask, stop, cancelled);
-                if (entry.run.plan != null) for (Task task : entry.run.plan.getTasks()) terminateTask(task, stop, cancelled);
+                terminateTask(entry,entry.run.planningTask, stop, cancelled);
+                if (entry.run.plan != null) for (Task task : entry.run.plan.getTasks()) terminateTask(entry,task, stop, cancelled);
             } else {
-                terminateTask(entry.run.planningTask, failure, false);
-                for (Task task : FailurePropagation.blockPending(entry.run.plan, failure)) publishTask(EventType.TASK_BLOCKED, task);
+                terminateTask(entry,entry.run.planningTask, failure, false);
+                for (Task task : FailurePropagation.blockPending(entry.run.plan, failure)) publishTask(entry,EventType.TASK_BLOCKED, task);
             }
-            if (entry.run.synthesisTask != null) terminateTask(entry.run.synthesisTask, failure, cancelled);
+            if (entry.run.synthesisTask != null) terminateTask(entry,entry.run.synthesisTask, failure, cancelled);
             if (entry.queuedWork != null) runtime.removeQueued(entry.queuedWork);
             if (stop != null) runtime.removeStoppedWork(entry);
             entry.waitingFor = null;
             WorkflowOutcome outcome = cancelled ? entry.run.finishCancelled(failure) : entry.run.finishFailure(failure); entry.result.complete(outcome);
-            publish(EventType.PLAN_FAILED, Map.of("executionId", entry.run.id, "outcome", outcome));
+            publish(entry,EventType.PLAN_FAILED, Map.of("executionId", entry.run.id, "outcome", outcome));
+            }catch(RuntimeException rejected){
+                if(!entry.scoped)throw rejected;
+                var neutral=new WorkflowError("RUN_AUTHORIZATION_LOST","workflow","运行授权失效，已停止执行");
+                entry.control.stop(neutral);
+                TaskLifecycle.cancel(entry.run.planningTask,neutral);
+                if(entry.run.plan!=null)entry.run.plan.getTasks().forEach(task->TaskLifecycle.cancel(task,neutral));
+                if(entry.run.synthesisTask!=null)TaskLifecycle.cancel(entry.run.synthesisTask,neutral);
+                if(entry.queuedWork!=null)runtime.removeQueued(entry.queuedWork);
+                runtime.removeStoppedWork(entry);entry.waitingFor=null;
+                entry.result.complete(entry.run.finishDenied());
+            }
         }
     }
-    private void terminateTask(Task task, WorkflowError error, boolean cancelled) {
+    private void terminateTask(RunRegistry.Entry entry,Task task, WorkflowError error, boolean cancelled) {
         TaskLifecycle.Transition transition = cancelled ? TaskLifecycle.cancel(task, error.forTask(task.getId())) :
                 task.getStatus() == TaskStatus.PENDING ? TaskLifecycle.block(task, error.forTask(task.getId())) : TaskLifecycle.fail(task, error);
-        if (transition.applied()) publishTask(cancelled ? EventType.TASK_CANCELLED : transition.snapshot().status() == TaskStatus.BLOCKED ? EventType.TASK_BLOCKED : EventType.TASK_FAILED, task);
+        if (transition.applied()) publishTask(entry,cancelled ? EventType.TASK_CANCELLED : transition.snapshot().status() == TaskStatus.BLOCKED ? EventType.TASK_BLOCKED : EventType.TASK_FAILED, task);
     }
     public CancelReceipt cancel(String id) {
         RunRegistry.Entry entry = registry.find(id); if (entry == null) return new CancelReceipt("not_found", null);
@@ -274,6 +316,30 @@ public class OrchestratorAgent implements AgentInterface {
         }
     }
     public RunRegistry.View runStatus(String id) { return registry.view(id); }
+    /** Server-only bounded candidates; each returned id still requires current ownership/read authorization. */
+    public List<String> retainedScopedRunIds(int maximum){
+        if(maximum<1||maximum>200)throw new IllegalArgumentException("Candidate limit must be 1..200");
+        return registry.entries().stream().filter(entry->entry.scoped&&entry.trustedContext!=null)
+                .limit(maximum).map(entry->entry.run.id).toList();
+    }
+    /** Caller must hold a current run.readOwn gate over this snapshot operation. */
+    public ScopedRunView runStatusScoped(String id){
+        var entry=registry.find(id);
+        if(entry==null||!entry.scoped||entry.trustedContext==null)return null;
+        var view=registry.view(id);
+        return view==null?null:new ScopedRunView(view,entry.trustedContext.events().snapshot());
+    }
+    public CancelReceipt cancelScoped(String id,OperationBoundary writeBoundary){
+        Objects.requireNonNull(writeBoundary);
+        var entry=registry.find(id);
+        if(entry==null||!entry.scoped)return new CancelReceipt("not_found",null);
+        boolean accepted;
+        // Serialize cancellation against an in-flight terminal commit/visibility barrier.
+        // This monitor is always outside the authority gate; the callback remains a short control mutation.
+        synchronized(entry.run){accepted=writeBoundary.start(Phase.ENTRY,()->entry.run.outcome()==null&&entry.control.cancel());}
+        if(entry.run.outcome()==null)finishError(entry,entry.control.stopReason());
+        return new CancelReceipt(accepted?"accepted":"already_finished",registry.view(id));
+    }
     public Map<String, Object> runtimeMetrics() { return runtime.metrics(); }
     public void sweepRuns() {
         runtime.sweepWorkerQueue();
@@ -288,8 +354,16 @@ public class OrchestratorAgent implements AgentInterface {
         try { if (messageBus != null) messageBus.publishEvent(AgentEvent.of(agentId, type, data)); }
         catch (Exception e) { log.warn("Workflow observation failed: {}", type); }
     }
-    private void publishTask(EventType type, Task task) {
+    private void publish(RunRegistry.Entry entry,EventType type,Map<String,Object> data){
+        if(!entry.scoped){publish(type,data);return;}
+        entry.boundary.start(Phase.RESULT_PUBLISH,()->{
+            var scopedData=new LinkedHashMap<String,Object>(data);scopedData.put("executionId",entry.run.id);
+            entry.trustedContext.events().accept(AgentEvent.of(agentId,type,Collections.unmodifiableMap(scopedData)));return null;
+        });
+    }
+    private void publishTask(RunRegistry.Entry entry,EventType type, Task task) {
         TaskSnapshot snapshot = task.snapshot();
+        if(entry.scoped){publish(entry,type,Map.of("taskId",task.getId(),"execution",snapshot));return;}
         try { if (messageBus != null) messageBus.publishEvent(AgentEvent.of(snapshot.assignedAgentId() == null ? agentId : snapshot.assignedAgentId(), type, Map.of("taskId", task.getId(), "execution", snapshot))); }
         catch (Exception e) { log.warn("Task observation failed: {}", task.getId()); }
     }
