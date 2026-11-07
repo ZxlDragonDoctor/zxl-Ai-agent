@@ -25,11 +25,19 @@
 | 提交屏障修复后重启主应用→提交同题 | 新ID、90秒预算，实际规划/研究 | 19-final-version-start.png |
 | 最终版本真实复验 | vector路线6231ms失败，keyword成功，工具6684ms明确VECTOR_CHANNEL_FAILED降级并返回甲原文；随后研究回答失败，无最终答案。不得将此前成功外推为本轮通过 | 20-final-version-tool-degraded-failure.png |
 | 最终图谱边界更新→阅读卡→再次恢复备份 | 页面明确120项回归/10项HTTP通过、最终模型回答仍失败；再导出深比较仍相等 | 21-final-graph-boundary.png |
+| 安全阶段诊断版本重启→同题90秒 | 未增加重试或预算，只增加诊断后进行一次有目的复验 | 22-diagnostic-version-start.png |
+| 展开工具 | 模型自行选择query="VPN 401"、hybrid；真实vector/keyword均OK、918ms、无降级、仅甲来源 | 23-diagnostic-version-hybrid-success.png |
+| 阅读最新最终答案 | completed，处理办法与C1原文一致，附C1/C2行号；[VERIFIED]为模型输出标记，不是业务审批证明 | 24-final-version-cited-answer.png |
+| 最新课程卡→恢复完整备份→重新导出 | 阅读卡含最新918ms成功及历史失败边界；个人记录JSON再次深比较相等，退出合成账号 | 25-latest-graph-evidence.png |
 
 首轮运行`85cac3a3-eb62-4a9e-943a-fb254e6df44e`失败。取消运行`0ac07ab7-6ca4-478f-ae79-bf9ac0c9a36a`完成资源清理。复验运行`6a1cc0df-7e26-48e1-b378-b393eb9b8bc5`成功。工具traceId为`7caecc0e-7a54-42a8-a365-dda51827f70e`。工具返回reranker=disabled，不能称为实际模型重排验收。
 
 混合检索预算修复针对独立复现的问题；本次成功不证明首轮超时只有这一个原因，也不是压测或稳定性保证。HTTP跨账号404/CSRF检查与自动化证据分别见本课evidence目录。运行报告当前在有界内存中，重启不恢复；本页不是持久事件重放或SSE验收。
 
 最终主应用PID30560上的运行`cfa3a0c1-9cdf-4959-8b46-9501c47d729c`失败，工具traceId为`ffed5666-6953-4a2d-84a1-30dcf4e2fcaa`。它证明实际向量慢时关键词保留了预算，没有证明回答阶段成功。页面仅有通用EXECUTION_ERROR；当时服务端未记录足够的阶段诊断，不能据此断言外部模型、截止或提交屏障是哪一个根因。该失败保持未通过，后续诊断另记。
+
+截图中的模型调用次数是门内尝试计数；失败时不能据此断言每次HTTP都实际发出或产生计费。研究回答门里还有原文再验证步骤。
+
+最新仅增安全诊断的主应用PID42468，运行`3c4cdb23-9d8e-4559-b1a0-1cf4d8738f5f`成功，traceId=`bd8a8362-68df-4713-b6d8-55062d8954c7`。此轮没有触发失败诊断，不能用它追溯前一轮失败原因，也不能说“加日志修复了模型失败”。只有诊断功能的固定阶段/脱敏行为由12类72项自动测试验收。整课仍在进行中。
 
 本批前端实际重跑身份/正式API/取消代际24项、图谱37项，均0失败/跳过；生产构建退出0，保留既有3D分包大于500kB警告。图谱经运行时validateCatalogue校验：ID唯一、端点存在、先修无环。日志为本地忽略目录`target/lesson17-orchestration-{frontend,graph,build}-20261107.log`。

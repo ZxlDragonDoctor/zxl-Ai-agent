@@ -28,7 +28,7 @@
 | 14 | 引用、拒答与确认事实 | 工程已实现并分层验证；原始真实 judge 门槛未过，已知注入守卫不等于独立留出通过 | [实现](14-implementation.md) |
 | 15 | MCP 工具契约与适配 | 已实现；47专项+194相关回归、真实SSE/PG/模型与逐状态截图分层验收，固定演示身份 | [实现与边界](15-implementation.md) |
 | 16 | Skill 与受控业务策略 | 已实现，97项专项/受影响回归、真实PG/MCP/模型、版本回滚及逐状态截图分层验收；固定课堂身份，无真实写入 | [任务](16-skills-business-policies-and-controlled-tools.md) / [证据与边界](16-implementation.md) |
-| 17 | 身份、权限与租户隔离 | **进行中**：正式多Agent入口接可信归属、私有报告和取消；111项入口测试、10项实际HTTP、24项前端与37项图谱通过。真实hybrid工具与引用答案复验成功，首轮超时保留；18张截图含取消清理、账号切换及进度恢复。旧历史、部分业务页面和独立profile验收仍待补齐；测试范围不简单累计 | [任务包](17-tenant-authorization-and-tool-policy.md) / [实现与边界](17-implementation.md) / [正式编排](17-formal-orchestration.md) |
+| 17 | 身份、权限与租户隔离 | **进行中**：正式多Agent接可信归属、私有报告和取消；120项入口、10项HTTP、24项前端、37项图谱通过。另安全诊断72项通过，范围有重叠。最新真实模型hybrid双通道918ms及引用回答成功；保留首轮超时和中间轮回答失败，未外推稳定性。25张截图含取消清理、账号切换和进度恢复。旧历史、部分业务页面与独立profile验收仍待补齐 | [任务包](17-tenant-authorization-and-tool-policy.md) / [实现与边界](17-implementation.md) / [正式编排](17-formal-orchestration.md) |
 | 18 | 注入防护与运行隔离 | 完整六单元任务已发布，工程未实施；已有局部守卫不等于完成实际隔离与评估 | [任务包](18-prompt-injection-and-runtime-isolation.md) |
 | 19 | 人工审批与业务写入 | 路线已规划；只读查询与草稿不算实际审批写入 | [路线第 5 阶段](enterprise-agent-roadmap.md) |
 | 20 | 执行事件与断线恢复 | 路线已规划；已有流式事件不等于持久游标恢复完成 | [路线第 6 阶段](enterprise-agent-roadmap.md) |

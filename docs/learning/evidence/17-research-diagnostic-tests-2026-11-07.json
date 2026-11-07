@@ -1,0 +1,97 @@
+{
+  "date": "2026-11-07",
+  "tests": 72,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "realPgTests": 2,
+  "suites": [
+    {
+      "name": "com.zxl.zxlaiagent.research.ResearchDiagnosticsTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ResearchRunnerTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ResearchFailureClassificationTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ResearchDispatchBoundaryTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ScopedResearchTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ScopedResearchAgentTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ScopedResearchAgentPgTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ResearchAgentIntegrationTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.StreamingResearchModelTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.McpEvidenceVerifierTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ScopedOrchestrationTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.WorkflowOutcomeTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "log": "target/lesson17-research-diagnostic-green-20261107.log",
+  "redLog": "target/lesson17-research-diagnostic-red-corrected-20261107.log",
+  "boundary": "Deterministic failure and safe-log tests; real PG uses synthetic model responses. Counts overlap formal-entry regression and are not a whole-repository total."
+}

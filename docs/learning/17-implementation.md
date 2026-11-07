@@ -216,3 +216,5 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 同批审查补充：复现授权回调返回成功、外层commit失败导致Future挂起，已增加[报告提交可见性屏障](17-run-publication-commit.md)。修复后最终16类120项入口回归通过（真实PG10项），日志`target/lesson17-formal-final-regression-20261107.log`，分层元数据见`evidence/17-formal-final-tests-2026-11-07.json`。这组包含并更新前述111项，不相加；commit失败由确定性边界注入，不是实际磁盘/网络故障。主应用重新启动后又通过同一组10项真实HTTP检查，见`evidence/17-orchestration-final-live-http-2026-11-07.json`。
 
 最终版本真实模型复验出现新失败：向量路线6231ms失败，关键词取回甲原文、最终PG校验成功；工具6684ms返回明确降级，无内存切换。研究模型调用2次后EXECUTION_ERROR，无答案；当时没有足够服务端阶段诊断，根因未确认。截图19/20保留，因此不能把提交屏障修复前的正向结果称为最终版本整链通过。本课保持进行中。
+
+随后新增[安全阶段诊断](17-research-failure-diagnostics.md)，12类72项通过（与120项有重叠，真实PG2项）。只记录固定阶段、白名单code和类型链；原异常、预算、权限和重试语义未改。重新启动主应用后同题/90秒做一次带诊断复验，最新运行3c4cdb23成功：模型选择query="VPN 401"、hybrid双通道918ms、无降级，仅甲来源、最终附原文引用。截图22～24保留；本次没有触发失败诊断，不能反推前次失败根因，也不是“日志修复模型”。modelCalls只统计门内尝试，失败时不等于实际HTTP/计费次数。整课剩余边界不变。
