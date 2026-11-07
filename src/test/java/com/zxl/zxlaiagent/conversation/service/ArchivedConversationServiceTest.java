@@ -42,6 +42,15 @@ class ArchivedConversationServiceTest {
         assertEquals("CONVERSATION_ARCHIVE_UNAVAILABLE",assertThrows(ConversationException.class,()->service().detail(actor,id)).getCode());
         verify(repository,never()).find(any());verify(repository,never()).save(any());
     }
+    @Test void anUnreadableArchiveDoesNotHideOrdinaryConversations(){
+        allowReads();
+        var ordinaryId=UUID.randomUUID();var at=Instant.now();
+        when(repository.findArchived(id,digest)).thenThrow(new ConversationException("CONVERSATION_ARCHIVE_UNAVAILABLE","Archive unavailable",HttpStatus.CONFLICT));
+        when(authorization.ownedResourceIds(actor,"conversation")).thenReturn(List.of(id.toString(),ordinaryId.toString()));
+        when(repository.find(ordinaryId)).thenReturn(Optional.of(new Conversation(ordinaryId,"ordinary",at,at,0,List.of(),List.of(),"safe")));
+        assertEquals(List.of(ordinaryId),service().list(actor).stream().map(ConversationSummary::id).toList());
+        verify(repository,never()).find(id);
+    }
     @Test void foreignMetadataDecisionNeverTouchesFile(){
         when(authorization.legacyConversationDigest(actor,id)).thenThrow(new SecurityFailure("RESOURCE_UNAVAILABLE",403));
         assertThrows(SecurityFailure.class,()->service().detail(actor,id));verifyNoInteractions(repository);

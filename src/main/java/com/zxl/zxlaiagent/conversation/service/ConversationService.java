@@ -78,7 +78,11 @@ public class ConversationService {
                         conversation.messages().size(), !snapshot.readOnly() && snapshotBusy(conversation),
                         conversation.agentType(), snapshot.readOnly()));
             } catch (ConversationException missing) {
-                if (missing.getStatus() != HttpStatus.NOT_FOUND) throw missing;
+                // An unverifiable archive cannot contribute even a title, but other conversations remain usable.
+                if (missing.getStatus() != HttpStatus.NOT_FOUND
+                        && !"CONVERSATION_ARCHIVE_UNAVAILABLE".equals(missing.getCode())) throw missing;
+            } catch (SecurityFailure missingReceipt) {
+                if (!"ARCHIVE_RECEIPT_UNAVAILABLE".equals(missingReceipt.code())) throw missingReceipt;
             }
         }
         summaries.sort(Comparator.comparing(ConversationSummary::updatedAt).reversed());

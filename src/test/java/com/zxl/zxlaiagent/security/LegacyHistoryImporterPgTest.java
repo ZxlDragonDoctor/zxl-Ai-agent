@@ -39,6 +39,8 @@ class LegacyHistoryImporterPgTest {
             assertEquals(entry.sha256(), fixture.authorization.legacyConversationDigest(fixture.owner, id));
             assertEquals("RESOURCE_UNAVAILABLE", assertThrows(SecurityFailure.class,
                     () -> fixture.authorization.legacyConversationDigest(fixture.foreign, id)).code());
+            assertEquals("RESOURCE_UNAVAILABLE", assertThrows(SecurityFailure.class,
+                    () -> fixture.authorization.legacyConversationDigest(fixture.colleague, id)).code());
             assertEquals("ARCHIVE_READ_ONLY", fixture.authorization.decide(fixture.owner, "conversation.writeOwn", resource, Phase.ENTRY, null).code());
             assertArrayEquals(Files.readAllBytes(fixture.source.resolve(id + ".json")),
                     Files.readAllBytes(fixture.backup.resolve(manifest.manifest().importId()).resolve(id + ".json")));
@@ -80,6 +82,7 @@ class LegacyHistoryImporterPgTest {
         final LegacyHistoryImporter importer;
         final ActorRef owner;
         final ActorRef foreign;
+        final ActorRef colleague;
 
         Fixture(SecurityDatabase db) throws Exception {
             this.db = db;
@@ -88,8 +91,10 @@ class LegacyHistoryImporterPgTest {
             importer = new LegacyHistoryImporter(db, source, backup, mapper);
             auth.provision(subject, subject, "synthetic-password", subject, "employee");
             auth.provision(subject + "-foreign", subject + "-foreign", "synthetic-password", subject + "-foreign", "employee");
+            auth.provision(subject + "-colleague", subject + "-colleague", "synthetic-password", subject, "employee");
             owner = auth.login(subject, "synthetic-password", subject).actor().ref();
             foreign = auth.login(subject + "-foreign", "synthetic-password", subject + "-foreign").actor().ref();
+            colleague = auth.login(subject + "-colleague", "synthetic-password", subject).actor().ref();
         }
 
         LegacyHistoryManifest.Entry entry() throws Exception {
@@ -108,6 +113,9 @@ class LegacyHistoryImporterPgTest {
 
         @Override public void close() {
             db.tx(c -> {
+                for (String sql : List.of("DELETE FROM authorization_audit WHERE subject_id=?", "DELETE FROM subject WHERE subject_id=?")) {
+                    try (var s = SecurityDatabase.statement(c, sql, subject + "-colleague")) { s.executeUpdate(); }
+                }
                 for (String sql : List.of("DELETE FROM legacy_import_receipt WHERE subject_id IN (?,?)",
                         "DELETE FROM authorization_audit WHERE subject_id IN (?,?)", "DELETE FROM subject WHERE subject_id IN (?,?)",
                         "DELETE FROM tenant WHERE tenant_id IN (?,?)")) {
