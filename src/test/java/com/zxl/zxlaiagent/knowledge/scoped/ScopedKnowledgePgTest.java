@@ -27,6 +27,43 @@ class ScopedKnowledgePgTest {
   var reopened=new ScopedKnowledgeFactory(new KnowledgeDatabase(System.getenv("LESSON12_DB_URL"),System.getenv("LESSON12_DB_USER"),System.getenv("LESSON12_DB_PASSWORD")),new AuthorizationService(SecurityDatabase.fromEnvironment()),new DemoKnowledgeEmbedding(),com.zxl.zxlaiagent.knowledge.retrieval.Reranker.rules(),null,Clock.systemUTC());assertEquals("The alpha policy is confidential.",reopened.knowledge(alice).detail("same").rawText());
  }
 
+ @Test void revokeAfterVerifyingMemorySourcePreventsProposalCommit() throws Exception {
+  var repository = org.mockito.Mockito.mock(com.zxl.zxlaiagent.conversation.repository.ConversationRepository.class);
+  var id = java.util.UUID.randomUUID();
+  var run = java.util.UUID.randomUUID();
+  var at = Instant.now();
+  var message = com.zxl.zxlaiagent.conversation.model.MessageRecord.user(run, "我偏好中文回复", at);
+  var conversation = new com.zxl.zxlaiagent.conversation.model.Conversation(id, "synthetic", at, at, 0,
+      java.util.List.of(message), java.util.List.of(com.zxl.zxlaiagent.conversation.model.RunRecord.started(run, at)), "enterprise-knowledge");
+  org.mockito.Mockito.when(repository.find(id)).thenReturn(java.util.Optional.of(conversation));
+  authorization.registerResource(alice, new ResourceRef("conversation", id.toString()));
+
+  var sourceVerified = new java.util.concurrent.CountDownLatch(1);
+  var allowCommit = new java.util.concurrent.CountDownLatch(1);
+  var clock = org.mockito.Mockito.mock(Clock.class);
+  org.mockito.Mockito.when(clock.instant()).thenAnswer(call -> {
+   sourceVerified.countDown();
+   assertTrue(allowCommit.await(10, java.util.concurrent.TimeUnit.SECONDS));
+   return at;
+  });
+  var scoped = new ScopedKnowledgeFactory(db, authorization, new DemoKnowledgeEmbedding(),
+      com.zxl.zxlaiagent.knowledge.retrieval.Reranker.rules(), null, clock, repository);
+  var executor = java.util.concurrent.Executors.newSingleThreadExecutor();
+  try {
+   var pending = executor.submit(() -> scoped.memory(alice).propose(id.toString(), message.messageId().toString(), message.content(), 600));
+   assertTrue(sourceVerified.await(5, java.util.concurrent.TimeUnit.SECONDS));
+   auth.revoke(alice);
+   allowCommit.countDown();
+   var failed = assertThrows(java.util.concurrent.ExecutionException.class, () -> pending.get(5, java.util.concurrent.TimeUnit.SECONDS));
+   assertEquals(401, assertInstanceOf(SecurityFailure.class, failed.getCause()).status());
+   var refreshed = auth.login(a, "synthetic-password", a).actor().ref();
+   assertTrue(scoped.memory(refreshed).list().isEmpty(), "The denied proposal must leave no row");
+  } finally {
+   allowCommit.countDown();
+   executor.shutdownNow();
+  }
+ }
+
  @Test void authorityLengthAndUnicodeScopesRemainValidAfterMigration(){
   String subject="主体"+"长".repeat(112)+java.util.UUID.randomUUID().toString();String tenant="租户"+"长".repeat(112)+java.util.UUID.randomUUID().toString();assertEquals(150,subject.length());assertEquals(150,tenant.length());auth.provision(subject,subject,"synthetic-password",tenant,"knowledge-maintainer");var actor=auth.login(subject,"synthetic-password",tenant).actor().ref();
   try{String document="d".repeat(120);factory.knowledge(actor).importDocument(document,"unicode.md","unicode authorized policy");assertEquals(document,factory.knowledge(actor).list().get(0).documentId());assertEquals(subject,factory.memory(actor).scope().userId());assertTrue(factory.memory(actor).list().isEmpty());db.tx(c->{try(var st=c.prepareStatement("SELECT count(*) FROM information_schema.columns WHERE table_schema='lesson12' AND column_name IN ('tenant_id','user_id') AND character_maximum_length=150");var rows=st.executeQuery()){rows.next();assertEquals(5,rows.getInt(1));}return null;});}
