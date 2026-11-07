@@ -4,35 +4,65 @@ import { locale } from '../i18n'
 import { actOnFact, askKnowledge, correctFact, deleteFact, factIsLive, listFacts, proposeFact, recallFacts } from '../api/answer'
 import type { DemoProfile, Fact } from '../api/answer'
 import { sessionState } from '../utils/sessionRequest'
+import { storedPreferenceSources } from '../utils/memorySource'
+import type { StoredMessage } from '../types/conversation'
 import KnowledgeAnswerCard from './KnowledgeAnswerCard.vue'
-const props = defineProps<{ conversationId: string | null }>()
+const props = defineProps<{ conversationId: string | null; storedMessages: StoredMessage[] }>()
 const tr = (zh: string, en: string) => locale.value === 'zh-CN' ? zh : en
-const identity = sessionState().status
+const { status: identity, generation } = sessionState()
 const formal = identity?.mode === 'required'
 const profile = ref<DemoProfile>('alice'), facts = ref<Fact[]>([]), text = ref('我偏好中文回复'), ttl = ref(3600)
 const busy = ref(false), error = ref(''), notice = ref(''), editing = ref<Fact | null>(null), correction = ref('')
+const sourceId = ref(''), correctionSourceId = ref('')
+const sources = computed(() => storedPreferenceSources(props.storedMessages))
+const correctionSources = computed(() => storedPreferenceSources(props.storedMessages, editing.value ?? undefined))
+const chosenSource = computed(() => sources.value.find(source => source.messageId === sourceId.value))
+const chosenCorrection = computed(() => correctionSources.value.find(source => source.messageId === correctionSourceId.value))
 const recalled = ref<Awaited<ReturnType<typeof recallFacts>> | null>(null), preview = ref(''), previewQuestion = ref('VPN报错401，应该如何处理？')
 const mode = ref<'demo' | 'real'>('demo'), now = ref(Date.now())
 const timer = setInterval(() => { now.value = Date.now() }, 1000)
-onUnmounted(() => clearInterval(timer))
+let disposed = false
+const current = () => !disposed && sessionState().generation === generation
+onUnmounted(() => { disposed = true; clearInterval(timer) })
 const live = (f: Fact) => factIsLive(f, now.value)
 const confirmedCount = computed(() => facts.value.filter(f => f.state === 'CONFIRMED' && live(f)).length)
-async function load() { facts.value = await listFacts(profile.value) }
+async function load() {
+  const result = await listFacts(profile.value)
+  if (current()) facts.value = result
+}
 async function run(action: () => Promise<unknown>, success?: string) {
-  if (busy.value) return
+  if (busy.value || !current()) return
   busy.value = true; error.value = ''; notice.value = ''; recalled.value = null; preview.value = ''
-  try { await action(); await load(); if (success) notice.value = success }
-  catch (cause) { error.value = cause instanceof Error ? cause.message : tr('操作未完成', 'Operation failed'); await load().catch(() => {}) }
+  try {
+    await action()
+    if (!current()) return
+    await load()
+    if (success && current()) notice.value = success
+  } catch (cause) {
+    if (!current()) return
+    error.value = cause instanceof Error ? cause.message : tr('操作未完成', 'Operation failed')
+    await load().catch(() => {})
+  }
   finally { busy.value = false }
 }
-function propose() { return run(() => proposeFact({ profile: profile.value, sessionId: props.conversationId || 'memory-demo', messageId: crypto.randomUUID(), userText: text.value, ttlSeconds: ttl.value }), tr('提议已保存，确认前不会进入上下文。', 'Proposal saved. It will not enter context until confirmed.')) }
+function propose() {
+  const source = formal ? chosenSource.value : { messageId: crypto.randomUUID(), userText: text.value }
+  if (!source || (formal && !props.conversationId)) return
+  return run(() => proposeFact({ profile: profile.value, sessionId: props.conversationId || 'memory-demo', ...source, ttlSeconds: ttl.value }), tr('提议已保存，确认前不会进入上下文。', 'Proposal saved. It will not enter context until confirmed.'))
+}
 function act(f: Fact, action: 'confirm' | 'reject') { return run(() => actOnFact(f.id, action, { profile: profile.value, version: f.version }), tr('状态已更新', 'State updated')) }
 function remove(f: Fact) { return run(() => deleteFact(f.id, profile.value, f.version), tr('已从业务召回移除；历史消息另行保留。', 'Removed from recall. Historical messages are retained separately.')) }
 async function saveCorrection() {
-  if (!editing.value) return
+  const source = formal ? chosenCorrection.value : { messageId: crypto.randomUUID(), userText: correction.value }
+  if (!editing.value || !source || (formal && !props.conversationId)) return
   const f = editing.value
-  await run(() => correctFact(f.id, { profile: profile.value, version: f.version, userText: correction.value, sessionId: props.conversationId || 'memory-demo', messageId: crypto.randomUUID(), ttlSeconds: ttl.value }), tr('更正进入待确认，旧值已退出召回。', 'Correction awaits confirmation; the old value is no longer recalled.'))
+  await run(() => correctFact(f.id, { profile: profile.value, version: f.version, sessionId: props.conversationId || 'memory-demo', ...source, ttlSeconds: ttl.value }), tr('更正进入待确认，旧值已退出召回。', 'Correction awaits confirmation; the old value is no longer recalled.'))
   if (!error.value) editing.value = null
+}
+function beginCorrection(fact: Fact) {
+  editing.value = fact
+  correction.value = fact.sourceText
+  correctionSourceId.value = ''
 }
 async function recall() { await run(async () => { recalled.value = await recallFacts(profile.value) }) }
 async function testContext() { await run(async () => { preview.value = JSON.stringify(await askKnowledge({ question: previewQuestion.value, conversationId: props.conversationId || 'memory-preview', mode: mode.value, budgetMs: 30000, profile: profile.value })) }) }
@@ -47,12 +77,31 @@ onMounted(() => { void run(load) })
       <p v-if="formal" class="boundary">{{ tr('真实PG · 记忆仅属于当前登录账号，先确认再召回。', 'Real PG · Memories belong to the signed-in account. Confirm before recall.') }}</p>
       <p v-else class="boundary">{{ tr('真实PG · 仅白名单偏好 · 先确认再召回。Alice / Bob 是固定演示身份，不代表生产登录授权。主聊天使用 Alice；下方可比较两个用户的上下文。', 'Real PG · Allowlisted preferences · Confirm before recall. Alice / Bob are fixed demo identities, not production authentication. Main chat uses Alice; compare both profiles below.') }}</p>
       <div class="toolbar"><span v-if="formal">{{ tr('当前账号', 'Current account') }} · {{ identity?.principal?.loginName }}</span><label v-else>{{ tr('演示用户', 'Demo profile') }} <select v-model="profile" :disabled="busy"><option value="alice">Alice</option><option value="bob">Bob</option></select></label><button :disabled="busy" @click="run(load)">{{ tr('刷新记忆', 'Refresh memories') }}</button><button :disabled="busy" @click="recall">{{ tr('查看实际召回', 'Inspect recall') }}</button></div>
-      <form @submit.prevent="propose"><label class="field">{{ tr('明确的用户原话', 'Explicit user statement') }}<input v-model="text" maxlength="500" :disabled="busy" :placeholder="tr('我偏好中文回复', 'I prefer replies in Chinese')"></label><div class="toolbar"><label>{{ tr('有效期', 'Lifetime') }} <select v-model="ttl" :disabled="busy"><option :value="5">{{ tr('5秒（到期演示）', '5 seconds (expiry demo)') }}</option><option :value="3600">{{ tr('1小时', '1 hour') }}</option><option :value="86400">{{ tr('1天', '1 day') }}</option></select></label><button class="primary" :disabled="busy || !text.trim()">{{ tr('提议保存', 'Propose memory') }}</button></div></form>
+      <form @submit.prevent="propose">
+        <label v-if="formal" class="field">{{ tr('当前会话已保存的用户原话', 'Saved user statement from this conversation') }}
+          <select v-model="sourceId" :disabled="busy || !sources.length">
+            <option disabled value="">{{ tr('选择一条偏好消息', 'Choose a preference message') }}</option>
+            <option v-for="source in sources" :key="source.messageId" :value="source.messageId">{{ source.userText }}</option>
+          </select>
+        </label>
+        <p v-if="formal && !sources.length">{{ tr('先在本会话发送明确偏好，例如「我偏好中文回复」，然后等待历史保存。', 'Send a preference in this conversation, such as “I prefer Chinese replies”, and wait for the history to save.') }}</p>
+        <label v-if="!formal" class="field">{{ tr('明确的用户原话', 'Explicit user statement') }}<input v-model="text" maxlength="500" :disabled="busy" :placeholder="tr('我偏好中文回复', 'I prefer replies in Chinese')"></label>
+        <div class="toolbar"><label>{{ tr('有效期', 'Lifetime') }} <select v-model="ttl" :disabled="busy"><option :value="5">{{ tr('5秒（到期演示）', '5 seconds (expiry demo)') }}</option><option :value="3600">{{ tr('1小时', '1 hour') }}</option><option :value="86400">{{ tr('1天', '1 day') }}</option></select></label><button class="primary" :disabled="busy || (formal ? !chosenSource || !conversationId : !text.trim())">{{ tr('提议保存', 'Propose memory') }}</button></div>
+      </form>
       <p v-if="error" role="alert" class="error">{{ error }}</p><p v-if="notice" role="status">{{ notice }}</p><p v-if="busy" role="status">{{ tr('正在处理…', 'Working…') }}</p>
       <div v-if="recalled" class="recall" role="region" :aria-label="tr('实际召回结果', 'Actual recall result')"><strong>{{ tr('实际进入记忆预算', 'Selected for memory budget') }}</strong><p>{{ recalled.facts.length }} {{ tr('条', 'facts') }} · {{ recalled.usedChars }} / 800 {{ tr('字符', 'characters') }} · {{ tr('丢弃', 'Dropped') }} {{ recalled.droppedCount }}</p><p v-for="f in recalled.facts" :key="f.id">{{ f.factKey }} = {{ f.value }} · v{{ f.version }}</p></div>
       <p v-if="!facts.length && !busy">{{ tr('此用户尚无记忆。', 'No memories for this profile.') }}</p>
-      <article v-for="f in facts" :key="f.id" class="fact"><div class="toolbar"><strong>{{ f.factKey }}：{{ f.value }}</strong><span class="state">{{ !live(f) && !f.deletedAt ? tr('已到期', 'Expired') : f.state }} · v{{ f.version }}</span></div><p class="quote">“{{ f.sourceText }}”</p><small>{{ tr('到期', 'Expires') }} {{ new Date(f.expiresAt).toLocaleString() }} · {{ tr('会话来源', 'Session source') }} {{ f.sessionId }}</small><div class="toolbar actions"><button v-if="f.state === 'PENDING' && live(f)" :disabled="busy" @click="act(f, 'confirm')">{{ tr('确认保存', 'Confirm') }}</button><button v-if="f.state === 'PENDING' && live(f)" :disabled="busy" @click="act(f, 'reject')">{{ tr('拒绝提议', 'Reject') }}</button><button v-if="f.state === 'CONFIRMED' && live(f)" :disabled="busy" @click="act(f, 'confirm')">{{ tr('再次确认（幂等）', 'Confirm again (idempotent)') }}</button><button v-if="f.state === 'CONFIRMED' && live(f)" :disabled="busy" @click="editing = f; correction = f.sourceText">{{ tr('更正', 'Correct') }}</button><button v-if="!f.deletedAt && f.state !== 'DELETED'" :disabled="busy" @click="remove(f)">{{ tr('删除记忆', 'Delete memory') }}</button></div></article>
-      <form v-if="editing" class="correction" @submit.prevent="saveCorrection"><label class="field">{{ tr('更正后的用户原话', 'Corrected statement') }}<input v-model="correction" maxlength="500" :disabled="busy"></label><div class="toolbar"><button :disabled="busy || !correction.trim()">{{ tr('提交更正待确认', 'Submit correction for confirmation') }}</button><button type="button" :disabled="busy" @click="editing = null">{{ tr('取消更正', 'Cancel correction') }}</button></div></form>
+      <article v-for="f in facts" :key="f.id" class="fact"><div class="toolbar"><strong>{{ f.factKey }}：{{ f.value }}</strong><span class="state">{{ !live(f) && !f.deletedAt ? tr('已到期', 'Expired') : f.state }} · v{{ f.version }}</span></div><p class="quote">“{{ f.sourceText }}”</p><small>{{ tr('到期', 'Expires') }} {{ new Date(f.expiresAt).toLocaleString() }} · {{ tr('会话来源', 'Session source') }} {{ f.sessionId }}</small><div class="toolbar actions"><button v-if="f.state === 'PENDING' && live(f)" :disabled="busy" @click="act(f, 'confirm')">{{ tr('确认保存', 'Confirm') }}</button><button v-if="f.state === 'PENDING' && live(f)" :disabled="busy" @click="act(f, 'reject')">{{ tr('拒绝提议', 'Reject') }}</button><button v-if="f.state === 'CONFIRMED' && live(f)" :disabled="busy" @click="act(f, 'confirm')">{{ tr('再次确认（幂等）', 'Confirm again (idempotent)') }}</button><button v-if="f.state === 'CONFIRMED' && live(f)" :disabled="busy" @click="beginCorrection(f)">{{ tr('更正', 'Correct') }}</button><button v-if="!f.deletedAt && f.state !== 'DELETED'" :disabled="busy" @click="remove(f)">{{ tr('删除记忆', 'Delete memory') }}</button></div></article>
+      <form v-if="editing" class="correction" @submit.prevent="saveCorrection">
+        <label v-if="formal" class="field">{{ tr('已保存的更正原话', 'Saved correction statement') }}
+          <select v-model="correctionSourceId" :disabled="busy || !correctionSources.length">
+            <option disabled value="">{{ tr('选择一条更正消息', 'Choose a correction message') }}</option>
+            <option v-for="source in correctionSources" :key="source.messageId" :value="source.messageId">{{ source.userText }}</option>
+          </select>
+        </label>
+        <label v-else class="field">{{ tr('更正后的用户原话', 'Corrected statement') }}<input v-model="correction" maxlength="500" :disabled="busy"></label>
+        <div class="toolbar"><button :disabled="busy || (formal ? !chosenCorrection || !conversationId : !correction.trim())">{{ tr('提交更正待确认', 'Submit correction for confirmation') }}</button><button type="button" :disabled="busy" @click="editing = null">{{ tr('取消更正', 'Cancel correction') }}</button></div>
+      </form>
       <form class="context-preview" @submit.prevent="testContext"><h3>{{ tr('核对本次回答的记忆上下文', 'Check memory used in this answer') }}</h3><label class="field">{{ tr('测试问题', 'Test question') }}<input v-model="previewQuestion" maxlength="2000" :disabled="busy"></label><div class="toolbar"><label>{{ tr('模型模式', 'Model mode') }} <select v-model="mode" :disabled="busy"><option value="demo">{{ tr('规则演示（非语义）', 'Rule demo (not semantic)') }}</option><option value="real">{{ tr('真实生成与支持性检查', 'Live generation and support check') }}</option></select></label><button :disabled="busy || !previewQuestion.trim()">{{ tr('试用此用户上下文', 'Try this profile context') }}</button></div></form>
       <KnowledgeAnswerCard v-if="preview" :payload="preview" />
     </div>

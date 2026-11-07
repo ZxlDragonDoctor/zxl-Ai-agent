@@ -8,7 +8,7 @@ import { locale, t } from '../i18n'
 import { assertConversationWritable, conversationBusy, isReadOnlyConversation, ConversationWriteError } from '../utils/conversationAccess'
 import { applyAgentEvent, finishFlow, restoreChat } from '../utils/agentFlow'
 import type { AgentChatMessage, AgentStreamEvent } from '../types/agent'
-import type { AgentDefinition, ConversationDetail, ConversationSummary } from '../types/conversation'
+import type { AgentDefinition, ConversationDetail, ConversationSummary, StoredMessage } from '../types/conversation'
 
 
 
@@ -17,6 +17,7 @@ export function useAgentConversations() {
   const route = useRoute()
   const input = ref('')
   const messages = ref<AgentChatMessage[]>([])
+  const storedMessages = ref<StoredMessage[]>([])
   const error = ref('')
   const running = ref(false)
   const loading = ref(false)
@@ -61,6 +62,7 @@ export function useAgentConversations() {
     selectedId.value = null
     readOnly.value = false
     messages.value = []
+    storedMessages.value = []
     busy.value = false
     remember(null)
     void refreshList().catch(showError)
@@ -73,6 +75,7 @@ export function useAgentConversations() {
     selectedId.value = detail.id
     selectedType.value = detail.agentType
     messages.value = restoreChat(detail)
+    storedMessages.value = detail.messages
     readOnly.value = isReadOnlyConversation(detail)
     busy.value = conversationBusy(detail)
     remember(detail.id)
@@ -125,6 +128,7 @@ export function useAgentConversations() {
         selectedId.value = null
         readOnly.value = false
         messages.value = []
+        storedMessages.value = []
         busy.value = false
         remember(null)
       }
@@ -187,8 +191,9 @@ export function useAgentConversations() {
       applyAgentEvent(reply, event)
       if (event.type === 'RUN_COMPLETED' || event.type === 'RUN_FAILED') {
         closeReply()
-        busy.value = false
-        void refreshList().catch(showError)
+        busy.value = selectedType.value === 'enterprise-knowledge'
+        if (busy.value) void pollCurrent()
+        else void refreshList().catch(showError)
       }
     }
     connection = chatWithAgentSse(message, () => {}, reason => {
@@ -254,6 +259,7 @@ export function useAgentConversations() {
       selectedId.value = null
       readOnly.value = false
       messages.value = []
+      storedMessages.value = []
       busy.value = false
       loading.value = false
       remember(null)
@@ -262,7 +268,7 @@ export function useAgentConversations() {
   onMounted(initialize)
   onUnmounted(() => { disposed = true; ++generation; connection?.close(); activeReply = null; clearInterval(timer) })
 
-  return { input, messages, error, running, loading, busy, readOnly, selectedId, selectedType, newType, conversations,
+  return { input, messages, storedMessages, error, running, loading, busy, readOnly, selectedId, selectedType, newType, conversations,
     agents, working, agentName, openConversation, newConversation, removeConversation, sendMessage,
     stopReceiving, initialize, refreshCurrent: () => selectedId.value ? openConversation(selectedId.value) : initialize() }
 }

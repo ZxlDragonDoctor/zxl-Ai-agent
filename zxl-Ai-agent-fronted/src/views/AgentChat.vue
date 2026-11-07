@@ -10,7 +10,7 @@ import SkillPanel from '../components/SkillPanel.vue'
 import { useAgentConversations } from '../composables/useAgentConversations'
 import { locale, t } from '../i18n'
 
-const { input, messages, error, running, loading, busy, readOnly, selectedId, selectedType, newType, conversations,
+const { input, messages, storedMessages, error, running, loading, busy, readOnly, selectedId, selectedType, newType, conversations,
   agents, working, agentName, openConversation, newConversation, removeConversation, sendMessage,
   stopReceiving, refreshCurrent } = useAgentConversations()
 const title = computed(() => conversations.value.find(item => item.id === selectedId.value)?.title || t('conversation.newTitle'))
@@ -48,7 +48,7 @@ const examplePrompt = computed(() => activeType.value === 'enterprise-knowledge'
       <p v-if="error" class="chat-error" role="alert">{{ error }}</p>
       <p v-if="loading" class="session-notice" role="status">{{ t('conversation.loading') }}</p>
       <p v-else-if="busy && !running" class="session-notice" role="status">{{ t('conversation.busyNote') }}</p>
-      <FactMemoryPanel v-if="!readOnly && activeType === 'enterprise-knowledge'" :key="selectedId || 'draft'" :conversation-id="selectedId" />
+      <FactMemoryPanel v-if="!readOnly && activeType === 'enterprise-knowledge'" :key="selectedId || 'draft'" :conversation-id="selectedId" :stored-messages="storedMessages" />
       <McpToolsPanel v-if="!readOnly && activeType === 'mcp-research'" :key="selectedId || 'draft'" />
       <SkillPanel v-if="!readOnly && activeType === 'it-ticket-skill'" :key="selectedId || 'draft'" v-model="skillVersion" :disabled="readOnly || working || busy" />
       <ChatRoom :key="selectedId || 'draft'" v-model="input" :messages="messages" :on-send="sendSelected" :read-only="readOnly" :disabled="working || busy || !agents.length">
