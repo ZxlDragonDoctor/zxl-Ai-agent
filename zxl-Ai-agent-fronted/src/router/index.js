@@ -6,7 +6,7 @@ const routes = [
   {
     path: '/multi-agent',
     name: 'MultiAgent',
-    component: () => import('../views/MultiAgent.vue')
+    component: () => import('../views/MultiAgentEntry.vue')
   },
   {
     path: '/love-master',
