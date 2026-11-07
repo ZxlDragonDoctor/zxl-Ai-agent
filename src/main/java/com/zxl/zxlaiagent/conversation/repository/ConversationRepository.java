@@ -14,6 +14,10 @@ public interface ConversationRepository {
         throw new IllegalStateException("SCOPED_CREATION_UNSUPPORTED");
     }
     Optional<Conversation> find(UUID id);
+    /** An archived body may only be returned after validating the bytes against its receipt. */
+    default Optional<Conversation> findArchived(UUID id, String expectedSha256) {
+        throw new IllegalStateException("ARCHIVE_READING_UNSUPPORTED");
+    }
     List<ConversationSummary> list();
     /** 传入读取时的 version；写入成功后持久化版本递增。 */
     void save(Conversation conversation);

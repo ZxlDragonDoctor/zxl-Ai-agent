@@ -72,8 +72,11 @@ public class ConversationService {
         for (String ownedId : authorization.ownedResourceIds(actor, "conversation")) {
             UUID id = parseId(ownedId);
             try {
-                Conversation conversation = get(actor, id);
-                summaries.add(conversation.summary(snapshotBusy(conversation)));
+                ScopedSnapshot snapshot = getScoped(actor, id);
+                Conversation conversation = snapshot.conversation();
+                summaries.add(new ConversationSummary(id, conversation.title(), conversation.updatedAt(),
+                        conversation.messages().size(), !snapshot.readOnly() && snapshotBusy(conversation),
+                        conversation.agentType(), snapshot.readOnly()));
             } catch (ConversationException missing) {
                 if (missing.getStatus() != HttpStatus.NOT_FOUND) throw missing;
             }
@@ -83,15 +86,31 @@ public class ConversationService {
     }
 
     public Conversation require(ActorRef actor, UUID id) {
-        return authorization().gate(actor, "conversation.readOwn", resource(id), Phase.HISTORY_READ, null,
-                () -> require(id));
+        return readScoped(actor, id).conversation();
+    }
+
+    private record ScopedSnapshot(Conversation conversation, boolean readOnly) {}
+
+    private ScopedSnapshot readScoped(ActorRef actor, UUID id) {
+        var authorization = authorization();
+        String digest = authorization.legacyConversationDigest(actor, id);
+        // The importer cannot replace an existing owner. Recheck access at the actual file read.
+        return authorization.gate(actor, "conversation.readOwn", resource(id), Phase.HISTORY_READ, null,
+                () -> digest == null ? new ScopedSnapshot(require(id), false)
+                        : new ScopedSnapshot(repository.findArchived(id, digest).orElseThrow(() ->
+                                new ConversationException("CONVERSATION_ARCHIVE_UNAVAILABLE", "归档文件无法读取", HttpStatus.CONFLICT)), true));
     }
 
     public Conversation get(ActorRef actor, UUID id) {
-        Conversation conversation = require(actor, id);
-        if (conversation.runs().stream().noneMatch(run -> "running".equals(run.status()))) return conversation;
+        return getScoped(actor, id).conversation();
+    }
+
+    private ScopedSnapshot getScoped(ActorRef actor, UUID id) {
+        ScopedSnapshot snapshot = readScoped(actor, id);
+        Conversation conversation = snapshot.conversation();
+        if (snapshot.readOnly() || conversation.runs().stream().noneMatch(run -> "running".equals(run.status()))) return snapshot;
         var lease = guard.tryAcquire(id);
-        if (lease.isEmpty()) return conversation;
+        if (lease.isEmpty()) return snapshot;
         try (var ignored = lease.get()) {
             return authorization().gate(actor, "conversation.writeOwn", resource(id), Phase.PERSIST, null, () -> {
                 Conversation current = require(id);
@@ -102,14 +121,15 @@ public class ConversationService {
                     repository.save(current.update(current.title(), current.messages(), recovered));
                     current = require(id);
                 }
-                return current;
+                return new ScopedSnapshot(current, false);
             });
         }
     }
 
     public ConversationDetail detail(ActorRef actor, UUID id) {
-        Conversation conversation = get(actor, id);
-        return ConversationDetail.of(conversation, snapshotBusy(conversation));
+        ScopedSnapshot snapshot = getScoped(actor, id);
+        return ConversationDetail.of(snapshot.conversation(),
+                !snapshot.readOnly() && snapshotBusy(snapshot.conversation()), snapshot.readOnly());
     }
 
     public void delete(ActorRef actor, UUID id) {

@@ -20,12 +20,14 @@ import java.util.stream.IntStream;
 public class FileConversationRepository implements ConversationRepository {
     private final Path directory;
     private final ObjectMapper mapper;
+    private final LegacyConversationFiles legacyFiles;
     private final Object[] locks = IntStream.range(0, 64).mapToObj(i -> new Object()).toArray();
 
     public FileConversationRepository(ObjectMapper mapper,
             @Value("${agent.conversation.storage-dir:runtime-data/conversations}") String directory) {
         this.mapper = mapper;
         this.directory = Path.of(directory).toAbsolutePath().normalize();
+        this.legacyFiles = new LegacyConversationFiles(this.directory, mapper);
     }
 
     @Override
@@ -58,6 +60,17 @@ public class FileConversationRepository implements ConversationRepository {
                 throw new ConversationException("CONVERSATION_CORRUPT", "会话文件损坏，无法恢复，请检查服务端存储", HttpStatus.INTERNAL_SERVER_ERROR, e);
             } catch (IOException e) {
                 throw new ConversationException("CONVERSATION_READ_FAILED", "读取会话失败，请检查存储权限", HttpStatus.INTERNAL_SERVER_ERROR, e);
+            }
+        }
+    }
+
+    @Override
+    public Optional<Conversation> findArchived(UUID id, String expectedSha256) {
+        synchronized (lock(id)) {
+            try {
+                return Optional.of(legacyFiles.read(id, expectedSha256).conversation());
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                throw new ConversationException("CONVERSATION_ARCHIVE_UNAVAILABLE", "归档文件不存在、摘要不匹配或无法读取", HttpStatus.CONFLICT);
             }
         }
     }

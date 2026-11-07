@@ -84,7 +84,10 @@ public class AgentConversationService {
         }
         UUID id = conversationId == null ? (actor == null ? conversations.create(null) : conversations.create(actor, null, "manus")).id() : ConversationService.parseId(conversationId);
         if (actor == null) conversations.get(id);
-        else conversations.get(actor, id);
+        else {
+            requireConversationExecution(actor, id);
+            conversations.get(actor, id);
+        }
         var lease = guard.acquire(id);
         UUID runId = UUID.randomUUID();
         boolean started = false;
@@ -195,9 +198,16 @@ public class AgentConversationService {
         if (actor == null) throw new SecurityFailure("UNAUTHENTICATED", 401);
         if (prompt == null || prompt.isBlank() || prompt.length() > 12000)
             throw ConversationService.badRequest("消息不能为空且不能超过 12000 个字符");
-        var conversation = conversations.require(actor, ConversationService.parseId(conversationId));
+        UUID id = ConversationService.parseId(conversationId);
+        requireConversationExecution(actor, id);
+        var conversation = conversations.require(actor, id);
         var agent = createAgent(actor, agents.require(conversation.agentType()), AgentRunOptions.NONE);
         return window.prepare(conversation, agent, prompt.strip());
+    }
+
+    private void requireConversationExecution(ActorRef actor, UUID id) {
+        authorization().decide(actor, "conversation.writeOwn", new ResourceRef("conversation", id.toString()),
+                Phase.ENTRY, null).requireAllowed();
     }
 
     /** Read-only run-start projection; the summary is generated from stored messages, never accepted from the request. */
