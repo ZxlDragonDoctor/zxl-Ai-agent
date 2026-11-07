@@ -14,6 +14,19 @@ import java.util.function.*;
 
 /** One explicit model selection, one allowed read, then grounded synthesis. No nested agent retry loop. */
 public final class ResearchRunner {
+    private static final org.slf4j.Logger LOG=org.slf4j.LoggerFactory.getLogger(ResearchRunner.class);
+    private enum Stage { VALIDATION, DISCOVERY, MODEL_SELECTION, TOOL_VALIDATION, TOOL_CALL, TOOL_RESPONSE,
+        EVIDENCE_VERIFICATION, ANSWER_EVIDENCE_VERIFICATION, MODEL_ANSWER, ANSWER_VALIDATION, FINAL_EVIDENCE_VERIFICATION, RESULT_PUBLISH }
+    private static final Set<String> DIAGNOSTIC_CODES=Set.of(
+        "RESEARCH_INVALID_REQUEST","RESEARCH_TOOL_ALLOWLIST","RESEARCH_TOOL_SCHEMA_DENIED","RESEARCH_TOOL_SELECTION_DENIED",
+        "RESEARCH_RESPONSE_LIMIT","RESEARCH_REMOTE_FAILURE","RESEARCH_INVALID_EVIDENCE","RESEARCH_EVIDENCE_REJECTED",
+        "RESEARCH_MODEL_INPUT_LIMIT","RESEARCH_EVIDENCE_CHANGED_BEFORE_DISPATCH","RESEARCH_INVALID_ANSWER",
+        "RESEARCH_INVALID_CITATION","RESEARCH_MISSING_CITATION","RESEARCH_EVIDENCE_CHANGED","RESEARCH_CAPACITY",
+        "RESEARCH_MODEL_FAILED","RESEARCH_DEADLINE","RESEARCH_CANCELLED","RESEARCH_EXPECTS_ONE_TOOL_SELECTION","RESEARCH_UNEXPECTED_SECOND_TOOL",
+        "RESEARCH_MODEL_AUTH_FAILED","RESEARCH_MODEL_RATE_LIMITED","RESEARCH_MODEL_SERVICE_UNAVAILABLE","RESEARCH_MODEL_HTTP_FAILED","RESEARCH_MODEL_NETWORK_UNAVAILABLE",
+        "EVIDENCE_NOT_CURRENT_OR_VISIBLE","EVIDENCE_CHUNK_MISMATCH","EVIDENCE_UNTRUSTED_INSTRUCTION","EVIDENCE_GATEWAY_UNAVAILABLE","EVIDENCE_GATEWAY_FAILED","EVIDENCE_DOCUMENT_ID","EVIDENCE_LIMIT",
+        "MCP_CLOSED","MCP_INVALID_ARGUMENT","MCP_NOT_AUTHORIZED","MCP_NETWORK_FAILURE","MCP_PROTOCOL_FAILURE","MCP_SCHEMA_CHANGED","MCP_DEADLINE_EXCEEDED","MCP_CANCELLED","MCP_CAPACITY","MCP_INVALID_RESPONSE",
+        "ACTION_DENIED","UNAUTHENTICATED","RESOURCE_UNAVAILABLE","RUN_CANCELLED","RUN_DEADLINE_EXCEEDED","TASK_TIMEOUT","CAPACITY_QUEUE_TIMEOUT","EXECUTION_INTERRUPTED");
     public record Tool(String name,String description,String schema) { }
     public record Selection(String callId,String name,String arguments) { }
     public interface Gateway {
@@ -46,19 +59,28 @@ public final class ResearchRunner {
         public void accept(AgentExecutionEvent event){target.accept(event);}
     }
     public String run(String question,Duration budget,BooleanSupplier cancelled,Consumer<AgentExecutionEvent> events,ModelGate gate){
+        var stage=new java.util.concurrent.atomic.AtomicReference<>(Stage.VALIDATION);
+        try{return execute(question,budget,cancelled,events,gate,stage);}
+        catch(RuntimeException failure){diagnose(stage.get(),failure);throw failure;}
+    }
+    private String execute(String question,Duration budget,BooleanSupplier cancelled,Consumer<AgentExecutionEvent> events,ModelGate gate,java.util.concurrent.atomic.AtomicReference<Stage> stage){
         if(question==null||question.isBlank()||question.length()>4000||budget==null||budget.isNegative()||budget.isZero()||budget.compareTo(Duration.ofSeconds(30))>0)throw new IllegalArgumentException("RESEARCH_INVALID_REQUEST");
         long end=System.nanoTime()+budget.toNanos();check(end,cancelled);boundary.check(Phase.ENTRY);
+        stage.set(Stage.DISCOVERY);
         boundary.check(Phase.DISCOVERY);
         var tools=gateway.discover(remaining(end,cancelled),cancelled);
         if(tools.size()!=1||!allowedTool.equals(tools.get(0).name()))throw new IllegalStateException("RESEARCH_TOOL_ALLOWLIST");
         if(FormalKnowledgeMcpProtocol.EXPOSED_NAME.equals(allowedTool)&&!Objects.equals(new io.modelcontextprotocol.spec.McpSchema.Tool(allowedTool,"",tools.get(0).schema()).inputSchema(),FormalKnowledgeMcpProtocol.modelDefinition().inputSchema()))throw new IllegalStateException("RESEARCH_TOOL_SCHEMA_DENIED");
+        stage.set(Stage.MODEL_SELECTION);
         var choice=bounded(()->{boundary.check(Phase.DEQUEUE);return gate.call(()->{boundary.check(Phase.MODEL_DISPATCH);return model.select(question,tools,remaining(end,cancelled),cancelled);});},end,cancelled);
+        stage.set(Stage.TOOL_VALIDATION);
         if(choice==null||!tools.get(0).name().equals(choice.name())||choice.callId()==null||choice.callId().length()>128||choice.arguments()==null||choice.arguments().length()>16384)throw new IllegalStateException("RESEARCH_TOOL_SELECTION_DENIED");
         // Validate before publishing arguments. Unknown fields must not leak into public tool events.
         var spec=new io.modelcontextprotocol.spec.McpSchema.Tool(tools.get(0).name(),tools.get(0).description(),tools.get(0).schema());
         var arguments=com.zxl.zxlaiagent.tools.support.StructuredMcpToolCallback.validateInput(choice.arguments(),spec);
         if(arguments.containsKey("budgetMs")||arguments.containsKey("authorization"))throw new IllegalArgumentException("Model cannot choose execution budget");
         check(end,cancelled);
+        stage.set(Stage.TOOL_CALL);
         publish(events,AgentExecutionEvent.tool("TOOL_REQUESTED",1,choice.callId(),choice.name(),choice.arguments(),null,"requested",null));
         publish(events,AgentExecutionEvent.tool("TOOL_STARTED",1,choice.callId(),choice.name(),choice.arguments(),null,"running",null));
         long start=System.nanoTime();String result;
@@ -73,6 +95,7 @@ public final class ResearchRunner {
             publish(events,AgentExecutionEvent.tool("TOOL_FAILED",1,choice.callId(),choice.name(),choice.arguments(),ToolResults.json(com.zxl.zxlaiagent.tools.model.ToolResult.fail("MCP_INVALID_RESPONSE","工具响应超过绝对字节限制")),"error",(System.nanoTime()-start)/1_000_000));
             throw new IllegalStateException("RESEARCH_RESPONSE_LIMIT");
         }
+        stage.set(Stage.TOOL_RESPONSE);
         JsonNode envelope=ToolResults.read(result);boolean success=envelope.path("success").asBoolean();
         publish(events,AgentExecutionEvent.tool(success?"TOOL_COMPLETED":"TOOL_FAILED",1,choice.callId(),choice.name(),choice.arguments(),result,success?"completed":"error",(System.nanoTime()-start)/1_000_000));
         if(!success){
@@ -86,26 +109,44 @@ public final class ResearchRunner {
         JsonNode raw=envelope.path("data").path("hits");
         if(!raw.isArray()||raw.size()>5)throw new IllegalStateException("RESEARCH_INVALID_EVIDENCE");
         List<JsonNode> hits=new ArrayList<>();raw.forEach(hits::add);
-        if(hits.isEmpty()){boundary.check(Phase.RESULT_PUBLISH);return "当前有效知识中没有找到匹配资料；未生成缺乏证据的结论。 / No matching current evidence.";}
+        if(hits.isEmpty()){stage.set(Stage.RESULT_PUBLISH);boundary.check(Phase.RESULT_PUBLISH);return "当前有效知识中没有找到匹配资料；未生成缺乏证据的结论。 / No matching current evidence.";}
+        stage.set(Stage.EVIDENCE_VERIFICATION);
         boundary.check(Phase.EVIDENCE_READ);
         var checked=List.copyOf(verifier.verify(List.copyOf(hits),remaining(end,cancelled),cancelled));
         if(checked.isEmpty()||checked.size()!=hits.size())throw new IllegalStateException("RESEARCH_EVIDENCE_REJECTED");
         if(ToolResults.json(Map.of("question",question,"evidence",checked)).getBytes(java.nio.charset.StandardCharsets.UTF_8).length>22000)throw new IllegalStateException("RESEARCH_MODEL_INPUT_LIMIT");
+        stage.set(Stage.ANSWER_EVIDENCE_VERIFICATION);
         var answer=bounded(()->{boundary.check(Phase.DEQUEUE);return gate.call(()->{
             boundary.check(Phase.MODEL_DISPATCH);
             // Revalidate after both the model queue and the workflow model permit, immediately before dispatch.
             if(!verifier.verify(checked,remaining(end,cancelled),cancelled).equals(checked))throw new IllegalStateException("RESEARCH_EVIDENCE_CHANGED_BEFORE_DISPATCH");
+            stage.set(Stage.MODEL_ANSWER);
             return model.answer(question,checked,remaining(end,cancelled),cancelled);
         });},end,cancelled);
+        stage.set(Stage.ANSWER_VALIDATION);
         if(answer==null||answer.isBlank()||answer.length()>6000)throw new IllegalStateException("RESEARCH_INVALID_ANSWER");
         var matches=java.util.regex.Pattern.compile("\\[C(\\d+)\\]").matcher(answer);boolean cited=false;
         while(matches.find()){int id;try{id=Integer.parseInt(matches.group(1));}catch(NumberFormatException e){throw new IllegalStateException("RESEARCH_INVALID_CITATION");}if(id<1||id>checked.size())throw new IllegalStateException("RESEARCH_INVALID_CITATION");cited=true;}
         if(!cited)throw new IllegalStateException("RESEARCH_MISSING_CITATION");
+        stage.set(Stage.FINAL_EVIDENCE_VERIFICATION);
         if(!verifier.verify(checked,remaining(end,cancelled),cancelled).equals(checked))throw new IllegalStateException("RESEARCH_EVIDENCE_CHANGED");
         check(end,cancelled);
         StringBuilder sources=new StringBuilder("\n\n引用 / Sources:");
         for(int i=0;i<checked.size();i++){var h=checked.get(i);sources.append("\n[C").append(i+1).append("] ").append(h.path("documentId").asText()).append(" · ").append(h.path("chunkId").asText()).append(" · L").append(h.path("startLine").asInt()).append("–").append(h.path("endLine").asInt());}
+        stage.set(Stage.RESULT_PUBLISH);
         return boundary.start(Phase.RESULT_PUBLISH,()->answer+sources);
+    }
+    /** Bounded type names and exact whitelist codes only: never log arbitrary messages, evidence or a Throwable. */
+    private static void diagnose(Stage stage,RuntimeException failure){
+        String code=null;var types=new ArrayList<String>();var seen=Collections.newSetFromMap(new IdentityHashMap<Throwable,Boolean>());
+        for(Throwable current=failure;current!=null&&seen.size()<16&&seen.add(current);current=current.getCause()){
+            types.add(current.getClass().getName());
+            String candidate=current instanceof SecurityFailure denied?denied.code():current instanceof com.zxl.zxlaiagent.knowledge.mcp.KnowledgeMcpClient.Failure remote?remote.code():current instanceof com.zxl.zxlaiagent.knowledge.mcp.FormalKnowledgeMcpClient.Failure remote?remote.code():current instanceof com.zxl.zxlaiagent.multiagent.model.WorkflowException workflow?workflow.getCode():current.getMessage();
+            if(code==null&&DIAGNOSTIC_CODES.contains(candidate==null?"":candidate))code=candidate;
+            if(current instanceof SecurityFailure&&code==null)code="RESEARCH_AUTHORIZATION_FAILED";
+            if(current instanceof CancellationException)code="RESEARCH_CANCELLED";
+        }
+        LOG.warn("Research failure stage={}, code={}, exceptionTypes={}",stage,code==null?"RESEARCH_EXECUTION_FAILED":code,String.join(" -> ",types));
     }
     /** Event consumer must only enqueue/start delivery; never block on a remote response inside a gate. */
     private void publish(Consumer<AgentExecutionEvent> events,AgentExecutionEvent event){
