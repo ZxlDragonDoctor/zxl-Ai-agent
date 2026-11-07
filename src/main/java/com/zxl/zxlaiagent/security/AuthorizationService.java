@@ -19,12 +19,39 @@ public final class AuthorizationService {
    if("ALLOWED".equals(code)&&action.endsWith("Own")){
     String expected=action.startsWith("conversation.")?"conversation":"run";
     if(resource==null||!expected.equals(resource.type()))code="RESOURCE_UNAVAILABLE";
-    else try(var s=SecurityDatabase.statement(c,"SELECT 1 FROM resource_owner WHERE resource_type=? AND resource_id=? AND tenant_id=? AND subject_id=? AND state='ACTIVE' FOR UPDATE",resource.type(),resource.id(),ref.tenantId(),ref.subjectId());var r=s.executeQuery()){if(!r.next())code="RESOURCE_UNAVAILABLE";}
+    else try(var s=SecurityDatabase.statement(c,"SELECT legacy_import_id FROM resource_owner WHERE resource_type=? AND resource_id=? AND tenant_id=? AND subject_id=? AND state='ACTIVE' FOR UPDATE",resource.type(),resource.id(),ref.tenantId(),ref.subjectId());var r=s.executeQuery()){
+     if(!r.next())code="RESOURCE_UNAVAILABLE";
+     else if(action.endsWith("writeOwn")&&r.getString(1)!=null)code="ARCHIVE_READ_ONLY";
+    }
    }
   }
   var decision=new AuthorizationDecision(UUID.randomUUID().toString(),version,"ALLOWED".equals(code),code);
   try(var s=SecurityDatabase.statement(c,"INSERT INTO authorization_audit(decision_id,run_id,phase,tenant_id,subject_id,session_id,action,resource_type,resource_id,version,allowed,code) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",decision.decisionId(),runId,phase.name(),ref.tenantId(),ref.subjectId(),ref.sessionId(),action,resource==null?null:resource.type(),resource==null?null:resource.id(),version,decision.allowed(),decision.code())){s.executeUpdate();}
   return decision;
+ }
+ /** The verified archive digest is private to the active owner. Normal conversations have no receipt. */
+ public String legacyConversationDigest(ActorRef ref, UUID id) {
+  Objects.requireNonNull(id);
+  record Checked(AuthorizationDecision decision,String digest,boolean missingReceipt){}
+  var checked=db.tx(c->{
+   var decision=decide(c,ref,"conversation.readOwn",new ResourceRef("conversation",id.toString()),Phase.HISTORY_READ,null);
+   if(!decision.allowed())return new Checked(decision,null,false);
+   try(var s=SecurityDatabase.statement(c,"""
+      SELECT o.legacy_import_id, e.sha256
+      FROM resource_owner o
+      LEFT JOIN legacy_import_receipt r ON r.import_id=o.legacy_import_id AND r.tenant_id=o.tenant_id AND r.subject_id=o.subject_id
+      LEFT JOIN legacy_import_entry e ON e.import_id=r.import_id AND e.conversation_id=o.resource_id
+      WHERE o.resource_type='conversation' AND o.resource_id=? AND o.tenant_id=? AND o.subject_id=? AND o.state='ACTIVE'
+      """,id.toString(),ref.tenantId(),ref.subjectId());var rows=s.executeQuery()){
+    if(!rows.next())return new Checked(decision,null,true);
+    String archive=rows.getString(1);
+    String digest=rows.getString(2);
+    return new Checked(decision,digest,archive!=null&&digest==null);
+   }
+  });
+  checked.decision().requireAllowed();
+  if(checked.missingReceipt())throw new SecurityFailure("ARCHIVE_RECEIPT_UNAVAILABLE",503);
+  return checked.digest();
  }
  public <T>T gate(ActorRef ref,String action,ResourceRef resource,Phase phase,String runId,Supplier<T> start){return gateAll(ref,List.of(new Permission(action,resource)),phase,runId,start);}
  /** All requirements share one epoch transaction. The callback only starts/enqueues an operation. */
