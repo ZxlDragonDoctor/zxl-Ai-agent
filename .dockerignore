@@ -1,0 +1,35 @@
+# 构建产物
+target/
+runtime-data/
+tmp/
+
+# IDE 配置
+.idea/
+.vscode/
+
+# 日志和错误报告
+*.log
+hs_err_pid*
+replay_pid*
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# 文档和图片（不影响运行）
+docs/
+img_1.png
+zxl-ai-agent.zip
+
+# 前端项目（单独部署）
+zxl-Ai-agent-fronted/
+zxl-image-search-mcp/
+
+# 其他
+chat-memory/
+scripts/
+tools/
+AGENTS.md
+README.md
+HELP.md

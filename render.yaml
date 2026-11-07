@@ -1,0 +1,47 @@
+# Render 平台部署配置
+# 文档：https://render.com/docs/blueprint-spec
+# 使用方法：
+#   1. 将项目推送到 GitHub 仓库
+#   2. 在 Render 控制台选择 "New > Blueprint"，选择该仓库
+#   3. Render 会自动读取此文件创建服务
+#   4. 部署后在服务设置中填入环境变量（API Key 等）
+
+services:
+  # 后端 Spring Boot 服务（免费 Web Service）
+  - type: web
+    name: zxl-ai-agent-backend
+    runtime: docker
+    plan: free
+    region: singapore  # 新加坡机房，国内访问较快的海外节点
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/swagger-ui.html
+    autoDeploy: true
+    envVars:
+      - key: DASHSCOPE_API_KEY
+        sync: false  # 手动在控制台填入
+      - key: SEARCH_API_KEY
+        sync: false
+      - key: MCP_SERVER_URL
+        value: http://ldlqepdn.zxl-image-search-mcp.77mounfk.rpjqduwt.com:8127
+      - key: DASHSCOPE_MODEL
+        value: qwen-plus
+      - key: JAVA_OPTS
+        value: "-Xmx350m -Xss256k -XX:+UseContainerSupport"
+
+  # 前端静态站点（免费，不休眠）
+  - type: web
+    name: zxl-ai-agent-frontend
+    runtime: static
+    plan: free
+    region: singapore
+    buildCommand: cd zxl-Ai-agent-fronted && npm install && npm run build
+    staticPublishPath: ./zxl-Ai-agent-fronted/dist
+    pullRequestPreviewsEnabled: false
+    autoDeploy: true
+    envVars:
+      - key: VITE_API_BASE
+        sync: false  # 手动填入后端地址，如 https://zxl-ai-agent-backend.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

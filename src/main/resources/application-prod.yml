@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: zxl-ai-agent
+  ai:
+    dashscope:
+      # API Key 通过环境变量 DASHSCOPE_API_KEY 注入（CloudBase 云托管控制台配置）
+      api-key: ${DASHSCOPE_API_KEY}
+      chat:
+        options:
+          model: ${DASHSCOPE_MODEL:qwen-plus}
+    mcp:
+      client:
+        # SSE 模式 MCP 服务地址，通过环境变量配置
+        sse:
+          connections:
+            server1:
+              url: ${MCP_SERVER_URL:http://ldlqepdn.zxl-image-search-mcp.77mounfk.rpjqduwt.com:8127}
+
+# 端口通过环境变量 PORT 注入（Render 自动分配，默认 10000）
+server:
+  port: ${PORT:10000}
+  servlet:
+    context-path: /api
+
+# searchApi 密钥通过环境变量注入
+search-api:
+  api-key: ${SEARCH_API_KEY}
+
+# springdoc-openapi
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  group-configs:
+    - group: 'default'
+      paths-to-match: '/**'
+      packages-to-scan: com.zxl.zxlaiagent.controller
+# knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
