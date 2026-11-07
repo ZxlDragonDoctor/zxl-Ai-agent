@@ -1,0 +1,139 @@
+{
+  "date": "2026-11-07",
+  "suites": [
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ExecutionRuntimeIntegrationTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "controlled-offline"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.FormalMultiAgentControllerTest",
+      "tests": "7",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "controlled-offline"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.MultiAgentOrchestrationTest",
+      "tests": "24",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "controlled-offline"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ScopedAgentModelTransportTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "controlled-offline"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ScopedMultiAgentServicePgTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "real-pg-synthetic-workers"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ScopedMultiAgentServiceTest",
+      "tests": "8",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "controlled-offline"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ScopedOrchestrationTest",
+      "tests": "10",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "controlled-offline"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ScopedTaskStartTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "controlled-offline"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.WorkflowOutcomeTest",
+      "tests": "11",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "controlled-offline"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ScopedResearchAgentPgTest",
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "real-pg-synthetic-workers"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ScopedResearchAgentTest",
+      "tests": "5",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "controlled-offline"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ScopedResearchTest",
+      "tests": "9",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "controlled-offline"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.AuthorizedRunRegistrationPgTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "real-pg-synthetic-workers"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.EndpointPolicyTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "controlled-offline"
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.TrustedHandlerInterceptorTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "layer": "controlled-offline"
+    }
+  ],
+  "total": 111,
+  "realPgTests": 10,
+  "logs": [
+    "target/lesson17-formal-entry-regression-20261107.log",
+    "target/lesson17-scoped-service-pg-20261107.log"
+  ],
+  "redLogs": [
+    "target/lesson17-scoped-orchestration-red-20261107.log",
+    "target/lesson17-task-start-behavior-red-20261107.log",
+    "target/lesson17-cancel-policy-red-20261107.log",
+    "target/lesson17-retained-owner-query-red-20261107.log",
+    "target/lesson17-formal-controller-red-20261107.log"
+  ],
+  "boundary": "Real PG owner/revocation/cancellation and actual runtime with synthetic workers; controlled tests do not prove paid-model success or browser acceptance."
+}

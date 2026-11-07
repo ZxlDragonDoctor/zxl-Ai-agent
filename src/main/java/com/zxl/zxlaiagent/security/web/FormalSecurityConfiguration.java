@@ -55,7 +55,8 @@ public class FormalSecurityConfiguration implements WebMvcConfigurer {
         // Add a business handler only after all of its methods use the trusted scoped service.
         registry.addInterceptor(new TrustedHandlerInterceptor(Set.of(AuthController.class,
                 FormalConversationController.class, SecurityHealthController.class,
-                FormalAgentChatController.class, FormalKnowledgeGatewayController.class, FormalAgentTypeController.class, FormalMcpController.class, FormalSkillController.class)));
+                FormalAgentChatController.class, FormalKnowledgeGatewayController.class, FormalAgentTypeController.class, FormalMcpController.class, FormalSkillController.class,
+                com.zxl.zxlaiagent.multiagent.security.FormalMultiAgentController.class)));
         registry.addInterceptor(new PreparedAgentStreamInterceptor());
     }
 }

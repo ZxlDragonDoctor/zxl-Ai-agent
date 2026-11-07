@@ -19,6 +19,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.Map;
 
 @RestController
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name="agent.security.mode",havingValue="legacy-demo",matchIfMissing=true)
 @RequestMapping("/ai/multiagent")
 @Slf4j
 public class MultiAgentController {

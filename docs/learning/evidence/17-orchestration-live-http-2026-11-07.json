@@ -1,0 +1,35 @@
+{
+  "boundary" : "Actual restarted formal HTTP gateway, real PG identity and existing actual-model run; distinct HTTP cookie sessions, not independent browser profiles.",
+  "date" : "2026-11-07",
+  "checks" : [ {
+    "passed" : true,
+    "check" : "owner reads own run"
+  }, {
+    "passed" : true,
+    "check" : "foreign GET run hidden"
+  }, {
+    "passed" : true,
+    "check" : "foreign POST run hidden"
+  }, {
+    "passed" : true,
+    "check" : "foreign workspace omits other run"
+  }, {
+    "passed" : true,
+    "check" : "global agents closed"
+  }, {
+    "passed" : true,
+    "check" : "global events closed"
+  }, {
+    "passed" : true,
+    "check" : "global harness/research-1 closed"
+  }, {
+    "passed" : true,
+    "check" : "global harness/benchmark closed"
+  }, {
+    "passed" : true,
+    "check" : "body identity injection rejected"
+  }, {
+    "passed" : true,
+    "check" : "missing valid csrf rejects mutation"
+  } ]
+}

@@ -1,0 +1,125 @@
+{
+  "date": "2026-11-07",
+  "layer": "formal-entry-final-after-publication-barrier",
+  "tests": 120,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "realPgTests": 10,
+  "suites": [
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.FormalMultiAgentControllerTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ScopedMultiAgentServiceTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ScopedMultiAgentServicePgTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ScopedOrchestrationTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ScopedTaskStartTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.PrivateRunEventsTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.AuthorizedRunRegistrationPgTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.MultiAgentOrchestrationTest",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.WorkflowOutcomeTest",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ExecutionRuntimeIntegrationTest",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ScopedResearchAgentTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ScopedResearchAgentPgTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.research.ScopedResearchTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.multiagent.ScopedAgentModelTransportTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.EndpointPolicyTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "com.zxl.zxlaiagent.security.web.TrustedHandlerInterceptorTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "log": "target/lesson17-formal-final-regression-20261107.log",
+  "boundary": "PG authorization and synthetic workers; commit failure is a deterministic boundary injection, not a real database outage. Paid-model/UI proof recorded separately."
+}
