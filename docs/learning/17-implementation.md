@@ -238,3 +238,9 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 最终 7 类 Java 测试共 45 项，其中 21 项连接真实 PG。新增三项撤权竞争覆盖记忆来源已核验但尚未写入、Skill 研究仍在等待、Skill 草稿已准备但尚未进入发布队列。记忆没有新增行，Skill 的迟到建议和草稿没有发布，真实 PG 记录了拒绝。Skill 自动化使用确定性研究替身。
 
 实际页面用真实配置运行 Skill v3。工具发现刷新后可用，研究走到核验与建议阶段后达到截止，未发布草稿。当前结果保留为失败样本，早前实际模型成功证据另列。阅读[记忆与撤权导读](17-memory-and-skill-revocation.md)和[逐状态验收](../images/lesson17-revocation-2026-11-07/README.md)。
+
+### 真实 Skill 的租户检查与预算诊断
+
+真实 PG、MCP 与 qwen-plus 复跑中，甲乙同题和甲冒充管理员共三例都在 30 秒内完成，只调用只读知识工具，各自草稿仅引用本租户资料，未创建工单。越权请求原话仍保存在草稿描述中，后续执行必须继续将它视为不可信数据。
+
+新增传输分段计时后，四类 Java 回归共 31 项通过，覆盖受控传输、研究和正式 Skill；这是确定性测试。另一次真实复跑超时：工具选择模型传输 21.247 秒，最终回答仅剩 1.502 秒，首帧已收到但未结束，未发布草稿。具体记录见[诊断导读](17-skill-live-diagnostics.md)与[逐状态截图](../images/lesson17-skill-live-2026-11-07/README.md)。前端生产构建和 37 项图谱回归通过。独立浏览器并发查询、执行期间撤权及正式 Skill 链路 PG 故障恢复仍待验收。
