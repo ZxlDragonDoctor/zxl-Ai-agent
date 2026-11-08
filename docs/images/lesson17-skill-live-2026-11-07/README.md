@@ -1,6 +1,6 @@
 # 第十七课：真实 Skill 逐状态验收
 
-三例成功和一例超时先通过正式 HTTP/SSE 入口执行，连接真实 PostgreSQL、MCP 和 qwen-plus。浏览器使用两个独立上下文登录合成账号，从历史重开已保存的运行，再展开执行和草稿。这里验证两种登录状态下的历史显示；查询并未从两个浏览器同时发起。
+前十项中，三例成功和一例超时先通过正式 HTTP/SSE 入口执行，连接真实 PostgreSQL、MCP 和 qwen-plus。浏览器使用两个独立上下文登录合成账号，从历史重开已保存的运行，再展开执行和草稿。最后两项独立验证由浏览器实际同时发起的请求。
 
 | 操作 | 预期 | 实际与截图 |
 | --- | --- | --- |
@@ -14,5 +14,7 @@
 | 切换英文 | 阅读卡翻译，保持 2D 与一跳 | [英文 2D](08-graph-en-2d.png) |
 | 打开目录并按英文标题搜索 | 唯一匹配新增证据 | [目录筛选](09-graph-filter.png) |
 | 重开带计时的超时运行并展开执行 | 显示 `SKILL_DEADLINE`，没有草稿 | [超时记录与公开诊断](10-a-skill-timeout.png) |
+| 在两个独立浏览器同时发送同一问题（11 月 9 日） | 分别进入运行，没有共用登录态 | [甲发起](11-a-concurrent-start.png) · [乙发起](12-b-concurrent-start.png) |
+| 并发结束后分别打开草稿 | 各自引用，仍需审批 | [甲草稿](13-a-concurrent-draft.png) · [乙草稿](14-b-concurrent-draft.png) · [持久化检查](../../learning/evidence/17-skill-concurrent-browser-2026-11-09.json) |
 
 图谱在独立测试上下文操作，未写入个人学习进度和笔记。引用隔离不代表已经验收执行中撤权、恶意文档注入或 PG 故障恢复。[真实运行与计时记录](../../learning/evidence/17-skill-live-matrix-2026-11-07.json)

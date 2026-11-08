@@ -1,0 +1,45 @@
+{
+  "date": "2026-11-09",
+  "scope": "two isolated browser contexts, actual formal Skill v3, PostgreSQL, MCP and qwen-plus; relative client timestamps include UI capture",
+  "budgetMs": 30000,
+  "runs": [
+    {
+      "fixture": "A",
+      "startedMs": 89,
+      "finishedMs": 29001,
+      "status": "已完成",
+      "draft": true,
+      "ownMarker": true,
+      "foreignMarker": false,
+      "deadline": false
+    },
+    {
+      "fixture": "B",
+      "startedMs": 92,
+      "finishedMs": 24212,
+      "status": "已完成",
+      "draft": true,
+      "ownMarker": true,
+      "foreignMarker": false,
+      "deadline": false
+    }
+  ],
+  "durableChecks": {
+    "A": {
+      "terminal": "completed",
+      "skillStatus": "SUCCEEDED",
+      "draftCreated": false,
+      "toolEvents": [
+        "knowledge__knowledge_lookup_v2"
+      ]
+    },
+    "B": {
+      "terminal": "completed",
+      "skillStatus": "SUCCEEDED",
+      "draftCreated": false,
+      "toolEvents": [
+        "knowledge__knowledge_lookup_v2"
+      ]
+    }
+  }
+}
