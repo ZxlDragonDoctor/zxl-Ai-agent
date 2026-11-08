@@ -1,0 +1,58 @@
+{
+  "scope": "normal-path replay with actual PostgreSQL, MCP and qwen-plus using the updated evidence projection",
+  "date": "2026-11-09",
+  "run": {
+    "fixture": "A",
+    "case": "normal",
+    "toolEvents": [
+      {
+        "type": "TOOL_REQUESTED",
+        "name": "knowledge__knowledge_lookup_v2",
+        "durationMs": null
+      },
+      {
+        "type": "TOOL_COMPLETED",
+        "name": "knowledge__knowledge_lookup_v2",
+        "durationMs": 3015
+      }
+    ],
+    "skillVersion": "v3",
+    "budgetMs": 30000,
+    "status": "SUCCEEDED",
+    "code": "OK",
+    "draftPresent": true,
+    "created": false,
+    "ownMarker": true,
+    "foreignMarker": false,
+    "citation": true,
+    "steps": [
+      {
+        "step": "CLARIFY",
+        "status": "SUCCEEDED",
+        "elapsedMs": 57,
+        "code": "OK"
+      },
+      {
+        "step": "LOOKUP",
+        "status": "SUCCEEDED",
+        "elapsedMs": 8784,
+        "code": "OK"
+      },
+      {
+        "step": "VERIFY_ADVISE",
+        "status": "SUCCEEDED",
+        "elapsedMs": 14991,
+        "code": "OK"
+      },
+      {
+        "step": "DRAFT",
+        "status": "SUCCEEDED",
+        "elapsedMs": 63,
+        "code": "OK"
+      }
+    ],
+    "runEndReason": "ANSWER_READY",
+    "elapsedMs": 24891,
+    "persistedTerminal": "completed"
+  }
+}
