@@ -14,7 +14,7 @@
     <div class="flow-body">
       <SkillRunEvidence v-if="flow.skill" :run="flow.skill" :receiving-ended="flow.status !== 'running'" />
       <p v-if="flow.restored" class="flow-waiting">{{ t('flow.restoredNote') }}</p>
-      <p v-if="!flow.archivedIncomplete && !flow.steps.length && !flow.skill" class="flow-waiting">{{ t('flow.connecting') }}</p>
+      <p v-if="flow.status === 'running' && !flow.steps.length && !flow.skill" class="flow-waiting">{{ t('flow.connecting') }}</p>
       <section v-for="step in flow.steps" :key="step.number" class="execution-step">
         <div class="step-heading">
           <span class="step-marker" :class="step.status" aria-hidden="true"></span>
