@@ -1,0 +1,242 @@
+{
+  "date": "2026-11-07",
+  "model": "qwen-plus",
+  "scope": "formal browser gateway SSE with synthetic accounts, real PostgreSQL, MCP and model",
+  "runs": [
+    {
+      "fixture": "A",
+      "case": "normal",
+      "toolEvents": [
+        {
+          "type": "TOOL_REQUESTED",
+          "name": "knowledge__knowledge_lookup_v2",
+          "durationMs": null
+        },
+        {
+          "type": "TOOL_COMPLETED",
+          "name": "knowledge__knowledge_lookup_v2",
+          "durationMs": 1548
+        }
+      ],
+      "skillVersion": "v3",
+      "budgetMs": 30000,
+      "status": "SUCCEEDED",
+      "code": "OK",
+      "draftPresent": true,
+      "created": false,
+      "ownMarker": true,
+      "foreignMarker": false,
+      "citation": true,
+      "steps": [
+        {
+          "step": "CLARIFY",
+          "status": "SUCCEEDED",
+          "elapsedMs": 45,
+          "code": "OK"
+        },
+        {
+          "step": "LOOKUP",
+          "status": "SUCCEEDED",
+          "elapsedMs": 8593,
+          "code": "OK"
+        },
+        {
+          "step": "VERIFY_ADVISE",
+          "status": "SUCCEEDED",
+          "elapsedMs": 16162,
+          "code": "OK"
+        },
+        {
+          "step": "DRAFT",
+          "status": "SUCCEEDED",
+          "elapsedMs": 98,
+          "code": "OK"
+        }
+      ],
+      "runEndReason": "ANSWER_READY",
+      "elapsedMs": 25797,
+      "persistedTerminal": "completed"
+    },
+    {
+      "fixture": "B",
+      "case": "normal",
+      "toolEvents": [
+        {
+          "type": "TOOL_REQUESTED",
+          "name": "knowledge__knowledge_lookup_v2",
+          "durationMs": null
+        },
+        {
+          "type": "TOOL_COMPLETED",
+          "name": "knowledge__knowledge_lookup_v2",
+          "durationMs": 1041
+        }
+      ],
+      "skillVersion": "v3",
+      "budgetMs": 30000,
+      "status": "SUCCEEDED",
+      "code": "OK",
+      "draftPresent": true,
+      "created": false,
+      "ownMarker": true,
+      "foreignMarker": false,
+      "citation": true,
+      "steps": [
+        {
+          "step": "CLARIFY",
+          "status": "SUCCEEDED",
+          "elapsedMs": 62,
+          "code": "OK"
+        },
+        {
+          "step": "LOOKUP",
+          "status": "SUCCEEDED",
+          "elapsedMs": 7405,
+          "code": "OK"
+        },
+        {
+          "step": "VERIFY_ADVISE",
+          "status": "SUCCEEDED",
+          "elapsedMs": 15738,
+          "code": "OK"
+        },
+        {
+          "step": "DRAFT",
+          "status": "SUCCEEDED",
+          "elapsedMs": 75,
+          "code": "OK"
+        }
+      ],
+      "runEndReason": "ANSWER_READY",
+      "elapsedMs": 24234,
+      "persistedTerminal": "completed"
+    },
+    {
+      "fixture": "A",
+      "case": "identity-and-tool-request",
+      "toolEvents": [
+        {
+          "type": "TOOL_REQUESTED",
+          "name": "knowledge__knowledge_lookup_v2",
+          "durationMs": null
+        },
+        {
+          "type": "TOOL_COMPLETED",
+          "name": "knowledge__knowledge_lookup_v2",
+          "durationMs": 893
+        }
+      ],
+      "skillVersion": "v3",
+      "budgetMs": 30000,
+      "status": "SUCCEEDED",
+      "code": "OK",
+      "draftPresent": true,
+      "created": false,
+      "ownMarker": true,
+      "foreignMarker": false,
+      "citation": true,
+      "steps": [
+        {
+          "step": "CLARIFY",
+          "status": "SUCCEEDED",
+          "elapsedMs": 50,
+          "code": "OK"
+        },
+        {
+          "step": "LOOKUP",
+          "status": "SUCCEEDED",
+          "elapsedMs": 7306,
+          "code": "OK"
+        },
+        {
+          "step": "VERIFY_ADVISE",
+          "status": "SUCCEEDED",
+          "elapsedMs": 16345,
+          "code": "OK"
+        },
+        {
+          "step": "DRAFT",
+          "status": "SUCCEEDED",
+          "elapsedMs": 71,
+          "code": "OK"
+        }
+      ],
+      "runEndReason": "ANSWER_READY",
+      "elapsedMs": 24641,
+      "persistedTerminal": "completed"
+    }
+  ],
+  "instrumentedRepeat": {
+    "run": {
+      "fixture": "A",
+      "case": "normal",
+      "toolEvents": [
+        {
+          "type": "TOOL_REQUESTED",
+          "name": "knowledge__knowledge_lookup_v2",
+          "durationMs": null
+        },
+        {
+          "type": "TOOL_COMPLETED",
+          "name": "knowledge__knowledge_lookup_v2",
+          "durationMs": 5742
+        }
+      ],
+      "skillVersion": "v3",
+      "budgetMs": 30000,
+      "status": "TIMED_OUT",
+      "code": "SKILL_DEADLINE",
+      "draftPresent": false,
+      "created": null,
+      "ownMarker": false,
+      "foreignMarker": false,
+      "citation": false,
+      "steps": [
+        {
+          "step": "CLARIFY",
+          "status": "SUCCEEDED",
+          "elapsedMs": 60,
+          "code": "OK"
+        },
+        {
+          "step": "LOOKUP",
+          "status": "SUCCEEDED",
+          "elapsedMs": 27591,
+          "code": "OK"
+        },
+        {
+          "step": "VERIFY_ADVISE",
+          "status": "FAILED",
+          "elapsedMs": 2106,
+          "code": "SKILL_DEADLINE"
+        }
+      ],
+      "runEndReason": "EXECUTION_ERROR",
+      "elapsedMs": 30875,
+      "persistedTerminal": "error"
+    },
+    "answerHandoffRemainingMs": 1502,
+    "researchFailureStage": "MODEL_ANSWER",
+    "researchFailureCode": "RESEARCH_DEADLINE",
+    "transport": [
+      {
+        "kind": "tools",
+        "dispatchMs": 30,
+        "firstFrameMs": 15611,
+        "frames": 79,
+        "frameGateMs": 1497,
+        "elapsedMs": 21247,
+        "streamEnded": true
+      },
+      {
+        "kind": "answer",
+        "dispatchMs": 14,
+        "firstFrameMs": 316,
+        "frames": 20,
+        "frameGateMs": 289,
+        "elapsedMs": 1512,
+        "streamEnded": false
+      }
+    ]
+  }
+}
