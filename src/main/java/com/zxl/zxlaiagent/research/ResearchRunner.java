@@ -121,7 +121,9 @@ public final class ResearchRunner {
             // Revalidate after both the model queue and the workflow model permit, immediately before dispatch.
             if(!verifier.verify(checked,remaining(end,cancelled),cancelled).equals(checked))throw new IllegalStateException("RESEARCH_EVIDENCE_CHANGED_BEFORE_DISPATCH");
             stage.set(Stage.MODEL_ANSWER);
-            return model.answer(question,checked,remaining(end,cancelled),cancelled);
+            var answerBudget = remaining(end,cancelled);
+            LOG.info("Research answer handoff remainingMs={}", answerBudget.toMillis());
+            return model.answer(question,checked,answerBudget,cancelled);
         });},end,cancelled);
         stage.set(Stage.ANSWER_VALIDATION);
         if(answer==null||answer.isBlank()||answer.length()>6000)throw new IllegalStateException("RESEARCH_INVALID_ANSWER");

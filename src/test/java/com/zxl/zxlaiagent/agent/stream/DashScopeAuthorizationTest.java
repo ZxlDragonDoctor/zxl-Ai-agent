@@ -130,4 +130,25 @@ class DashScopeAuthorizationTest {
             assertEquals(1, starts.get());
         }
     }
+
+    @Test void timingRecordShowsObservedFramesAndGateWorkWithoutContent() throws Exception {
+        var logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(DashScopeAgentStreamer.class);
+        var entries = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
+        entries.start();
+        logger.addAppender(entries);
+        try (var fixture = new Fixture(3)) {
+            fixture.release.countDown();
+            fixture.streamer().stream("synthetic-private-prompt", List.of(), new ToolCallback[0],
+                    (type, text) -> {}, () -> false, OperationBoundary.unrestricted());
+            var timing = entries.list.stream().map(event -> event.getFormattedMessage())
+                    .filter(message -> message.startsWith("Model transport timing")).toList();
+            assertEquals(1, timing.size());
+            assertTrue(timing.get(0).matches(".*dispatchMs=\\d+, firstFrameMs=\\d+, frames=4, frameGateMs=\\d+, elapsedMs=\\d+, streamEnded=true"));
+            assertFalse(timing.get(0).contains("synthetic-private-prompt"));
+            assertFalse(timing.get(0).contains("synthetic-token"));
+        } finally {
+            logger.detachAppender(entries);
+            entries.stop();
+        }
+    }
 }

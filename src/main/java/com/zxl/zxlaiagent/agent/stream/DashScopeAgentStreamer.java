@@ -30,6 +30,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import reactor.core.Disposable;
@@ -39,6 +41,7 @@ import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 /** Stream reasoning/content without upgrading the rest of the M6 application. */
 @Component
 public class DashScopeAgentStreamer {
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(DashScopeAgentStreamer.class);
     private final ObjectMapper mapper;
     private final WebClient client;
     private final String model;
@@ -94,6 +97,12 @@ public class DashScopeAgentStreamer {
         boolean[] sawCompletion = {false};
         var completed = new CompletableFuture<Void>();
         Disposable subscription = null;
+        long transportStarted = System.nanoTime();
+        long[] dispatchNanos = {-1};
+        var firstFrameNanos = new AtomicLong(-1);
+        var frameCount = new AtomicInteger();
+        var gateNanos = new AtomicLong();
+        boolean streamEnded = false;
         try {
             var frames = client.post().uri("/chat/completions")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -102,8 +111,12 @@ public class DashScopeAgentStreamer {
                     .retrieve()
                     .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {})
                     .doOnNext(event -> {
+                        firstFrameNanos.compareAndSet(-1, System.nanoTime() - transportStarted);
+                        frameCount.incrementAndGet();
                         if (cancelled.getAsBoolean()) throw new CancellationException("输出连接已关闭");
-                        boundary.check(Phase.RESULT_PUBLISH);
+                        long gateStarted = System.nanoTime();
+                        try { boundary.check(Phase.RESULT_PUBLISH); }
+                        finally { gateNanos.addAndGet(System.nanoTime() - gateStarted); }
                         String data = event.data();
                         if (data == null || data.isBlank()) return;
                         if ("[DONE]".equals(data.trim())) {
@@ -136,9 +149,12 @@ public class DashScopeAgentStreamer {
                         }
                     });
             if (cancelled.getAsBoolean()) throw new CancellationException("输出连接已关闭");
-            subscription = boundary.start(Phase.MODEL_DISPATCH,
-                    () -> frames.subscribe(ignored -> {}, completed::completeExceptionally, () -> completed.complete(null)));
+            subscription = boundary.start(Phase.MODEL_DISPATCH, () -> {
+                dispatchNanos[0] = System.nanoTime() - transportStarted;
+                return frames.subscribe(ignored -> {}, completed::completeExceptionally, () -> completed.complete(null));
+            });
             await(completed, cancelled);
+            streamEnded = true;
         } catch (WebClientResponseException e) {
             throw new IllegalStateException("模型服务请求失败（HTTP " + e.getStatusCode().value()
                     + "），请检查模型配置、额度及服务状态", e);
@@ -146,6 +162,9 @@ public class DashScopeAgentStreamer {
             throw new IllegalStateException("连接模型服务失败，请检查网络后重试", e);
         } finally {
             if (subscription != null) subscription.dispose();
+            LOG.info("Model transport timing requestKind={}, dispatchMs={}, firstFrameMs={}, frames={}, frameGateMs={}, elapsedMs={}, streamEnded={}",
+                    tools.length > 0 ? "tools" : "answer", timingMs(dispatchNanos[0]), timingMs(firstFrameNanos.get()),
+                    frameCount.get(), timingMs(gateNanos.get()), timingMs(System.nanoTime() - transportStarted), streamEnded);
         }
         boundary.check(Phase.RESULT_PUBLISH);
         if (!sawCompletion[0]) throw new IllegalStateException("模型输出连接提前中断，请重试");
@@ -160,6 +179,10 @@ public class DashScopeAgentStreamer {
         if (answer.isEmpty() && toolCalls.isEmpty()) throw new IllegalStateException("模型未返回回答或工具调用，请重试");
         AssistantMessage message = new AssistantMessage(answer.toString(), Map.of(), toolCalls);
         return new ChatResponse(List.of(new Generation(message)));
+    }
+
+    private static long timingMs(long nanos) {
+        return nanos < 0 ? -1 : TimeUnit.NANOSECONDS.toMillis(nanos);
     }
 
     private static void await(CompletableFuture<Void> completed, BooleanSupplier cancelled) {
