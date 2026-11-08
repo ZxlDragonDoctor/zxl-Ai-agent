@@ -1,0 +1,45 @@
+{
+  "build": "ceffcb5",
+  "faultMode": "close existing isolated PostgreSQL TCP connections and refuse new sessions without stopping PostgreSQL",
+  "outage": {
+    "http": 503,
+    "code": "AUTHORITY_UNAVAILABLE",
+    "draft": false
+  },
+  "original": {
+    "http": 200,
+    "persistedRunCount": 0
+  },
+  "firstRecoveryAttempt": {
+    "http": 200,
+    "status": "TIMED_OUT",
+    "code": "SKILL_DEADLINE",
+    "ownMarker": false,
+    "foreignMarker": false,
+    "draftPresent": false,
+    "created": null,
+    "tools": [
+      "knowledge__knowledge_lookup_v2"
+    ],
+    "persistedTerminal": "error"
+  },
+  "separateShortAnswerRetry": {
+    "http": 200,
+    "status": "SUCCEEDED",
+    "code": "OK",
+    "ownMarker": true,
+    "foreignMarker": false,
+    "draftPresent": true,
+    "created": false,
+    "tools": [
+      "knowledge__knowledge_lookup_v2"
+    ],
+    "persistedTerminal": "completed"
+  },
+  "firstRecoveryModelTimingMs": {
+    "answerHandoffRemaining": 15229,
+    "answerFirstFrame": 356,
+    "answerFrameGate": 14772,
+    "answerFrames": 178
+  }
+}

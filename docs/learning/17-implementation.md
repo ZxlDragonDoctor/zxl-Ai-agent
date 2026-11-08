@@ -248,3 +248,7 @@ mvn -q '-Dtest=AuthenticationPgTest,AuthorizationDecisionTest,SecurityConcurrenc
 ### 2026-11-09：在途撤权后的运行终态
 
 真实 Skill 工具阶段撤权后，结果门和保存门被拒绝。原实现仍保留运行中状态，现由已持有会话租约的完成回调写入固定失败终态。回归覆盖会话失效与权限存储不可达，38 项通过，其中 11 项连接真实 PostgreSQL。重新登录后打开同一历史，页面可见权限失败，并且不会显示正在连接或草稿。[实现导读](17-rejected-run-terminal.md) · [逐状态截图](../images/lesson17-terminal-boundary-2026-11-09/README.md)
+
+### 2026-11-09：正式 Skill 连接中断与恢复
+
+隔离转发切断真实 PostgreSQL 的既有和新连接，页面发送得到 503。恢复后原会话 200、运行数零。首次新请求完成真实 MCP 查询，最终回答超时。另一次较短的真实请求成功，只有乙租户资料和待审批草稿。实测范围是提交前断连和恢复后的新请求。[断连与恢复导读](17-pg-connection-recovery.md)
