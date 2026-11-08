@@ -1,0 +1,44 @@
+{
+  "date": "2026-11-09",
+  "scope": "formal Skill v3, separate browser contexts sharing one synthetic login session, real PostgreSQL 16.15, MCP and qwen-plus",
+  "before": {
+    "researchStage": "TOOL_CALL",
+    "researchCode": "ACTION_DENIED",
+    "storedRunStatusAfter35Seconds": "running"
+  },
+  "after": {
+    "logoutHttp": 204,
+    "revokedWhileRunning": true,
+    "logoutRoundtripMs": 229,
+    "runStatus": "error",
+    "endReason": "EXECUTION_ERROR",
+    "terminalStatus": null,
+    "terminalCode": null,
+    "draftPresent": false,
+    "sourceMarkerPresent": false,
+    "toolRequestVisibleBeforeLogout": true,
+    "restrictedEventsRetained": 0,
+    "researchStage": "TOOL_CALL",
+    "researchCode": "ACTION_DENIED",
+    "authorizationAudit": {
+      "MODEL_DISPATCH": {
+        "allowedDecisions": 10
+      },
+      "TOOL_DISPATCH": {
+        "allowedDecisions": 15
+      },
+      "RESULT_PUBLISH": {
+        "deniedDecisions": 10,
+        "code": "UNAUTHENTICATED"
+      },
+      "RESULT_PERSIST": {
+        "deniedDecisions": 6,
+        "code": "UNAUTHENTICATED"
+      }
+    }
+  },
+  "regression": {
+    "javaPassed": 38,
+    "javaWithPostgreSQL": 11
+  }
+}
