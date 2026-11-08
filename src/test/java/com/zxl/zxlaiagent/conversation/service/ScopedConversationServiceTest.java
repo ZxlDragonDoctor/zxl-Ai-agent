@@ -7,6 +7,8 @@ import com.zxl.zxlaiagent.conversation.model.*;
 import com.zxl.zxlaiagent.conversation.repository.ConversationRepository;
 import com.zxl.zxlaiagent.security.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -132,10 +134,16 @@ class ScopedConversationServiceTest {
                 () -> legacy.create(ACTOR, AgentRunOptions.NONE)).code());
     }
 
-    @Test void completionRechecksAuthorizationAndDenialDoesNotPersistAnswer() {
+    @ParameterizedTest
+    @CsvSource({"UNAUTHENTICATED,401", "AUTHORITY_UNAVAILABLE,503"})
+    void failedPublicationClosesOnlyItsOwnRunWithoutPersistingAnswer(String code, int status) {
         allowGates();
         UUID id = UUID.randomUUID();
-        AtomicReference<Conversation> stored = new AtomicReference<>(empty(id));
+        var unrelated = RunRecord.started(UUID.randomUUID(), Instant.now())
+                .finish(AgentEndReason.ANSWER_READY, "之前的回答", null, List.of());
+        var initial = empty(id);
+        AtomicReference<Conversation> stored = new AtomicReference<>(
+                initial.update(initial.title(), List.of(), List.of(unrelated)));
         when(repository.find(id)).thenAnswer(call -> Optional.of(stored.get()));
         doAnswer(call -> { stored.set(call.getArgument(0)); return null; }).when(repository).save(any());
         var mapper = new ConversationMessageMapper();
@@ -152,15 +160,20 @@ class ScopedConversationServiceTest {
                     && "run".equals(permission.resource().type()))), eq(Phase.RESULT_PUBLISH), anyString(), any());
         assertTrue(guard.isBusy(id));
         verify(authorization).registerResource(eq(ACTOR), argThat(resource -> "run".equals(resource.type())));
-        doThrow(new SecurityFailure("UNAUTHENTICATED", 401)).when(authorization)
+        doThrow(new SecurityFailure(code, status)).when(authorization)
                 .gate(eq(ACTOR), eq("conversation.writeOwn"), any(), eq(Phase.RESULT_PERSIST), anyString(), any());
-        doThrow(new SecurityFailure("UNAUTHENTICATED", 401)).when(authorization)
+        doThrow(new SecurityFailure(code, status)).when(authorization)
                 .gateAll(eq(ACTOR), anyList(), eq(Phase.RESULT_PERSIST), anyString(), any());
-        assertThrows(SecurityFailure.class, agent::complete);
+        assertEquals(code, assertThrows(SecurityFailure.class, agent::complete).code());
         assertFalse(guard.isBusy(id));
-        verify(repository, times(1)).save(any());
+        verify(repository, times(2)).save(any());
         assertEquals(1, stored.get().messages().size());
-        assertEquals("running", stored.get().runs().get(0).status());
+        assertEquals(unrelated, stored.get().runs().get(0));
+        var rejected = stored.get().runs().get(1);
+        assertEquals("error", rejected.status());
+        assertTrue(rejected.answer().isEmpty());
+        assertTrue(rejected.events().isEmpty());
+        assertNotNull(rejected.finishedAt());
     }
 
     @Test void successfulCompletionCarriesSameActorToPersistence() {

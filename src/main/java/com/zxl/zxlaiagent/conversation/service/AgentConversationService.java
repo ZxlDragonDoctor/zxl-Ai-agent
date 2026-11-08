@@ -140,8 +140,9 @@ public class AgentConversationService {
                         try{
                             authorization().gateAll(actor,List.copyOf(required),Phase.RESULT_PERSIST,runId.toString(),()->{finish(id,run,user,history.size(),snapshot,capture);return null;});
                         }catch(SecurityFailure denied){
-                            // A still-authorized owner may see a neutral failure record, never captured output.
-                            try{recordDeniedCompletion(actor,id,runId);}
+                            // The authorized start already recorded this run. Close it under the
+                            // same server-held lease with a fixed failure state and no captured data.
+                            try{recordRejectedCompletion(id,runId);}
                             catch(RuntimeException unavailable){log.warn("Unable to record sanitized authorization failure for run {}",runId);}
                             throw denied;
                         }
@@ -185,13 +186,17 @@ public class AgentConversationService {
         return List.copyOf(required);
     }
 
-    private void recordDeniedCompletion(ActorRef actor,UUID id,UUID runId){
-        authorization().gate(actor,"conversation.writeOwn",new ResourceRef("conversation",id.toString()),Phase.RESULT_PERSIST,runId.toString(),()->{
-            var current=conversations.require(id);
-            var runs=current.runs().stream().map(run->run.runId().equals(runId)&&"running".equals(run.status())
-                    ?run.finish(AgentEndReason.EXECUTION_ERROR,"","执行权限已变化，本次输出未保存 / Execution authorization changed; output was not saved",List.of()):run).toList();
-            repository.save(current.update(current.title(),current.messages(),runs));return null;
-        });
+    private void recordRejectedCompletion(UUID conversationId, UUID runId) {
+        var current = conversations.require(conversationId);
+        var runs = new ArrayList<>(current.runs());
+        for (int i = 0; i < runs.size(); i++) {
+            var run = runs.get(i);
+            if (!run.runId().equals(runId) || !"running".equals(run.status())) continue;
+            runs.set(i, run.finish(AgentEndReason.EXECUTION_ERROR, "",
+                    "未能确认执行权限，本次输出未保存 / Execution authorization could not be confirmed", List.of()));
+            repository.save(current.update(current.title(), current.messages(), runs));
+            return;
+        }
     }
 
     public ContextAssembler.Plan previewContext(ActorRef actor, String conversationId, String prompt) {
