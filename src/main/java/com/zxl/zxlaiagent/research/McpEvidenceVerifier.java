@@ -3,8 +3,11 @@ package com.zxl.zxlaiagent.research;
 import com.fasterxml.jackson.databind.*;
 import com.zxl.zxlaiagent.security.Phase;
 import com.zxl.zxlaiagent.security.execution.OperationBoundary;
+import java.io.ByteArrayOutputStream;
 import java.net.URI;
 import java.net.http.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
@@ -13,6 +16,7 @@ import java.util.function.BooleanSupplier;
 /** Independent application-side fixed-scope source lookup. Remote MCP identifiers are never authorization. */
 public final class McpEvidenceVerifier implements ResearchRunner.Verifier {
     private static final ObjectMapper JSON=new ObjectMapper();
+    private static final int MAX_EVIDENCE_BYTES = 1_048_576;
     @FunctionalInterface public interface VerificationPort {JsonNode document(String documentId,Duration budget,BooleanSupplier cancelled);}
     private final URI base;private final VerificationPort port;private final OperationBoundary boundary;
     private final HttpClient http=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).followRedirects(HttpClient.Redirect.NEVER).build();
@@ -45,17 +49,16 @@ public final class McpEvidenceVerifier implements ResearchRunner.Verifier {
         boundary.check(Phase.SOURCE_READ);
         JsonNode result=port==null?fetch(base.resolve(id),end,cancelled):port.document(id,ResearchRunner.remaining(end,cancelled),cancelled);
         ResearchRunner.remaining(end,cancelled);boundary.check(Phase.EVIDENCE_READ);
-        if(result==null||!result.isObject()||result.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8).length>1_048_576)throw new IllegalStateException("EVIDENCE_GATEWAY_UNAVAILABLE");
+        if(result==null||!result.isObject()||result.toString().getBytes(StandardCharsets.UTF_8).length>MAX_EVIDENCE_BYTES)throw new IllegalStateException("EVIDENCE_GATEWAY_UNAVAILABLE");
         return result;
     }
     private JsonNode fetch(URI uri,long end,BooleanSupplier cancelled){
-        var req=HttpRequest.newBuilder(uri).timeout(ResearchRunner.remaining(end,cancelled)).GET().build();
-        var f=http.sendAsync(req,HttpResponse.BodyHandlers.ofByteArray());
+        var req=HttpRequest.newBuilder(uri).timeout(ResearchRunner.remaining(end,cancelled))
+                .header("Accept-Encoding", "identity").GET().build();
+        var f=http.sendAsync(req, info -> new BoundedEvidenceBody(supportedResponse(info)));
         try{
             HttpResponse<byte[]> response;
             while(true){ResearchRunner.remaining(end,cancelled);try{response=f.get(50,TimeUnit.MILLISECONDS);break;}catch(TimeoutException poll){}}
-            // Post-allocation limit: this loopback teaching adapter is not a streaming HTTP memory firewall.
-            if(response.statusCode()!=200||response.body().length>1_048_576)throw new IllegalStateException("EVIDENCE_GATEWAY_UNAVAILABLE");
             return JSON.readTree(response.body());
         }catch(Exception e){
             var classified=classifyFailure(e);
@@ -67,6 +70,66 @@ public final class McpEvidenceVerifier implements ResearchRunner.Verifier {
         }
         finally{if(!f.isDone())f.cancel(true);}
     }
+
+    private static boolean supportedResponse(HttpResponse.ResponseInfo info) {
+        if (info.statusCode() != 200) return false;
+        var encodings = info.headers().allValues("Content-Encoding");
+        if (!encodings.isEmpty() && (encodings.size() != 1 || !encodings.get(0).equalsIgnoreCase("identity"))) {
+            return false;
+        }
+        var lengths = info.headers().allValues("Content-Length");
+        if (lengths.isEmpty()) return true;
+        if (lengths.size() != 1 || !lengths.get(0).matches("[0-9]+")) return false;
+        try {
+            return Long.parseLong(lengths.get(0)) <= MAX_EVIDENCE_BYTES;
+        } catch (NumberFormatException invalidLength) {
+            return false;
+        }
+    }
+
+    private static final class BoundedEvidenceBody implements HttpResponse.BodySubscriber<byte[]> {
+        private final boolean supported;
+        private final CompletableFuture<byte[]> body = new CompletableFuture<>();
+        private final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        private final byte[] copyBuffer = new byte[8192];
+        private Flow.Subscription subscription;
+
+        private BoundedEvidenceBody(boolean supported) { this.supported = supported; }
+
+        @Override public CompletionStage<byte[]> getBody() { return body; }
+
+        @Override public void onSubscribe(Flow.Subscription subscription) {
+            this.subscription = subscription;
+            if (supported) subscription.request(1);
+            else reject();
+        }
+
+        @Override public void onNext(List<ByteBuffer> buffers) {
+            if (body.isDone()) return;
+            for (ByteBuffer buffer : buffers) {
+                if (buffer.remaining() > MAX_EVIDENCE_BYTES - bytes.size()) {
+                    reject();
+                    return;
+                }
+                while (buffer.hasRemaining()) {
+                    int length = Math.min(buffer.remaining(), copyBuffer.length);
+                    buffer.get(copyBuffer, 0, length);
+                    bytes.write(copyBuffer, 0, length);
+                }
+            }
+            subscription.request(1);
+        }
+
+        @Override public void onError(Throwable failure) { body.completeExceptionally(failure); }
+
+        @Override public void onComplete() { if (!body.isDone()) body.complete(bytes.toByteArray()); }
+
+        private void reject() {
+            body.completeExceptionally(new IllegalStateException("Invalid evidence HTTP response"));
+            subscription.cancel();
+        }
+    }
+
     static RuntimeException classifyFailure(Throwable failure){
         var causes=new ArrayList<Throwable>();var seen=Collections.newSetFromMap(new IdentityHashMap<Throwable,Boolean>());
         for(Throwable cause=failure;cause!=null&&causes.size()<16&&seen.add(cause);cause=cause.getCause())causes.add(cause);

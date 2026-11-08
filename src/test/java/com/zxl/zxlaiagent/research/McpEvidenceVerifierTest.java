@@ -37,6 +37,96 @@ class McpEvidenceVerifierTest {
     @Test void cancellationWhileWaitingForEvidenceRetainsCancelledTerminal() throws Exception {
         assertDelayedEvidenceTerminal(true,SkillRunner.Status.CANCELLED,"SKILL_CANCELLED");
     }
+    @Test void oversizedChunkedBodyIsRejectedBeforeEndAndConnectionIsCancelled() throws Exception {
+        assertRejectedBeforeBodyEnds(null, 0, 1_048_577);
+    }
+    @Test void oversizedDeclaredBodyIsRejectedBeforeAnyBytesArrive() throws Exception {
+        assertRejectedBeforeBodyEnds(null, 1_048_577, 0);
+    }
+    @Test void unsupportedContentEncodingIsRejectedBeforeAnyBytesArrive() throws Exception {
+        assertRejectedBeforeBodyEnds("gzip", 0, 0);
+    }
+    @Test void partialChunkedBodyStillObeysOriginalDeadline() throws Exception {
+        var started = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/ai/learning/knowledge/documents/vpn", exchange -> {
+            try {
+                exchange.sendResponseHeaders(200, 0);
+                exchange.getResponseBody().write('{');
+                exchange.getResponseBody().flush();
+                started.countDown();
+                release.await(4, TimeUnit.SECONDS);
+            } catch (java.io.IOException ignored) {
+                // A cancelled response need not accept more writes.
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+            } finally {
+                exchange.close();
+            }
+        });
+        server.start();
+        var executor = Executors.newSingleThreadExecutor();
+        try {
+            var verifier = new McpEvidenceVerifier(URI.create("http://127.0.0.1:" + server.getAddress().getPort()
+                    + "/ai/learning/knowledge/documents/"));
+            var hit = json.readTree("{\"documentId\":\"vpn\"}");
+            var call = executor.submit(() -> verifier.verify(List.of(hit), Duration.ofSeconds(2), () -> false));
+            assertTrue(started.await(1, TimeUnit.SECONDS), "server should send a real response fragment");
+            var error = assertThrows(ExecutionException.class, () -> call.get(3, TimeUnit.SECONDS));
+            assertEquals("RESEARCH_DEADLINE", error.getCause().getMessage());
+        } finally {
+            release.countDown();
+            server.stop(0);
+            executor.shutdownNow();
+        }
+    }
+    private void assertRejectedBeforeBodyEnds(String encoding, long declaredBytes, int sentBytes) throws Exception {
+        var partial = new CountDownLatch(1);
+        var release = new CountDownLatch(1);
+        var disconnected = new CountDownLatch(1);
+        var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/ai/learning/knowledge/documents/vpn", exchange -> {
+            try {
+                if (encoding != null) exchange.getResponseHeaders().add("Content-Encoding", encoding);
+                exchange.sendResponseHeaders(200, declaredBytes);
+                var body = exchange.getResponseBody();
+                if (sentBytes > 0) body.write(new byte[sentBytes]);
+                body.flush();
+                partial.countDown();
+                if (release.await(8, TimeUnit.SECONDS) && declaredBytes == 0) {
+                    byte[] block = new byte[64 * 1024];
+                    for (int i = 0; i < 128; i++) { body.write(block); body.flush(); }
+                }
+            } catch (java.io.IOException disconnectedClient) {
+                partial.countDown();
+                disconnected.countDown();
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+            } finally {
+                exchange.close();
+            }
+        });
+        server.start();
+        var executor = Executors.newSingleThreadExecutor();
+        try {
+            var verifier = new McpEvidenceVerifier(URI.create("http://127.0.0.1:" + server.getAddress().getPort()
+                    + "/ai/learning/knowledge/documents/"));
+            var hit = json.readTree("{\"documentId\":\"vpn\"}");
+            var call = executor.submit(() -> verifier.verify(List.of(hit), Duration.ofSeconds(10), () -> false));
+            assertTrue(partial.await(3, TimeUnit.SECONDS), "server should reach the open-body checkpoint");
+            var error = assertThrows(ExecutionException.class, () -> call.get(2, TimeUnit.SECONDS),
+                    "invalid body must be rejected while the HTTP response is still open");
+            assertEquals("EVIDENCE_GATEWAY_FAILED", error.getCause().getMessage());
+            release.countDown();
+            if (declaredBytes == 0) assertTrue(disconnected.await(3, TimeUnit.SECONDS),
+                    "server should observe client disconnect when it tries to continue the stream");
+        } finally {
+            release.countDown();
+            server.stop(0);
+            executor.shutdownNow();
+        }
+    }
     private void assertDelayedEvidenceTerminal(boolean cancel,SkillRunner.Status expected,String code) throws Exception {
         var entered=new CountDownLatch(1);var release=new CountDownLatch(1);var finished=new CountDownLatch(1);
         var stopped=new AtomicBoolean();var answers=new AtomicInteger();
