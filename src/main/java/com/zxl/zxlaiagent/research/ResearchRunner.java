@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zxl.zxlaiagent.agent.model.AgentExecutionEvent;
 import com.zxl.zxlaiagent.tools.support.ToolResults;
+import com.zxl.zxlaiagent.tools.model.ToolResult;
 import com.zxl.zxlaiagent.security.*;
 import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 import com.zxl.zxlaiagent.knowledge.mcp.FormalKnowledgeMcpProtocol;
@@ -95,10 +96,18 @@ public final class ResearchRunner {
             publish(events,AgentExecutionEvent.tool("TOOL_FAILED",1,choice.callId(),choice.name(),choice.arguments(),ToolResults.json(com.zxl.zxlaiagent.tools.model.ToolResult.fail("MCP_INVALID_RESPONSE","工具响应超过绝对字节限制")),"error",(System.nanoTime()-start)/1_000_000));
             throw new IllegalStateException("RESEARCH_RESPONSE_LIMIT");
         }
+        long toolElapsedMs = (System.nanoTime() - start) / 1_000_000;
         stage.set(Stage.TOOL_RESPONSE);
-        JsonNode envelope=ToolResults.read(result);boolean success=envelope.path("success").asBoolean();
-        publish(events,AgentExecutionEvent.tool(success?"TOOL_COMPLETED":"TOOL_FAILED",1,choice.callId(),choice.name(),choice.arguments(),result,success?"completed":"error",(System.nanoTime()-start)/1_000_000));
-        if(!success){
+        final JsonNode envelope;
+        try {
+            envelope = ToolResults.read(result);
+        } catch (IllegalStateException invalid) {
+            publishToolFailure(events, choice, toolElapsedMs, "MCP_INVALID_RESPONSE", "知识工具返回格式无效 / Invalid knowledge tool response");
+            throw invalid;
+        }
+        if(!envelope.path("success").asBoolean()){
+            publish(events, AgentExecutionEvent.tool("TOOL_FAILED", 1, choice.callId(), choice.name(), choice.arguments(),
+                    ResearchToolResult.remoteFailure(envelope), "error", toolElapsedMs));
             // Only the adapter's bounded diagnostic enum may classify a remote isError result.
             // Arbitrary remote text, retry hints and error messages never grant a retry or alter identity.
             String remote=envelope.path("data").path("remoteCode").asText();
@@ -106,14 +115,31 @@ public final class ResearchRunner {
                 throw new com.zxl.zxlaiagent.knowledge.mcp.KnowledgeMcpClient.Failure(remote);
             throw new IllegalStateException("RESEARCH_REMOTE_FAILURE");
         }
-        JsonNode raw=envelope.path("data").path("hits");
-        if(!raw.isArray()||raw.size()>5)throw new IllegalStateException("RESEARCH_INVALID_EVIDENCE");
-        List<JsonNode> hits=new ArrayList<>();raw.forEach(hits::add);
-        if(hits.isEmpty()){stage.set(Stage.RESULT_PUBLISH);boundary.check(Phase.RESULT_PUBLISH);return "当前有效知识中没有找到匹配资料；未生成缺乏证据的结论。 / No matching current evidence.";}
-        stage.set(Stage.EVIDENCE_VERIFICATION);
-        boundary.check(Phase.EVIDENCE_READ);
-        var checked=List.copyOf(verifier.verify(List.copyOf(hits),remaining(end,cancelled),cancelled));
-        if(checked.isEmpty()||checked.size()!=hits.size())throw new IllegalStateException("RESEARCH_EVIDENCE_REJECTED");
+        JsonNode data = envelope.path("data");
+        final List<JsonNode> checked;
+        try {
+            JsonNode raw = data.path("hits");
+            if (!raw.isArray() || raw.size() > 5) throw new IllegalStateException("RESEARCH_INVALID_EVIDENCE");
+            List<JsonNode> hits = new ArrayList<>();
+            raw.forEach(hits::add);
+            if (hits.isEmpty()) {
+                checked = List.of();
+            } else {
+                stage.set(Stage.EVIDENCE_VERIFICATION);
+                boundary.check(Phase.EVIDENCE_READ);
+                checked = List.copyOf(verifier.verify(List.copyOf(hits), remaining(end, cancelled), cancelled));
+                if (checked.size() != hits.size()) throw new IllegalStateException("RESEARCH_EVIDENCE_REJECTED");
+            }
+        } catch (RuntimeException failure) {
+            if (failure instanceof SecurityFailure || failure instanceof CancellationException) throw failure;
+            check(end, cancelled);
+            publishToolFailure(events, choice, toolElapsedMs, "MCP_EVIDENCE_REJECTED", "知识来源未通过复核 / Knowledge evidence was not verified");
+            throw failure;
+        }
+        check(end, cancelled);
+        publish(events, AgentExecutionEvent.tool("TOOL_COMPLETED", 1, choice.callId(), choice.name(), choice.arguments(),
+                ResearchToolResult.success(data, checked), "completed", toolElapsedMs));
+        if(checked.isEmpty()){stage.set(Stage.RESULT_PUBLISH);boundary.check(Phase.RESULT_PUBLISH);return "当前有效知识中没有找到匹配资料；未生成缺乏证据的结论。 / No matching current evidence.";}
         if(ToolResults.json(Map.of("question",question,"evidence",checked)).getBytes(java.nio.charset.StandardCharsets.UTF_8).length>22000)throw new IllegalStateException("RESEARCH_MODEL_INPUT_LIMIT");
         stage.set(Stage.ANSWER_EVIDENCE_VERIFICATION);
         var answer=bounded(()->{boundary.check(Phase.DEQUEUE);return gate.call(()->{
@@ -150,6 +176,11 @@ public final class ResearchRunner {
         }
         LOG.warn("Research failure stage={}, code={}, exceptionTypes={}",stage,code==null?"RESEARCH_EXECUTION_FAILED":code,String.join(" -> ",types));
     }
+    private void publishToolFailure(Consumer<AgentExecutionEvent> events, Selection choice, long elapsedMs, String code, String message) {
+        publish(events, AgentExecutionEvent.tool("TOOL_FAILED", 1, choice.callId(), choice.name(), choice.arguments(),
+                ToolResults.json(ToolResult.fail(code, message)), "error", elapsedMs));
+    }
+
     /** Event consumer must only enqueue/start delivery; never block on a remote response inside a gate. */
     private void publish(Consumer<AgentExecutionEvent> events,AgentExecutionEvent event){
         if(events instanceof AuthorizedPublisher)events.accept(event);

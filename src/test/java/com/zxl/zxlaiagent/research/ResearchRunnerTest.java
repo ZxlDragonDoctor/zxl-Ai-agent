@@ -28,6 +28,54 @@ class ResearchRunnerTest {
         var runner=runner(new AtomicInteger(),new AtomicInteger(),false,true);
         assertThrows(IllegalStateException.class,()->runner.run("VPN401",Duration.ofSeconds(2),()->false,e->{}));
     }
+    @Test void rejectsCandidateWithoutEverPublishingItsContent() throws Exception {
+        var events = new ArrayList<AgentExecutionEvent>();
+        var result = json.readTree("""
+                {"success":true,"code":"OK","message":"private-debug",
+                "data":{"hits":[{"documentId":"vpn","text":"private-unverified"}]}}
+                """);
+        var runner = runner(new AtomicInteger(), false, result, (hits, duration, cancelled) -> {
+            assertEquals(List.of("TOOL_REQUESTED", "TOOL_STARTED"),
+                    events.stream().map(AgentExecutionEvent::type).toList());
+            throw new IllegalStateException("EVIDENCE_UNTRUSTED_INSTRUCTION");
+        });
+        assertThrows(IllegalStateException.class, () -> runner.run("VPN 401", Duration.ofSeconds(2), () -> false, events::add));
+        assertEquals(List.of("TOOL_REQUESTED", "TOOL_STARTED", "TOOL_FAILED"),
+                events.stream().map(AgentExecutionEvent::type).toList());
+        assertFalse(events.toString().contains("private-"));
+    }
+
+    @Test void exposesOnlyVerifiedHitFieldsAndBoundedDiagnostics() throws Exception {
+        var events = new ArrayList<AgentExecutionEvent>();
+        var result = json.readTree("""
+                {"success":true,"code":"OK","message":"private-message","data":{
+                  "hits":[{"documentId":"vpn","chunkId":"c","text":"current span","authorization":"private-ticket"}],
+                  "stages":[{"name":"vector","status":"OK","elapsedMs":2,"candidateCount":1,"body":"private-body"},
+                            {"name":"private-stage","status":"OK","elapsedMs":2,"candidateCount":1}],
+                  "degradations":["KEYWORD_CHANNEL_FAILED","private-degradation"]}}
+                """);
+        runner(new AtomicInteger(), false, result, (hits, duration, cancelled) -> hits)
+                .run("VPN 401", Duration.ofSeconds(2), () -> false, events::add);
+        var publicResult = json.readTree(events.get(2).content());
+        assertFalse(publicResult.toString().contains("private-"));
+        assertEquals("current span", publicResult.at("/data/hits/0/text").asText());
+        assertEquals(1, publicResult.at("/data/stages").size());
+        assertEquals("vector", publicResult.at("/data/stages/0/name").asText());
+        assertEquals(1, publicResult.at("/data/degradations").size());
+    }
+
+    @Test void remoteFailureKeepsKnownCodeWithoutPublishingRemoteBody() throws Exception {
+        var events = new ArrayList<AgentExecutionEvent>();
+        var result = json.readTree("""
+                {"success":false,"code":"MCP_TOOL_ERROR","message":"private-error",
+                "data":{"remoteCode":"MCP_CAPACITY","authorization":"private-ticket"}}
+                """);
+        var runner = runner(new AtomicInteger(), false, result, (hits, duration, cancelled) -> fail("unexpected verification"));
+        assertThrows(RuntimeException.class, () -> runner.run("VPN 401", Duration.ofSeconds(2), () -> false, events::add));
+        var publicResult = json.readTree(events.get(2).content());
+        assertFalse(publicResult.toString().contains("private-"));
+        assertEquals("MCP_CAPACITY", publicResult.at("/data/remoteCode").asText());
+    }
     @Test void cancellationNeverStartsDiscoveryOrModel() throws Exception {
         var calls=new AtomicInteger();
         assertThrows(java.util.concurrent.CancellationException.class,()->runner(calls,new AtomicInteger(),false,false)
@@ -49,6 +97,11 @@ class ResearchRunnerTest {
     }
     private ResearchRunner runner(AtomicInteger calls,AtomicInteger checks,boolean forged,boolean changed) throws Exception {
         var result=json.readTree("{\"success\":true,\"code\":\"OK\",\"message\":\"done\",\"data\":{\"hits\":[{\"documentId\":\"vpn\",\"chunkId\":\"c\",\"text\":\"通过SSO更新凭据\"}]}}");
+        return runner(calls, forged, result, (hits,d,c)->{if(checks.incrementAndGet()>1&&changed)throw new IllegalStateException("EVIDENCE_CHANGED");return hits;});
+    }
+
+    private ResearchRunner runner(AtomicInteger calls, boolean forged, com.fasterxml.jackson.databind.JsonNode result,
+                                  ResearchRunner.Verifier verifier) {
         ResearchRunner.Gateway gateway=new ResearchRunner.Gateway(){
             public List<ResearchRunner.Tool> discover(Duration d,java.util.function.BooleanSupplier c){return List.of(new ResearchRunner.Tool("knowledge__knowledge_lookup_v1","lookup",com.zxl.zxlaiagent.knowledge.mcp.KnowledgeLookupTool.SCHEMA));}
             public String call(String n,String a,Duration d,java.util.function.BooleanSupplier c){calls.incrementAndGet();return result.toString();}
@@ -57,6 +110,6 @@ class ResearchRunnerTest {
             public ResearchRunner.Selection select(String q,List<ResearchRunner.Tool> t,Duration d,java.util.function.BooleanSupplier c){return new ResearchRunner.Selection("call1",forged?"terminal":"knowledge__knowledge_lookup_v1","{\"query\":\"VPN401\"}");}
             public String answer(String q,List<com.fasterxml.jackson.databind.JsonNode> es,Duration d,java.util.function.BooleanSupplier c){return "通过SSO更新凭据 [C1]";}
         };
-        return new ResearchRunner(gateway,model,(hits,d,c)->{if(checks.incrementAndGet()>1&&changed)throw new IllegalStateException("EVIDENCE_CHANGED");return hits;});
+        return new ResearchRunner(gateway,model,verifier);
     }
 }
