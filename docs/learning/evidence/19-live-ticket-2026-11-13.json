@@ -1,0 +1,23 @@
+{
+  "date": "2026-11-13",
+  "data": "synthetic",
+  "browser": "Chrome, real HTTP, no intercepted business endpoints",
+  "postgres": "16.15",
+  "pgvector": "0.8.6",
+  "embedding": "text-embedding-v3",
+  "dimensions": 1024,
+  "sourceDocument": "lesson19-portal-sso-403",
+  "model": "qwen-plus",
+  "mcpTool": "knowledge__knowledge_lookup_v2",
+  "skillVersion": "v4",
+  "skillStatus": "SUCCEEDED",
+  "runId": "e799cc6e-5a4b-4e47-8120-64d6bbb1a8bf",
+  "proposalId": "e799cc6e-5a4b-4e47-8120-64d6bbb1a8bf",
+  "outcome": "APPROVED",
+  "approvalVersion": 2,
+  "persistedTickets": 1,
+  "ticketId": "T-fbfd4913-1154-40f9-a668-e87925ff2527",
+  "receiptMatchesPostgres": true,
+  "replayMatchesOriginal": true,
+  "modelDispatchAllowedAuditRows": 4
+}

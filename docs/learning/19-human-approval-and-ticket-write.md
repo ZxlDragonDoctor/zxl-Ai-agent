@@ -30,7 +30,9 @@ mvn.cmd '-Dtest=TicketApprovalTest,TicketReliabilityTest,TicketApiTest' test
 
 沿着 `FormalTicketProposalController` → `StoredSkillDraft` → `TicketApprovalWorkflow` 阅读提交路径，再查看 `FormalTicketApprovalController` 的详情、审批和执行。对照浏览器请求，说明为什么客户端只能传来源 ID，审批时却需要传回版本、操作 ID 和摘要。当前由申请人传递编号。
 
-浏览器逐步验收使用合成的已保存 Skill 草稿与 HTTP 响应替身。43 项后端联合回归通过，其中 PostgreSQL 用例通过正式请求过滤器、控制器和真实事务，核对提交、回执和重试。尚需在同一次真实模型运行中验证从草稿生成到页面回执的全链路。[页面截图与证据说明](../images/lesson19-handoff-2026-11-13/README.md)
+43 项后端联合回归通过。分层测试覆盖正式请求过滤器、控制器、真实事务，以及浏览器中的过期、驳回和撤权反馈。[分层页面截图](../images/lesson19-handoff-2026-11-13/README.md)
+
+真实链路已验收。知识维护员导入一份合成 SSO 手册，`text-embedding-v3` 生成 1024 维向量并写入 pgvector。员工运行正式 v4 Skill，`qwen-plus` 选择知识查询工具，Java 执行 MCP 调用，核对引用后生成草稿。审批员用独立账号批准、执行并重试。浏览器显示的工单编号与 PostgreSQL 记录一致，数据库只有一张工单。 [真实链路截图](../images/lesson19-live-2026-11-13/README.md) · [结构化证据](evidence/19-live-ticket-2026-11-13.json)
 
 ## 工程任务
 
