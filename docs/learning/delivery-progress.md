@@ -30,7 +30,7 @@
 | 16 | Skill 与受控业务策略 | 已实现，97项专项/受影响回归、真实PG/MCP/模型、版本回滚及逐状态截图分层验收；固定课堂身份，无真实写入 | [任务](16-skills-business-policies-and-controlled-tools.md) / [证据与边界](16-implementation.md) |
 | 17 | 身份、权限与租户隔离 | **进行中**：正式多 Agent 支持私有报告和取消，已记录真实混合检索及引用回答的成功与失败。旧历史已支持显式只读归档，真实 PG 并发、回滚和重启有证据；独立浏览器验证归档隔离。部分事实记忆和 Skill 撤权验收待补 | [任务包](17-tenant-authorization-and-tool-policy.md) / [实现与边界](17-implementation.md) / [旧历史归档](17-legacy-history-archive.md) |
 | 18 | 注入防护与运行隔离 | **进行中**。研究回答使用固定证据字段，本地回源有流式字节上限，工具事件复核后发布。已实测一例恶意来源。文件与网络隔离及完整攻击评估待实施 | [任务包](18-prompt-injection-and-runtime-isolation.md) · [实现记录](18-implementation.md) |
-| 19 | 人工审批与业务写入 | 路线已规划；只读查询与草稿不算实际审批写入 | [路线第 5 阶段](enterprise-agent-roadmap.md) |
+| 19 | 人工审批与业务写入 | **进行中**。不可变提案与双人审批规则已实现，正式授权入口、PostgreSQL 持久化和工单写入待接通 | [课程与工程任务](19-human-approval-and-ticket-write.md) |
 | 20 | 执行事件与断线恢复 | 路线已规划；已有流式事件不等于持久游标恢复完成 | [路线第 6 阶段](enterprise-agent-roadmap.md) |
 | 21 | 日志、指标与追踪 | 路线已规划；现有局部耗时不等于全链路追踪完成 | [路线第 6 阶段](enterprise-agent-roadmap.md) |
 | 22 | Agent 评估与持续改进 | 路线已规划；复用第十三/十四课评估起点，完整业务集尚待建设 | [路线第 6 阶段](enterprise-agent-roadmap.md) |
