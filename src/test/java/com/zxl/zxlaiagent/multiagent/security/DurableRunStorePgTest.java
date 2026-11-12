@@ -1,0 +1,63 @@
+package com.zxl.zxlaiagent.multiagent.security;
+
+import com.zxl.zxlaiagent.security.SecurityDatabase;
+import com.zxl.zxlaiagent.security.SecurityFailure;
+import org.junit.jupiter.api.Test;
+import java.util.UUID;
+import static org.junit.jupiter.api.Assertions.*;
+
+class DurableRunStorePgTest {
+    @Test
+    void cursorReplayIsolationAndRollbackShareTheSnapshotTransaction() {
+        var store = new DurableRunStore();
+        var run = UUID.randomUUID().toString();
+        var tenant = "durable-" + UUID.randomUUID();
+        try (var db = SecurityDatabase.fromEnvironment()) {
+            db.tx(c -> {
+                try (var insert = SecurityDatabase.statement(c, "INSERT INTO lesson17.tenant(tenant_id) VALUES (?)", tenant)) {
+                    insert.executeUpdate();
+                }
+                return null;
+            });
+            try {
+                db.tx(c -> {
+                    store.append(c, tenant, run, 1, "queued", "{}");
+                    store.append(c, tenant, run, 2, "running", "{}");
+                    store.append(c, tenant, run, 2, "running", "{}");
+                    return null;
+                });
+                assertThrows(SecurityFailure.class, () -> db.tx(c -> {
+                    store.append(c, tenant, run, 4, "completed", "{}");
+                    return null;
+                }));
+                assertThrows(SecurityFailure.class, () -> db.tx(c -> {
+                    store.append(c, tenant, run, 2, "failed", "{}");
+                    return null;
+                }));
+                assertThrows(IllegalStateException.class, () -> db.tx(c -> {
+                    store.append(c, tenant, run, 3, "completed", "{}");
+                    throw new IllegalStateException("rollback");
+                }));
+                try (var reopened = SecurityDatabase.fromEnvironment()) {
+                    reopened.tx(c -> {
+                        assertEquals(new DurableRunStore.Snapshot(2, "running", "{}"),
+                                store.get(c, tenant, run).orElseThrow());
+                        var events = store.eventsAfter(c, tenant, run, 1, 50);
+                        assertEquals(1, events.size());
+                        assertEquals(2, events.get(0).sequence());
+                        assertTrue(store.get(c, "different-tenant", run).isEmpty());
+                        assertTrue(store.eventsAfter(c, "different-tenant", run, 0, 50).isEmpty());
+                        return null;
+                    });
+                }
+            } finally {
+                db.tx(c -> {
+                    try (var delete = SecurityDatabase.statement(c, "DELETE FROM lesson17.tenant WHERE tenant_id=?", tenant)) {
+                        delete.executeUpdate();
+                    }
+                    return null;
+                });
+            }
+        }
+    }
+}
