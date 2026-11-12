@@ -15,6 +15,29 @@ class HttpAnswerModelTest {
  @Test void realProtocolGenerationAndJudgingAreSeparateCalls()throws Exception{response=envelope("{\"snapshotId\":\"s\",\"claims\":[],\"missingInformation\":[]}");var m=model();assertEquals("s",m.generate("question","s",List.of(),new MemoryContext.MemoryView(List.of(),"none",0,0),Duration.ofSeconds(2)).snapshotId());response=envelope("{\"support\":\"INSUFFICIENT\",\"reason\":\"没有依据\"}");assertEquals("INSUFFICIENT",m.judge("q",new AnswerService.Claim("c",List.of("E1")),List.of(),Duration.ofSeconds(2)).support());assertTrue(bodies.get(0).contains("\"model\":\"gen\""));assertTrue(bodies.get(1).contains("\"model\":\"judge\""));assertTrue(bodies.get(0).contains("enable_thinking"));assertTrue(bodies.get(0).contains("reply_language"));assertTrue(bodies.get(0).contains("reply_detail"));assertTrue(bodies.get(0).contains("reply_format"));assertTrue(bodies.get(0).contains("最多3条"));assertTrue(m.identity().endsWith("prompt-v2"));assertTrue(m.judgeIdentity().endsWith("prompt-v1"));}
  @Test void unknownFieldsMalformedAndOversizedRejected()throws Exception{response=envelope("{\"snapshotId\":\"s\",\"claims\":[],\"permission\":true}");assertThrows(IllegalStateException.class,()->model().generate("q","s",List.of(),new MemoryContext.MemoryView(List.of(),"none",0,0),Duration.ofSeconds(2)));response="x".repeat(65537);assertThrows(IllegalStateException.class,()->model().judge("q",new AnswerService.Claim("c",List.of()),List.of(),Duration.ofSeconds(2)));}
  @Test void redirectAndNonHttpsProductionAreRejected(){code=302;response="";assertThrows(IllegalStateException.class,()->model().judge("q",new AnswerService.Claim("c",List.of()),List.of(),Duration.ofSeconds(2)));assertThrows(IllegalArgumentException.class,()->new HttpAnswerModel("http://127.0.0.1/chat","key","m","j","r"));}
+ @Test void incompleteBodyKeepsTheOriginalDeadline() throws Exception {
+  var headersSent = new java.util.concurrent.CountDownLatch(1);
+  var release = new java.util.concurrent.CountDownLatch(1);
+  server.removeContext("/chat");
+  server.createContext("/chat", exchange -> {
+   try (exchange) {
+    exchange.getRequestBody().readAllBytes();
+    exchange.sendResponseHeaders(200, 0);
+    exchange.getResponseBody().write('{');
+    exchange.getResponseBody().flush();
+    headersSent.countDown();
+    try { release.await(4, java.util.concurrent.TimeUnit.SECONDS); }
+    catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); }
+   }
+  });
+  var client = model();
+  try {
+   assertTimeoutPreemptively(Duration.ofSeconds(3), () ->
+    assertThrows(IllegalStateException.class, () -> client.judge("q",
+     new AnswerService.Claim("c", List.of()), List.of(), Duration.ofSeconds(1))));
+   assertEquals(0, headersSent.getCount());
+  } finally { release.countDown(); }
+ }
  @Test void generationV2RequiresExplicitMissingInformationField()throws Exception{
   response=envelope("{\"snapshotId\":\"s\",\"claims\":[]}");assertThrows(IllegalStateException.class,()->model().generate("q","s",List.of(),new MemoryContext.MemoryView(List.of(),"none",0,0),Duration.ofSeconds(2)));
   response=envelope("{\"snapshotId\":\"s\",\"claims\":[],\"missingInformation\":[\"缺少年假制度。\"]}");assertEquals(List.of("缺少年假制度。"),model().generate("q","s",List.of(),new MemoryContext.MemoryView(List.of(),"none",0,0),Duration.ofSeconds(2)).missingInformation());

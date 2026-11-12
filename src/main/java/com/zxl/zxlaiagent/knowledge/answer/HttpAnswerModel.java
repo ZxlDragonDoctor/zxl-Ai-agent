@@ -37,13 +37,10 @@ public final class HttpAnswerModel implements AnswerModel {
    String content=json.writeValueAsString(input);if(com.zxl.zxlaiagent.conversation.context.ContextAssembler.utf8Units(content)>24576)throw new IllegalStateException("Context budget exceeded");
    String body=json.writeValueAsString(Map.of("model",selected,"temperature",0,"enable_thinking",false,"max_tokens",1600,"response_format",Map.of("type","json_object"),"messages",List.of(Map.of("role","system","content",system),Map.of("role","user","content",content))));
    var request=HttpRequest.newBuilder(endpoint).timeout(remaining).header("Authorization","Bearer "+key).header("Content-Type","application/json").POST(HttpRequest.BodyPublishers.ofString(body)).build();
-   var response=AuthorizedHttp.send(client,request,HttpResponse.BodyHandlers.ofInputStream(),remaining,boundary);
-   try(var stream=response.body()){
+   var response=AuthorizedHttp.send(client,request,AuthorizedHttp.boundedBody(65_536),remaining,boundary);
     if(response.statusCode()!=200)throw new IllegalStateException("Chat provider HTTP failure");
-    byte[] bytes=stream.readNBytes(65537);if(bytes.length>65536)throw new IllegalStateException("Provider response too large");
-    var root=json.readTree(bytes);var choices=root.path("choices");if(!choices.isArray()||choices.size()!=1||!"stop".equals(choices.get(0).path("finish_reason").asText()))throw new IllegalStateException("Incomplete chat response");
+    var root=json.readTree(response.body());var choices=root.path("choices");if(!choices.isArray()||choices.size()!=1||!"stop".equals(choices.get(0).path("finish_reason").asText()))throw new IllegalStateException("Incomplete chat response");
     var answer=choices.get(0).path("message").path("content");if(!answer.isTextual()||answer.textValue().length()>12000)throw new IllegalStateException("Invalid chat content");return json.readTree(answer.textValue());
-   }
   }catch(com.zxl.zxlaiagent.security.SecurityFailure denied){throw denied;}catch(InterruptedException ex){Thread.currentThread().interrupt();throw new IllegalStateException("Chat cancelled");}catch(Exception ex){throw new IllegalStateException("Chat failed",ex);}
  }
  private static void exact(JsonNode node,Set<String> fields){if(!node.isObject()||node.size()!=fields.size())throw new IllegalStateException("Invalid schema fields");node.fieldNames().forEachRemaining(f->{if(!fields.contains(f))throw new IllegalStateException("Unknown schema field");});}
