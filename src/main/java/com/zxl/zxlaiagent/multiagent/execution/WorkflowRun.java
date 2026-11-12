@@ -30,6 +30,9 @@ public final class WorkflowRun {
     private TrustedRunContext trustedContext;
     private ExecutionControl scopedControl;
     private Supplier<RuntimeView> runtimeView = () -> null;
+    public interface ReportTransaction {
+        <T> T commit(Supplier<T> mutation, Supplier<Report> snapshot);
+    }
     public synchronized void setRuntimeView(Supplier<RuntimeView> view) { runtimeView = view; }
     public WorkflowOutcome outcome() { return published.outcome(); }
     public Report latestReport() { return published.report(); }
@@ -52,7 +55,9 @@ public final class WorkflowRun {
         var beforeOutcome=outcome;var beforeLatest=latest;long beforeSequence=sequence;
         var beforePlanStatus=plan==null?null:plan.getStatus();
         try{
-            T result=scopedBoundary.start(Phase.RESULT_PUBLISH,operation);
+            var transaction = trustedContext.reportTransaction();
+            T result = transaction == null ? scopedBoundary.start(Phase.RESULT_PUBLISH, operation)
+                    : transaction.commit(operation, () -> latest);
             // The data and event were prepared inside the gate. Release their visibility only after commit.
             published=new Published(latest,outcome);
             if(preparedEvent!=null){preparedEvent.commit();preparedEvent=null;}

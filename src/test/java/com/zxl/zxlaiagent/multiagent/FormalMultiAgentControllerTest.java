@@ -51,6 +51,19 @@ class FormalMultiAgentControllerTest {
         mvc().perform(post("/api/ai/multiagent/runs/"+id+"/cancel").contextPath("/api").cookie(cookie()).header("X-CSRF-Token","synthetic-csrf"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("accepted")).andExpect(jsonPath("$.run").doesNotExist()).andExpect(jsonPath("$.report").doesNotExist());
     }
+    @Test void readsEventPageWithVerifiedActorAndCursor() throws Exception {
+        String id = UUID.randomUUID().toString();
+        String path = "/api/ai/multiagent/runs/" + id + "/events";
+        var event = new ScopedMultiAgentService.PublicRunEvent(3, "running", 100L, 0L, 1, null, null);
+        when(service.eventsAfter(actor.ref(), id, 2L)).thenReturn(new ScopedMultiAgentService.EventPage(3L, List.of(event)));
+        var mvc = mvc();
+        mvc.perform(get(path).contextPath("/api").param("after", "2")).andExpect(status().isUnauthorized());
+        mvc.perform(get(path).contextPath("/api").cookie(cookie()).param("after", "2"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.lastSequence").value(3))
+                .andExpect(jsonPath("$.events[0].sequence").value(3));
+        mvc.perform(post(path).contextPath("/api").cookie(cookie())).andExpect(status().isNotFound());
+        verify(service).eventsAfter(actor.ref(), id, 2L);
+    }
     @Test void globalObserverAndHarnessRemainClosed()throws Exception{
         var mvc=mvc();for(String suffix:List.of("agents","events","harness/research-1","harness/benchmark"))mvc.perform(get("/api/ai/multiagent/"+suffix).contextPath("/api").cookie(cookie())).andExpect(status().isNotFound());verifyNoInteractions(service);
     }

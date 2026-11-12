@@ -15,7 +15,7 @@ class ScopedMultiAgentServiceTest {
     final ActorRef actor=new ActorRef("synthetic","tenant","session",1);
     final AuthorizationService authorization=mock(AuthorizationService.class);
     final OrchestratorAgent orchestrator=mock(OrchestratorAgent.class);
-    final ScopedMultiAgentService service=new ScopedMultiAgentService(orchestrator,authorization);
+    final ScopedMultiAgentService service=new ScopedMultiAgentService(orchestrator,authorization,mock(SecurityDatabase.class));
     final String id=UUID.randomUUID().toString();
     @BeforeEach void gates(){
         when(authorization.gateAll(any(),anyList(),any(),any(),any())).thenAnswer(i->((Supplier<?>)i.getArgument(4)).get());

@@ -30,7 +30,7 @@ class ScopedMultiAgentServicePgTest {
         actorA=authentication.login(a,"synthetic-password",ta).actor().ref();actorB=authentication.login(b,"synthetic-password",tb).actor().ref();actorPeer=authentication.login(peer,"synthetic-password",ta).actor().ref();
         start(new RuntimeSettings());
     }
-    void start(RuntimeSettings settings){orchestrator=new OrchestratorAgent(mock(ChatModel.class),settings,System::nanoTime);bus=mock(AgentMessageBus.class);orchestrator.init(bus);service=new ScopedMultiAgentService(orchestrator,authorization);}
+    void start(RuntimeSettings settings){orchestrator=new OrchestratorAgent(mock(ChatModel.class),settings,System::nanoTime);bus=mock(AgentMessageBus.class);orchestrator.init(bus);service=new ScopedMultiAgentService(orchestrator,authorization,db);}
     void worker(String role,Function<Task,CompletableFuture<String>> work){
         var agent=new AbstractBaseAgent(role,role,mock(ChatModel.class)){public CompletableFuture<String> processTask(Task task){return work.apply(task);}};
         agent.attachMessageBus(bus);agent.requireScopedExecution();orchestrator.registerAgent(agent);
@@ -67,6 +67,27 @@ class ScopedMultiAgentServicePgTest {
         assertEquals("cancelled",cancelled.run().report().status());assertTrue(cancelled.run().runtime().cleanupPending());
         waiting.complete("late synthetic output");await(()->!service.detail(actorA,run).run().runtime().cleanupPending());
         assertEquals("cancelled",service.detail(actorA,run).run().report().status());verify(bus,never()).publishEvent(any());
+    }
+    @Test void authorizedCursorReadsCommittedResultAfterRuntimeReplacement() throws Exception {
+        worker("planner", task -> CompletableFuture.completedFuture(plan(task)));
+        worker("supervisor", task -> CompletableFuture.completedFuture("durable result"));
+        String id = service.submit(actorA, "synthetic durable run", Map.of(), 15000L);
+        await(() -> orchestrator.runStatusScoped(id).run().report().outcome() != null);
+        var full = service.eventsAfter(actorA, id, 0);
+        assertEquals("queued", full.events().get(0).status());
+        var terminal = full.events().get(full.events().size() - 1);
+        assertEquals("completed", terminal.status());
+        assertEquals("durable result", terminal.result());
+        assertEquals(full.events().size(), full.lastSequence());
+        for (var stranger : List.of(actorB, actorPeer)) {
+            assertEquals(404, assertThrows(SecurityFailure.class, () -> service.eventsAfter(stranger, id, 0)).status());
+        }
+        orchestrator.shutdown();
+        start(new RuntimeSettings());
+        assertEquals(List.of(terminal), service.eventsAfter(actorA, id, terminal.sequence() - 1).events());
+        assertTrue(service.eventsAfter(actorA, id, terminal.sequence()).events().isEmpty());
+        assertEquals(409, assertThrows(SecurityFailure.class,
+                () -> service.eventsAfter(actorA, id, terminal.sequence() + 1)).status());
     }
     @Test void pgRevocationStopsResultAndProducesNeutralInternalTerminal()throws Exception{
         var began=new CountDownLatch(1);var waiting=pending();worker("planner",task->{began.countDown();return waiting;});clearInvocations(bus);

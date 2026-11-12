@@ -31,6 +31,12 @@ public final class FormalMultiAgentController {
     }
     @GetMapping("/runs/{executionId}")
     public Object detail(HttpServletRequest request,@PathVariable String executionId){var actor=AuthenticatedRequest.require(request).ref();return safe(()->service.detail(actor,executionId));}
+    @GetMapping("/runs/{executionId}/events")
+    public ScopedMultiAgentService.EventPage events(HttpServletRequest request, @PathVariable String executionId,
+                                                    @RequestParam(defaultValue = "0") long after) {
+        var actor = AuthenticatedRequest.require(request).ref();
+        return safe(() -> service.eventsAfter(actor, executionId, after));
+    }
     @PostMapping("/runs/{executionId}/cancel")
     public ScopedMultiAgentService.CancelAcknowledgement cancel(HttpServletRequest request,@PathVariable String executionId){var actor=AuthenticatedRequest.require(request).ref();return safe(()->service.cancel(actor,executionId));}
     @GetMapping("/status")
