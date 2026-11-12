@@ -35,7 +35,7 @@ public final class ProvisionAccountCommand {
             }
             out.println("Account created. Existing accounts are never overwritten."); return 0;
         } catch (IllegalArgumentException invalid) {
-            out.println("Invalid input. Required: --subject ID --login NAME --tenant ID --role employee|knowledge-maintainer. Password is read from the console."); return 2;
+            out.println("Invalid input. Required: --subject ID --login NAME --tenant ID --role employee|knowledge-maintainer|ticket-approver. Password is read from the console."); return 2;
         } catch (Exception failure) {
             // Driver messages can include deployment details. Do not print the exception or inputs.
             out.println("Account was not confirmed created. Check database availability or an existing account; no overwrite is performed."); return 1;
@@ -52,7 +52,7 @@ public final class ProvisionAccountCommand {
             if (!keys.contains(args[i]) || !AuthenticationService.validId(args[i+1])
                     || options.putIfAbsent(args[i],args[i+1]) != null) throw new IllegalArgumentException();
         }
-        if (!options.keySet().equals(keys) || !Set.of("employee","knowledge-maintainer").contains(options.get("--role")))
+        if (!options.keySet().equals(keys) || !Set.of("employee","knowledge-maintainer","ticket-approver").contains(options.get("--role")))
             throw new IllegalArgumentException();
         return options;
     }

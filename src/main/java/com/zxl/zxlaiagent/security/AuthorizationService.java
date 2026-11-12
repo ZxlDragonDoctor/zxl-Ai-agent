@@ -6,16 +6,18 @@ import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 /** PG epoch row is the shared linearization gate for decisions, revocations and action starts. */
 public final class AuthorizationService {
  private final SecurityDatabase db;
- private static final Set<String> ACTIONS=Set.of("knowledge.read","knowledge.manage","conversation.readOwn","conversation.writeOwn","run.readOwn","run.writeOwn","skill.execute","agent.execute");
+ private static final Set<String> ACTIONS=Set.of("knowledge.read","knowledge.manage","conversation.readOwn","conversation.writeOwn","run.readOwn","run.writeOwn","skill.execute","agent.execute","ticket.propose","ticket.review","ticket.execute");
+ private static final Set<String> APPROVER_ACTIONS=Set.of("ticket.review","ticket.execute");
  public AuthorizationService(SecurityDatabase db){this.db=db;}
  public AuthorizationDecision decide(ActorRef ref,String action,ResourceRef resource,Phase phase,String runId){return db.tx(c->decide(c,ref,action,resource,phase,runId));}
  AuthorizationDecision decide(Connection c,ActorRef ref,String action,ResourceRef resource,Phase phase,String runId)throws SQLException{
   AuthenticationService.validateRef(ref);if(action==null||action.length()>80||phase==null||(resource!=null&&(!AuthenticationService.validId(resource.type())||resource.type().length()>80||!AuthenticationService.validId(resource.id()))))throw new SecurityFailure("ACTION_DENIED",403);
   try{AuthenticationService.lockEpoch(c,ref);}catch(SecurityFailure failure){if(!"UNAUTHENTICATED".equals(failure.code()))throw failure;}
   String version="unresolved";String code="UNAUTHENTICATED";boolean authenticated=false;String role="";
-  try(var s=SecurityDatabase.statement(c,"SELECT e.version,s.version,m.version,m.role,(s.revoked_at IS NULL AND s.version=? AND m.status='ACTIVE' AND u.status='ACTIVE' AND t.status='ACTIVE') FROM authorization_epoch e JOIN membership m USING(tenant_id,subject_id) JOIN auth_session s USING(tenant_id,subject_id) JOIN subject u USING(subject_id) JOIN tenant t USING(tenant_id) WHERE e.tenant_id=? AND e.subject_id=? AND s.session_id=? FOR UPDATE OF e,s,m",ref.authenticationVersion(),ref.tenantId(),ref.subjectId(),ref.sessionId());var r=s.executeQuery()){if(r.next()){version="epoch:"+r.getLong(1)+";session:"+r.getLong(2)+";member:"+r.getLong(3)+";policy:1";role=r.getString(4);authenticated=r.getBoolean(5);}}
+  try(var s=SecurityDatabase.statement(c,"SELECT e.version,s.version,m.version,m.role,(s.revoked_at IS NULL AND s.version=? AND m.status='ACTIVE' AND u.status='ACTIVE' AND t.status='ACTIVE') FROM authorization_epoch e JOIN membership m USING(tenant_id,subject_id) JOIN auth_session s USING(tenant_id,subject_id) JOIN subject u USING(subject_id) JOIN tenant t USING(tenant_id) WHERE e.tenant_id=? AND e.subject_id=? AND s.session_id=? FOR UPDATE OF e,s,m",ref.authenticationVersion(),ref.tenantId(),ref.subjectId(),ref.sessionId());var r=s.executeQuery()){if(r.next()){version="epoch:"+r.getLong(1)+";session:"+r.getLong(2)+";member:"+r.getLong(3)+";policy:2";role=r.getString(4);authenticated=r.getBoolean(5);}}
   if(authenticated)authenticated=AuthenticationService.sessionNotExpired(c,ref);
   if(authenticated){code=!ACTIONS.contains(action)?"ACTION_DENIED":"ALLOWED";if("knowledge.manage".equals(action)&&!"knowledge-maintainer".equals(role))code="ACTION_DENIED";
+   if(APPROVER_ACTIONS.contains(action)&&!"ticket-approver".equals(role))code="ACTION_DENIED";
    if("ALLOWED".equals(code)&&action.endsWith("Own")){
     String expected=action.startsWith("conversation.")?"conversation":"run";
     if(resource==null||!expected.equals(resource.type()))code="RESOURCE_UNAVAILABLE";
