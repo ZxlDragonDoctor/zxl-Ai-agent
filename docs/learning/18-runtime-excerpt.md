@@ -19,6 +19,8 @@ docker build -t zxl-lesson18-excerpt:local scripts/lesson18-runtime
 
 启动前读取 Docker 实际生成的容器配置，核对镜像 ID、固定入口、无挂载、网络模式、用户、权限和资源配额。配置不一致时清理容器并拒绝执行。
 
-GitHub Actions 的 Ubuntu 24.04 任务使用固定摘要构建镜像。真实 Docker 通过了 Unicode 摘录、执行前配置检查和执行后容器清理。测试在同一运行中的容器内观察到仅有 `lo` 接口，写入根文件系统返回 `EROFS`，cgroup 显示 CPU 配额与周期均为 100000 微秒、内存上限 134217728 字节、进程上限 32。实际触发资源超限终止及外发监听器验证仍待实测。[成功运行](https://github.com/ZxlDragonDoctor/zxl-Ai-agent/actions/runs/43267383398)
+GitHub Actions 的 Ubuntu 24.04 任务使用固定摘要构建镜像。真实 Docker 通过了 Unicode 摘录、执行前配置检查和执行后容器清理。测试在同一运行中的容器内观察到仅有 `lo` 接口，写入根文件系统返回 `EROFS`，cgroup 显示 CPU 配额与周期均为 100000 微秒、内存上限 134217728 字节、进程上限 32。
+
+桥接网络的对照容器连接到专用临时监听器。隔离容器尝试连接同一监听器时收到 `ENETUNREACH`，监听器没有收到新连接。160 MiB 合成内存探针退出码为 137，cgroup 的 `oom_kill` 计数增加 1。摘录进程随后正常完成，容器也已清理。CPU 与进程数仅核对配置和实际配额。[Linux 实测日志](https://github.com/ZxlDragonDoctor/zxl-Ai-agent/actions/runs/43268012367/job/131356698575)
 
 [图谱验收截图](../images/lesson18-runtime-excerpt-2026-11-13/README.md)
