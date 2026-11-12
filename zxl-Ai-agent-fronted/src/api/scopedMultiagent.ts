@@ -10,3 +10,13 @@ export async function submitScopedRun(goal:string,timeoutMs:number){return reque
 export async function readScopedRun(id:string){return request<ScopedRun>(runPath(id))}
 export async function cancelScopedRun(id:string){return request<{executionId:string;status:string}>(runPath(id)+'/cancel','POST')}
 export async function listScopedRuns(){return request<{runs:ScopedRun[]}>(base+'/status')}
+export interface DurableRunEvent {
+  sequence: number
+  status: string
+  taskCount: number
+  result: string | null
+  errorCode: string | null
+}
+export async function readDurableRunEvents(id: string, after: number) {
+  return request<{ lastSequence: number; events: DurableRunEvent[] }>(runPath(id) + '/events?after=' + after)
+}
