@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-13",
+  "executionId": "69ff54db-6934-4837-ab6c-04a79bf80e19",
+  "syntheticData": true,
+  "backendTests": 40,
+  "postgres": "16.15",
+  "migration": "V5",
+  "firstCursor": 3,
+  "lastSequence": 7,
+  "persistedEvents": 7,
+  "allowedModelDispatchAuditRows": 8,
+  "terminalStatus": "completed",
+  "applicationRestart": "verified",
+  "persistedResultIncludesSource": "lesson19-portal-sso-403"
+}
