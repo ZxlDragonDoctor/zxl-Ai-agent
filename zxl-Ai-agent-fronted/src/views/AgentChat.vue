@@ -7,7 +7,10 @@ import KnowledgeAnswerCard from '../components/KnowledgeAnswerCard.vue'
 import FactMemoryPanel from '../components/FactMemoryPanel.vue'
 import McpToolsPanel from '../components/McpToolsPanel.vue'
 import SkillPanel from '../components/SkillPanel.vue'
+import TicketApprovalPanel from '../components/TicketApprovalPanel.vue'
+import TicketDraftSubmission from '../components/TicketDraftSubmission.vue'
 import { useAgentConversations } from '../composables/useAgentConversations'
+import { sessionState } from '../utils/sessionRequest'
 import { locale, t } from '../i18n'
 
 const { input, messages, storedMessages, error, running, loading, busy, readOnly, selectedId, selectedType, newType, conversations,
@@ -16,6 +19,9 @@ const { input, messages, storedMessages, error, running, loading, busy, readOnly
 const title = computed(() => conversations.value.find(item => item.id === selectedId.value)?.title || t('conversation.newTitle'))
 const activeType = computed(() => selectedId.value ? selectedType.value : newType.value)
 const skillVersion = ref('')
+// AuthGate remounts this view when the authenticated identity changes.
+const session = sessionState().status
+const formal = session?.mode === 'required' && session.authenticated
 watch(selectedId, () => { skillVersion.value = '' })
 function sendSelected(message: string) {
   return sendMessage(message, activeType.value === 'it-ticket-skill'
@@ -51,6 +57,7 @@ const examplePrompt = computed(() => activeType.value === 'enterprise-knowledge'
       <FactMemoryPanel v-if="!readOnly && activeType === 'enterprise-knowledge'" :key="selectedId || 'draft'" :conversation-id="selectedId" :stored-messages="storedMessages" />
       <McpToolsPanel v-if="!readOnly && activeType === 'mcp-research'" :key="selectedId || 'draft'" />
       <SkillPanel v-if="!readOnly && activeType === 'it-ticket-skill'" :key="selectedId || 'draft'" v-model="skillVersion" :disabled="readOnly || working || busy" />
+      <TicketApprovalPanel v-if="formal && session?.principal?.role === 'ticket-approver'" />
       <ChatRoom :key="selectedId || 'draft'" v-model="input" :messages="messages" :on-send="sendSelected" :read-only="readOnly" :disabled="working || busy || !agents.length">
         <template #empty>
           <div class="conversation-welcome">
@@ -71,6 +78,12 @@ const examplePrompt = computed(() => activeType.value === 'enterprise-knowledge'
             {{ message.content || t('flow.emptyReply') }}<span v-if="message.isTyping" class="answer-cursor" aria-hidden="true"></span>
           </div>
           <KnowledgeAnswerCard v-if="message.knowledgePayload" :payload="message.knowledgePayload" />
+          <TicketDraftSubmission v-if="formal && !readOnly && selectedId && message.flow?.status === 'completed'
+            && !message.flow.skill?.invalidEvent && message.flow.skill?.result?.status === 'SUCCEEDED'
+            && message.flow.skill.result.draft
+            && message.flow.skill.result.snapshot.executorVersion === 'authenticated-skill-executor-v1'"
+            :key="message.flow.skill.result.snapshot.runId" :conversation-id="selectedId"
+            :run-id="message.flow.skill.result.snapshot.runId" />
         </template>
       </ChatRoom>
     </section>
