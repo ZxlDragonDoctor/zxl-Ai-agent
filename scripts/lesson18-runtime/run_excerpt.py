@@ -13,12 +13,39 @@ from excerpt import EXCERPT_LIMIT, INPUT_LIMIT
 IMAGE = "zxl-lesson18-excerpt:local"
 TIMEOUT = 10
 OUTPUT_LIMIT = 2048
+WORKER_ENTRYPOINT = ["python", "-I", "-B", "/worker/excerpt.py"]
 
 
 def docker(*arguments, timeout=TIMEOUT):
     return subprocess.run(
         ["docker", *arguments], stdin=subprocess.DEVNULL, capture_output=True, timeout=timeout, check=False,
     )
+
+def verify_container(name, image_id):
+    inspected = docker("container", "inspect", name)
+    if inspected.returncode:
+        raise RuntimeError("The worker configuration could not be verified.")
+    containers = json.loads(inspected.stdout)
+    if not isinstance(containers, list) or len(containers) != 1 or not isinstance(containers[0], dict):
+        raise RuntimeError("The worker configuration could not be verified.")
+    container = containers[0]
+    host = container.get("HostConfig")
+    config = container.get("Config")
+    if not isinstance(host, dict) or not isinstance(config, dict):
+        raise RuntimeError("The worker configuration could not be verified.")
+    expected = {
+        "NetworkMode": "none", "ReadonlyRootfs": True, "Privileged": False,
+        "CapDrop": ["ALL"], "Memory": 134217728, "MemorySwap": 134217728,
+        "NanoCpus": 1000000000, "PidsLimit": 32,
+    }
+    if (container.get("Image") != image_id or container.get("Mounts") != []
+            or config.get("User") != "65534:65534" or config.get("Entrypoint") != WORKER_ENTRYPOINT
+            or config.get("Cmd") not in (None, [])
+            or any(host.get(key) != value for key, value in expected.items())
+            or host.get("CapAdd") not in (None, [])
+            or host.get("SecurityOpt") not in (["no-new-privileges"], ["no-new-privileges:true"])
+            or host.get("LogConfig") != {"Type": "none", "Config": {}} and host.get("LogConfig") != {"Type": "none"}):
+        raise RuntimeError("The worker configuration did not match the isolation policy.")
 
 
 def attach_worker(name, data):
@@ -74,6 +101,7 @@ def run_excerpt(data):
         )
         if created.returncode:
             raise RuntimeError("The restricted worker could not be created.")
+        verify_container(name, image_id)
         payload = json.loads(attach_worker(name, data))
         if (not isinstance(payload, dict) or set(payload) != {"excerpt", "truncated"}
                 or not isinstance(payload["excerpt"], str) or len(payload["excerpt"]) > EXCERPT_LIMIT
