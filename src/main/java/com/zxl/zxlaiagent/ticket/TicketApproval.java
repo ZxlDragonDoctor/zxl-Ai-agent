@@ -38,6 +38,18 @@ public final class TicketApproval {
     public UUID proposalId() { return proposalId; }
     public long version() { return version; }
     public Outcome outcome() { return outcome; }
+    ActorRef requester() { return requester; }
+    ActorRef reviewer() { return reviewer; }
+    TicketCommand command() { return command; }
+    Instant expiresAt() { return expiresAt; }
+
+    static TicketApproval restore(UUID id, ActorRef requester, ActorRef reviewer, TicketCommand command,
+                                  Instant expiresAt, Outcome outcome, long version) {
+        if (outcome == Outcome.PENDING ? version != 1 || reviewer != null : version != 2 || reviewer == null) {
+            throw new IllegalStateException("Invalid stored approval state");
+        }
+        return new TicketApproval(id, requester, reviewer, command, expiresAt, outcome, version);
+    }
 
     public TicketApproval review(ActorRef actor, Outcome decision, long expectedVersion, String operationId,
                                  String fingerprint, Instant now) {
@@ -55,14 +67,28 @@ public final class TicketApproval {
 
     public TicketCommand commandForExecution(ActorRef actor, long expectedVersion, String operationId,
                                              String fingerprint, Instant now) {
+        var approved = commandForReceipt(actor, expectedVersion, operationId, fingerprint);
+        requireCurrent(now);
+        return approved;
+    }
+
+    TicketCommand commandForReceipt(ActorRef actor, long expectedVersion, String operationId, String fingerprint) {
         if (outcome != Outcome.APPROVED) throw new SecurityFailure("APPROVAL_NOT_GRANTED", 409);
         if (!reviewer.equals(actor)) throw new SecurityFailure("APPROVAL_REVIEWER_MISMATCH", 403);
-        requireBinding(expectedVersion, operationId, fingerprint, now);
+        requireBinding(expectedVersion, operationId, fingerprint);
         return command;
     }
 
     private void requireBinding(long expectedVersion, String operationId, String fingerprint, Instant now) {
+        requireCurrent(now);
+        requireBinding(expectedVersion, operationId, fingerprint);
+    }
+
+    private void requireCurrent(Instant now) {
         if (!expiresAt.isAfter(Objects.requireNonNull(now))) throw new SecurityFailure("APPROVAL_EXPIRED", 409);
+    }
+
+    private void requireBinding(long expectedVersion, String operationId, String fingerprint) {
         if (version != expectedVersion || !command.operationId().equals(operationId)
                 || !command.fingerprint().equals(fingerprint)) {
             throw new SecurityFailure("APPROVAL_BINDING_MISMATCH", 409);
