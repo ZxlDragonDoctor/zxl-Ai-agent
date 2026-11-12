@@ -13,10 +13,12 @@ docker build -t zxl-lesson18-excerpt:local scripts/lesson18-runtime
 
 运行时先将固定标签解析为本地镜像 ID，再用该 ID 创建容器，禁用自动拉取。输入限 8 KiB，摘录限 240 字符，标准输出限 2 KiB。容器配额为 1 CPU、128 MiB 内存和 32 个进程。运行等待上限为 10 秒。
 
-本机 Docker CLI 29.7.2 可用。Docker Desktop 4.89.0 启动时无法重命名 `sailor-ingest.sock`，Linux 引擎管道未建立。真实启动器返回退出码 1，标准输出为空。正向容器运行和限制实测待引擎恢复。
+本机 Docker CLI 29.7.2 可用。Docker Desktop 4.89.0 启动时无法重命名 `sailor-ingest.sock`，Linux 引擎管道未建立。真实启动器返回退出码 1，标准输出为空。
 
-四项单测覆盖 UTF-8 输入和限额、启动参数和超时清理、镜像缺失、清理失败时不返回摘录。Docker 调用相关单测使用替身。构建文件当前使用 `python:3.12-alpine` 标签，首次成功构建后还需记录基础镜像摘要。
+五项单测覆盖 UTF-8 输入和限额、启动参数和超时清理、镜像缺失、清理失败与配置不符。Docker 调用相关单测使用替身。镜像构建固定为已在 Linux 运行记录中验证的 `python:3.12-alpine` 摘要。
 
-启动前读取 Docker 实际生成的容器配置，核对镜像 ID、固定入口、无挂载、网络模式、用户、权限和资源配额。配置不一致时清理容器并拒绝执行。新增第五项单测，验证网络模式偏差和意外挂载均无法启动 worker。本机尚未取得真实容器的 inspect 结果。
+启动前读取 Docker 实际生成的容器配置，核对镜像 ID、固定入口、无挂载、网络模式、用户、权限和资源配额。配置不一致时清理容器并拒绝执行。
+
+GitHub Actions 的 Ubuntu 24.04 任务已使用固定摘要构建镜像。真实 Docker 通过了 Unicode 摘录、执行前配置检查和执行后容器清理。容器内部的文件写入拒绝、网络访问拒绝和资源超限终止仍待独立验证。[成功运行](https://github.com/ZxlDragonDoctor/zxl-Ai-agent/actions/runs/43266966520)
 
 [图谱验收截图](../images/lesson18-runtime-excerpt-2026-11-13/README.md)
