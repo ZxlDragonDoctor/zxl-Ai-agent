@@ -45,6 +45,19 @@ class ResearchRunnerTest {
         assertFalse(events.toString().contains("private-"));
     }
 
+    @Test void ambiguousToolJsonNeverBecomesACompletedEvent() throws Exception {
+        String valid = "{\"success\":true,\"code\":\"OK\",\"message\":\"done\",\"data\":{\"hits\":[]}}";
+        for (String invalid : List.of(valid + " {}", valid.replace("\"success\":true", "\"success\":false,\"success\":true"))) {
+            var events = new ArrayList<AgentExecutionEvent>();
+            var runner = runner(new AtomicInteger(), false, json.getNodeFactory().textNode(invalid),
+                    (hits, duration, cancelled) -> fail("unexpected verification"));
+            assertThrows(IllegalStateException.class, () -> runner.run("VPN 401", Duration.ofSeconds(2), () -> false, events::add));
+            assertEquals(List.of("TOOL_REQUESTED", "TOOL_STARTED", "TOOL_FAILED"),
+                    events.stream().map(AgentExecutionEvent::type).toList());
+            assertEquals("MCP_INVALID_RESPONSE", json.readTree(events.get(2).content()).path("code").asText());
+        }
+    }
+
     @Test void exposesOnlyVerifiedHitFieldsAndBoundedDiagnostics() throws Exception {
         var events = new ArrayList<AgentExecutionEvent>();
         var result = json.readTree("""
@@ -104,7 +117,7 @@ class ResearchRunnerTest {
                                   ResearchRunner.Verifier verifier) {
         ResearchRunner.Gateway gateway=new ResearchRunner.Gateway(){
             public List<ResearchRunner.Tool> discover(Duration d,java.util.function.BooleanSupplier c){return List.of(new ResearchRunner.Tool("knowledge__knowledge_lookup_v1","lookup",com.zxl.zxlaiagent.knowledge.mcp.KnowledgeLookupTool.SCHEMA));}
-            public String call(String n,String a,Duration d,java.util.function.BooleanSupplier c){calls.incrementAndGet();return result.toString();}
+            public String call(String n,String a,Duration d,java.util.function.BooleanSupplier c){calls.incrementAndGet();return result.isTextual()?result.textValue():result.toString();}
         };
         ResearchRunner.Model model=new ResearchRunner.Model(){
             public ResearchRunner.Selection select(String q,List<ResearchRunner.Tool> t,Duration d,java.util.function.BooleanSupplier c){return new ResearchRunner.Selection("call1",forged?"terminal":"knowledge__knowledge_lookup_v1","{\"query\":\"VPN401\"}");}

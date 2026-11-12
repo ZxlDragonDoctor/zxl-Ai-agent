@@ -3,6 +3,7 @@ package com.zxl.zxlaiagent.knowledge.answer;
 import com.zxl.zxlaiagent.security.Phase;
 import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 import com.zxl.zxlaiagent.knowledge.scoped.AuthorizedHttp;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.*;
 import java.net.URI;
 import java.net.http.*;
@@ -18,7 +19,10 @@ public final class HttpAnswerModel implements AnswerModel {
  private record ModelEvidence(String id, String text, boolean truncated) {}
  private record ModelPreference(String key, String value) {}
 
- private final URI endpoint;private final String key,model,judge,revision;private final HttpClient client;private final ObjectMapper json=new ObjectMapper();
+ private final URI endpoint;private final String key,model,judge,revision;private final HttpClient client;
+ private final ObjectMapper json = new ObjectMapper()
+   .enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+   .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
  public HttpAnswerModel(String endpoint,String key,String model,String judge,String revision){this(URI.create(endpoint),key,model,judge,revision,HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).connectTimeout(Duration.ofSeconds(3)).build(),false);}
  HttpAnswerModel(URI endpoint,String key,String model,String judge,String revision,HttpClient client,boolean localTest){
   if(endpoint.getUserInfo()!=null||endpoint.getFragment()!=null||endpoint.getQuery()!=null||!("https".equals(endpoint.getScheme())||localTest&&"http".equals(endpoint.getScheme())&&Set.of("localhost","127.0.0.1").contains(endpoint.getHost()))||key==null||key.isBlank()||model==null||model.isBlank()||judge==null||judge.isBlank()||revision==null||revision.isBlank())throw new IllegalArgumentException("Explicit HTTPS endpoint/key/generator/judge/revision required");

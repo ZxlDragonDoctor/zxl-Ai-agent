@@ -60,6 +60,15 @@ class HttpAnswerModelTest {
    assertEquals(0, headersSent.getCount());
   } finally { release.countDown(); }
  }
+ @Test void ambiguousProviderJsonIsRejectedAtEitherLayer() throws Exception {
+  String valid = "{\"support\":\"SUPPORTED\",\"reason\":\"ok\"}";
+  for (String invalid : List.of(envelope(valid) + " {}", envelope(valid + " {}"),
+      envelope("{\"support\":\"INSUFFICIENT\",\"support\":\"SUPPORTED\",\"reason\":\"ok\"}"))) {
+   response = invalid;
+   assertThrows(IllegalStateException.class, () -> model().judge("q",
+      new AnswerService.Claim("c", List.of()), List.of(), Duration.ofSeconds(2)));
+  }
+ }
  @Test void generationV2RequiresExplicitMissingInformationField()throws Exception{
   response=envelope("{\"snapshotId\":\"s\",\"claims\":[]}");assertThrows(IllegalStateException.class,()->model().generate("q","s",List.of(),new MemoryContext.MemoryView(List.of(),"none",0,0),Duration.ofSeconds(2)));
   response=envelope("{\"snapshotId\":\"s\",\"claims\":[],\"missingInformation\":[\"缺少年假制度。\"]}");assertEquals(List.of("缺少年假制度。"),model().generate("q","s",List.of(),new MemoryContext.MemoryView(List.of(),"none",0,0),Duration.ofSeconds(2)).missingInformation());
