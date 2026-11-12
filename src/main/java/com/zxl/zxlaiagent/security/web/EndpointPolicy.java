@@ -14,6 +14,7 @@ public final class EndpointPolicy {
     private static final Pattern CONVERSATION = Pattern.compile("/conversations/(" + UUID + ")");
     private static final Pattern RUN = Pattern.compile("/ai/multiagent/runs/(" + UUID + ")(/cancel)?");
     private static final Pattern DOCUMENT = Pattern.compile("/ai/learning/knowledge/documents/[A-Za-z0-9][A-Za-z0-9._-]{0,119}");
+    private static final Pattern TICKET_APPROVAL = Pattern.compile("/ai/learning/ticket-approvals/" + UUID + "(?:/(review|execute))?");
     public static String servletPath(String contextPath, String requestUri) {
         if (contextPath == null || requestUri == null || !requestUri.startsWith(contextPath)) return "";
         String path = requestUri.substring(contextPath.length());
@@ -34,6 +35,8 @@ public final class EndpointPolicy {
                 || ("POST".equals(method) && "/auth/login".equals(path)))
             return new Requirement(true, false, null, null, null, "POST".equals(method));
         if ("POST".equals(method) && "/auth/logout".equals(path)) return allow(method, null);
+        if ("POST".equals(method) && "/ai/learning/ticket-proposals".equals(path))
+            return allow(method, "ticket.propose");
         if ("GET".equals(method) && "/agent-types".equals(path)) return allow(method, "agent.execute");
         if (Set.of("GET", "POST").contains(method) && "/conversations".equals(path))
             return allow(method, "agent.execute");
@@ -48,6 +51,12 @@ public final class EndpointPolicy {
         if ("GET".equals(method) && "/ai/learning/mcp/status".equals(path)) return allow(method, "knowledge.read");
         if ("POST".equals(method) && "/ai/learning/mcp/lookup".equals(path)) return allow(method, "knowledge.read");
         if ("POST".equals(method) && "/ai/learning/mcp/refresh".equals(path)) return allow(method, "knowledge.manage");
+        var approval = TICKET_APPROVAL.matcher(path);
+        if (approval.matches()) {
+            String operation = approval.group(1);
+            if (operation == null && "GET".equals(method)) return allow(method, "ticket.review");
+            if (operation != null && "POST".equals(method)) return allow(method, "ticket." + operation);
+        }
         if ("POST".equals(method) && Set.of("/ai/multiagent/orchestrate", "/ai/multiagent/runs", "/ai/multiagent/orchestrate/stream").contains(path))
             return allow(method, "agent.execute");
         var run = RUN.matcher(path);

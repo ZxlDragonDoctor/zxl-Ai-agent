@@ -7,6 +7,10 @@ import com.zxl.zxlaiagent.knowledge.gateway.FormalKnowledgeGatewayController;
 import com.zxl.zxlaiagent.agent.stream.PreparedAgentStreamInterceptor;
 import com.zxl.zxlaiagent.research.FormalMcpController;
 import com.zxl.zxlaiagent.skills.FormalSkillController;
+import com.zxl.zxlaiagent.ticket.FormalTicketProposalController;
+import com.zxl.zxlaiagent.ticket.FormalTicketApprovalController;
+import com.zxl.zxlaiagent.ticket.TicketApprovalStore;
+import com.zxl.zxlaiagent.ticket.TicketApprovalWorkflow;
 import com.zxl.zxlaiagent.security.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -16,6 +20,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -35,6 +40,9 @@ public class FormalSecurityConfiguration implements WebMvcConfigurer {
     @Bean(destroyMethod = "close") public SecurityDatabase securityDatabase() { return SecurityDatabase.pooledFromEnvironment(); }
     @Bean public AuthenticationService authenticationService(SecurityDatabase db) { return new AuthenticationService(db); }
     @Bean public AuthorizationService authorizationService(SecurityDatabase db) { return new AuthorizationService(db); }
+    @Bean public TicketApprovalWorkflow ticketApprovalWorkflow(SecurityDatabase db, AuthorizationService authorization) {
+        return new TicketApprovalWorkflow(db, authorization, new TicketApprovalStore(), Clock.systemUTC());
+    }
     @Bean public ServiceCallAuthorizer serviceCallAuthorizer(SecurityDatabase db, AuthorizationService authorization) {
         return new ServiceCallAuthorizer(db, authorization);
     }
@@ -56,7 +64,8 @@ public class FormalSecurityConfiguration implements WebMvcConfigurer {
         registry.addInterceptor(new TrustedHandlerInterceptor(Set.of(AuthController.class,
                 FormalConversationController.class, SecurityHealthController.class,
                 FormalAgentChatController.class, FormalKnowledgeGatewayController.class, FormalAgentTypeController.class, FormalMcpController.class, FormalSkillController.class,
-                com.zxl.zxlaiagent.multiagent.security.FormalMultiAgentController.class)));
+                FormalTicketApprovalController.class,
+                FormalTicketProposalController.class, com.zxl.zxlaiagent.multiagent.security.FormalMultiAgentController.class)));
         registry.addInterceptor(new PreparedAgentStreamInterceptor());
     }
 }

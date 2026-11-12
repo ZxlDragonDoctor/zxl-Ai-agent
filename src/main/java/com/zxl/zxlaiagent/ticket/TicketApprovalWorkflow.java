@@ -3,11 +3,13 @@ package com.zxl.zxlaiagent.ticket;
 import com.zxl.zxlaiagent.security.ActorRef;
 import com.zxl.zxlaiagent.security.AuthorizationService;
 import com.zxl.zxlaiagent.security.Phase;
+import com.zxl.zxlaiagent.security.ResourceRef;
 import com.zxl.zxlaiagent.security.SecurityDatabase;
 import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -30,14 +32,24 @@ public final class TicketApprovalWorkflow {
     }
 
     /** The caller must first resolve the draft from the requester's authorized stored history. */
-    TicketApproval propose(ActorRef requester, String title, String description) {
-        UUID proposalId = UUID.randomUUID();
-        return inTransaction(requester, "ticket.propose", proposalId, connection -> {
-            var command = new TicketCommand(proposalId.toString(), title, description);
-            var proposal = TicketApproval.propose(proposalId, requester, command, clock.instant().plus(REVIEW_WINDOW));
-            store.insert(connection, proposal);
-            return proposal;
-        });
+    TicketApproval proposeFromRun(ActorRef requester, UUID conversationId, UUID runId, StoredSkillDraft.Draft draft) {
+        var permissions = List.of(
+                new AuthorizationService.Permission("ticket.propose", null),
+                new AuthorizationService.Permission("conversation.readOwn", new ResourceRef("conversation", conversationId.toString())),
+                new AuthorizationService.Permission("run.readOwn", new ResourceRef("run", runId.toString())));
+        return database.tx(connection -> authorization.sqlGate(connection, requester, permissions, Phase.PERSIST,
+                runId.toString(), sql -> {
+                    var command = new TicketCommand(runId.toString(), draft.title(), draft.problem());
+                    var expiresAt = clock.instant().plus(REVIEW_WINDOW).truncatedTo(ChronoUnit.MILLIS);
+                    var proposal = TicketApproval.propose(runId, requester, command, expiresAt);
+                    return store.insertOrReplay(sql, proposal);
+                })).result();
+    }
+
+    public TicketApproval inspect(ActorRef reviewer, UUID proposalId) {
+        return database.tx(connection -> authorization.sqlGate(connection, reviewer,
+                List.of(new AuthorizationService.Permission("ticket.review", null)),
+                Phase.SOURCE_READ, proposalId.toString(), sql -> store.read(sql, reviewer.tenantId(), proposalId))).result();
     }
 
     public TicketApproval review(ActorRef reviewer, UUID proposalId, TicketApproval.Outcome decision,

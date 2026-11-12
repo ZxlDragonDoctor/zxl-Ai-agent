@@ -14,6 +14,20 @@ import static com.zxl.zxlaiagent.security.SecurityDatabase.statement;
 /** SQL-only storage. Call inside the caller's authorized PostgreSQL transaction. */
 public final class TicketApprovalStore {
     public void insert(Connection c, TicketApproval proposal) throws SQLException {
+        if (!insertPending(c, proposal)) throw new SecurityFailure("APPROVAL_CONFLICT", 409);
+    }
+
+    TicketApproval insertOrReplay(Connection c, TicketApproval proposal) throws SQLException {
+        if (insertPending(c, proposal)) return proposal;
+        var existing = lock(c, proposal.requester().tenantId(), proposal.proposalId());
+        if (!existing.requester().subjectId().equals(proposal.requester().subjectId())
+                || !existing.command().equals(proposal.command())) {
+            throw new SecurityFailure("APPROVAL_CONFLICT", 409);
+        }
+        return existing;
+    }
+
+    private boolean insertPending(Connection c, TicketApproval proposal) throws SQLException {
         requireTransaction(c);
         if (proposal.outcome() != TicketApproval.Outcome.PENDING) throw new IllegalArgumentException("Pending proposal required");
         var actor = proposal.requester();
@@ -25,18 +39,27 @@ public final class TicketApprovalStore {
                 """, actor.tenantId(), proposal.proposalId(), actor.subjectId(), actor.sessionId(),
                 actor.authenticationVersion(), command.operationId(), command.title(), command.description(),
                 command.fingerprint(), Timestamp.from(proposal.expiresAt()))) {
-            if (s.executeUpdate() != 1) throw new SecurityFailure("APPROVAL_CONFLICT", 409);
+            return s.executeUpdate() == 1;
         }
     }
 
     public TicketApproval lock(Connection c, String tenantId, UUID proposalId) throws SQLException {
+        return load(c, tenantId, proposalId, true);
+    }
+
+    TicketApproval read(Connection c, String tenantId, UUID proposalId) throws SQLException {
+        return load(c, tenantId, proposalId, false);
+    }
+
+    private TicketApproval load(Connection c, String tenantId, UUID proposalId, boolean forUpdate) throws SQLException {
         requireTransaction(c);
-        try (var s = statement(c, """
+        String sql = """
                 SELECT requester_id, requester_session, requester_auth_version, operation_id, title,
                     description, parameter_sha256, expires_at, outcome, version, reviewer_id, reviewer_session,
                     reviewer_auth_version
-                FROM lesson17.ticket_approval WHERE tenant_id = ? AND proposal_id = ? FOR UPDATE
-                """, tenantId, proposalId); var rows = s.executeQuery()) {
+                FROM lesson17.ticket_approval WHERE tenant_id = ? AND proposal_id = ?
+                """ + (forUpdate ? "FOR UPDATE" : "");
+        try (var s = statement(c, sql, tenantId, proposalId); var rows = s.executeQuery()) {
             if (!rows.next()) throw new SecurityFailure("APPROVAL_NOT_FOUND", 404);
             var requester = new ActorRef(rows.getString(1), tenantId, rows.getString(2), rows.getLong(3));
             var command = new TicketCommand(rows.getString(4), rows.getString(5), rows.getString(6));
