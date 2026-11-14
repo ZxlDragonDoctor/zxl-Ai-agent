@@ -8,13 +8,18 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.zxl.zxlaiagent.security.SecurityDatabase.statement;
 
 /** Stores the public projections inside the caller's authorized transaction. */
 public final class DurableRunStore {
+    private static final Set<String> ACTIVE = Set.of("queued", "planning", "running", "synthesizing");
+
     public record Snapshot(long sequence, String status, String json) {}
+    public record RunSnapshot(String runId, Snapshot snapshot) {}
+    public record TenantRunSnapshot(String tenantId, String runId, Snapshot snapshot) {}
 
     public void append(Connection c, String tenantId, String runId, long sequence, String status, String json)
             throws SQLException {
@@ -42,10 +47,65 @@ public final class DurableRunStore {
         if (sequence - current != 1) throw gap();
         insertEvent(c, tenantId, id, sequence, status, json);
         try (var update = statement(c, """
-                UPDATE lesson17.durable_agent_run SET latest_sequence=? WHERE tenant_id=? AND run_id=?
+                UPDATE lesson17.durable_agent_run SET latest_sequence=?, updated_at=clock_timestamp()
+                WHERE tenant_id=? AND run_id=?
                 """, sequence, tenantId, id)) {
             update.executeUpdate();
         }
+    }
+
+    public List<RunSnapshot> listOwned(Connection c, String tenantId, String subjectId, int limit)
+            throws SQLException {
+        requireTransaction(c);
+        requireLimit(limit);
+        var result = new ArrayList<RunSnapshot>();
+        try (var query = statement(c, """
+                SELECT e.event_sequence,e.status,e.public_snapshot,r.run_id
+                FROM lesson17.durable_agent_run r
+                JOIN lesson17.resource_owner o ON o.tenant_id=r.tenant_id AND o.resource_id=r.run_id::text
+                    AND o.resource_type='run' AND o.state='ACTIVE'
+                JOIN lesson17.durable_agent_run_event e ON e.tenant_id=r.tenant_id AND e.run_id=r.run_id
+                    AND e.event_sequence=r.latest_sequence
+                WHERE r.tenant_id=? AND o.subject_id=?
+                ORDER BY r.updated_at DESC,r.run_id LIMIT ?
+                """, tenantId, subjectId, limit); var rows = query.executeQuery()) {
+            while (rows.next()) result.add(new RunSnapshot(rows.getString(4), read(rows)));
+        }
+        return List.copyOf(result);
+    }
+
+    /** Candidate enumeration for a caller that can prove the owning execution instance is stopped. */
+    public List<TenantRunSnapshot> listRecoverable(Connection c, int limit) throws SQLException {
+        requireTransaction(c);
+        requireLimit(limit);
+        var result = new ArrayList<TenantRunSnapshot>();
+        try (var query = statement(c, """
+                SELECT e.event_sequence,e.status,e.public_snapshot,r.tenant_id,r.run_id
+                FROM lesson17.durable_agent_run r
+                JOIN lesson17.durable_agent_run_event e ON e.tenant_id=r.tenant_id AND e.run_id=r.run_id
+                    AND e.event_sequence=r.latest_sequence
+                WHERE e.status IN ('queued','planning','running','synthesizing')
+                ORDER BY r.updated_at,r.tenant_id,r.run_id LIMIT ?
+                """, limit); var rows = query.executeQuery()) {
+            while (rows.next()) result.add(new TenantRunSnapshot(rows.getString(4), rows.getString(5), read(rows)));
+        }
+        return List.copyOf(result);
+    }
+
+    /** Caller must prove the owning instance is stopped before invoking this compare-and-set. */
+    public boolean interruptIfCurrent(Connection c, String tenantId, String runId, long expectedSequence,
+                                      String interruptedJson) throws SQLException {
+        requireTransaction(c);
+        try (var query = statement(c, """
+                SELECT e.status FROM lesson17.durable_agent_run r
+                JOIN lesson17.durable_agent_run_event e ON e.tenant_id=r.tenant_id AND e.run_id=r.run_id
+                    AND e.event_sequence=r.latest_sequence
+                WHERE r.tenant_id=? AND r.run_id=? AND r.latest_sequence=? FOR UPDATE OF r
+                """, tenantId, UUID.fromString(runId), expectedSequence); var rows = query.executeQuery()) {
+            if (!rows.next() || !ACTIVE.contains(rows.getString(1))) return false;
+        }
+        append(c, tenantId, runId, Math.incrementExact(expectedSequence), "interrupted", interruptedJson);
+        return true;
     }
 
     public Optional<Snapshot> get(Connection c, String tenantId, String runId) throws SQLException {
@@ -63,7 +123,8 @@ public final class DurableRunStore {
     public List<Snapshot> eventsAfter(Connection c, String tenantId, String runId, long cursor, int limit)
             throws SQLException {
         requireTransaction(c);
-        if (cursor < 0 || limit < 1 || limit > 100) throw new IllegalArgumentException("Invalid event page");
+        requireLimit(limit);
+        if (cursor < 0) throw new IllegalArgumentException("Invalid event cursor");
         var events = new ArrayList<Snapshot>();
         try (var query = statement(c, """
                 SELECT event_sequence,status,public_snapshot FROM lesson17.durable_agent_run_event
@@ -115,5 +176,9 @@ public final class DurableRunStore {
 
     private static void requireTransaction(Connection c) throws SQLException {
         if (c.getAutoCommit()) throw new IllegalArgumentException("Run history requires a caller-owned transaction");
+    }
+
+    private static void requireLimit(int limit) {
+        if (limit < 1 || limit > 100) throw new IllegalArgumentException("Invalid history page size");
     }
 }

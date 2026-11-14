@@ -2,6 +2,9 @@ package com.zxl.zxlaiagent.multiagent.security;
 
 import com.zxl.zxlaiagent.security.SecurityDatabase;
 import com.zxl.zxlaiagent.security.SecurityFailure;
+import com.zxl.zxlaiagent.security.AuthenticationService;
+import com.zxl.zxlaiagent.security.AuthorizationService;
+import com.zxl.zxlaiagent.security.ResourceRef;
 import org.junit.jupiter.api.Test;
 import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,6 +22,11 @@ class DurableRunStorePgTest {
                 }
                 return null;
             });
+            var auth = new AuthenticationService(db);
+            var subject = tenant + "-employee";
+            auth.provision(subject, subject, "synthetic-password", tenant, "employee");
+            var actor = auth.login(subject, "synthetic-password", tenant).actor().ref();
+            new AuthorizationService(db).registerResource(actor, new ResourceRef("run", run));
             try {
                 db.tx(c -> {
                     store.append(c, tenant, run, 1, "queued", "{}");
@@ -47,12 +55,21 @@ class DurableRunStorePgTest {
                         assertEquals(2, events.get(0).sequence());
                         assertTrue(store.get(c, "different-tenant", run).isEmpty());
                         assertTrue(store.eventsAfter(c, "different-tenant", run, 0, 50).isEmpty());
+                        assertEquals(run, store.listOwned(c, tenant, subject, 50).get(0).runId());
+                        assertTrue(store.listOwned(c, tenant, "other-subject", 50).isEmpty());
+                        assertFalse(store.interruptIfCurrent(c, tenant, run, 1, "{}"));
+                        assertTrue(store.interruptIfCurrent(c, tenant, run, 2, "{}"));
+                        assertFalse(store.interruptIfCurrent(c, tenant, run, 3, "{}"));
+                        assertEquals("interrupted", store.get(c, tenant, run).orElseThrow().status());
                         return null;
                     });
                 }
             } finally {
                 db.tx(c -> {
                     try (var delete = SecurityDatabase.statement(c, "DELETE FROM lesson17.tenant WHERE tenant_id=?", tenant)) {
+                        delete.executeUpdate();
+                    }
+                    try (var delete = SecurityDatabase.statement(c, "DELETE FROM lesson17.subject WHERE subject_id=?", subject)) {
                         delete.executeUpdate();
                     }
                     return null;
