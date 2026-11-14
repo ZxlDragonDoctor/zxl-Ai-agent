@@ -30,3 +30,7 @@
 DashScope 的流式用量帧可能没有任何回答片段。解析器先读取用量，再判断该帧有无输出。Spring AI 响应元数据和传输日志保留输入、输出及总 token 数。服务端没有返回的字段保留为 `null`，明确返回的零照常保留。 [百炼流式协议](https://www.alibabacloud.com/help/en/model-studio/stream)
 
 [实际 token 用量与页面验收](../images/lesson21-usage-2026-11-15/README.md)
+
+正式知识请求在 MCP 和 Worker 之间传递 W3C `traceparent`。从运行 ID 去掉连字符得到 trace ID，各服务生成自己的 span ID，记录收到的父 span。追踪头仅用于诊断，租户身份和请求授权继续由原有的一次性票据校验。当前通过各服务日志重建这条链路，OpenTelemetry Collector 的 span 导出仍待接入。
+
+[跨服务追踪与工作台截图](../images/lesson21-trace-2026-11-15/README.md)
