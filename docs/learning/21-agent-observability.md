@@ -26,3 +26,5 @@
 用 1 秒预算提交正式运行，页面会显示失败，事件回放记录 `RUN_DEADLINE_EXCEEDED`。终态日志在保存事务提交后记录结果、是否超时及当时持有的任务和模型许可数。许可数是终态时刻的快照，清理完成时间需要单独测量。并行回归验证了运行 ID 不会串线，计时器只有结果标签。 [超时逐状态截图](../images/lesson21-timeout-2026-11-15/README.md)
 
 DashScope 的流式用量帧可能没有任何回答片段。解析器先读取用量，再判断该帧有无输出。Spring AI 响应元数据和传输日志保留输入、输出及总 token 数。服务端没有返回的字段保留为 `null`，明确返回的零照常保留。 [百炼流式协议](https://www.alibabacloud.com/help/en/model-studio/stream)
+
+[实际 token 用量与页面验收](../images/lesson21-usage-2026-11-15/README.md)
