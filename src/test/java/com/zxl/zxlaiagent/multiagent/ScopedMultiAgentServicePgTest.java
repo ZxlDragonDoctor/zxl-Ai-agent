@@ -84,6 +84,9 @@ class ScopedMultiAgentServicePgTest {
         }
         orchestrator.shutdown();
         start(new RuntimeSettings());
+        assertEquals("durable result", service.detail(actorA, id).run().report().result());
+        assertEquals(List.of(id), service.status(actorA).runs().stream().map(view -> view.run().executionId()).toList());
+        assertTrue(service.status(actorPeer).runs().isEmpty());
         assertEquals(List.of(terminal), service.eventsAfter(actorA, id, terminal.sequence() - 1).events());
         assertTrue(service.eventsAfter(actorA, id, terminal.sequence()).events().isEmpty());
         assertEquals(409, assertThrows(SecurityFailure.class,

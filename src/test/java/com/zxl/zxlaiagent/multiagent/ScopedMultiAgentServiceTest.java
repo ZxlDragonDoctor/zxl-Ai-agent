@@ -15,7 +15,8 @@ class ScopedMultiAgentServiceTest {
     final ActorRef actor=new ActorRef("synthetic","tenant","session",1);
     final AuthorizationService authorization=mock(AuthorizationService.class);
     final OrchestratorAgent orchestrator=mock(OrchestratorAgent.class);
-    final ScopedMultiAgentService service=new ScopedMultiAgentService(orchestrator,authorization,mock(SecurityDatabase.class));
+    final SecurityDatabase db=mock(SecurityDatabase.class);
+    final ScopedMultiAgentService service=new ScopedMultiAgentService(orchestrator,authorization,db);
     final String id=UUID.randomUUID().toString();
     @BeforeEach void gates(){
         when(authorization.gateAll(any(),anyList(),any(),any(),any())).thenAnswer(i->((Supplier<?>)i.getArgument(4)).get());
@@ -54,6 +55,7 @@ class ScopedMultiAgentServiceTest {
         assertEquals(404,assertThrows(SecurityFailure.class,()->service.detail(actor,id)).status());verifyNoInteractions(orchestrator);
     }
     @Test void authorizedMissingOrExpiredRegistryEntryIsAlso404(){
+        when(db.tx(any())).thenThrow(new SecurityFailure("NOT_FOUND",404));
         assertEquals(404,assertThrows(SecurityFailure.class,()->service.detail(actor,id)).status());
         verify(orchestrator).runStatusScoped(id);
     }
@@ -68,6 +70,7 @@ class ScopedMultiAgentServiceTest {
     @Test void workspaceNeverQueriesLegacyGlobalObserver(){
         when(orchestrator.retainedScopedRunIds(200)).thenReturn(List.of(id));
         when(authorization.ownedResourceIds(actor,"run",List.of(id))).thenReturn(List.of(id));
+        when(db.tx(any())).thenReturn(new com.zxl.zxlaiagent.security.execution.OperationBoundary.SqlOutcome<>(List.of(),null));
         assertTrue(service.status(actor).runs().isEmpty());verify(orchestrator).runStatusScoped(id);verify(orchestrator,never()).getStatus();
         verify(authorization,never()).ownedResourceIds(actor,"run");
     }

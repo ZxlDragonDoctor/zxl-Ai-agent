@@ -12,7 +12,7 @@ public final class EndpointPolicy {
     private static final Set<String> SAFE = Set.of("GET", "HEAD", "OPTIONS");
     private static final String UUID = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
     private static final Pattern CONVERSATION = Pattern.compile("/conversations/(" + UUID + ")");
-    private static final Pattern RUN = Pattern.compile("/ai/multiagent/runs/(" + UUID + ")(/cancel|/events)?");
+    private static final Pattern RUN = Pattern.compile("/ai/multiagent/runs/(" + UUID + ")(/cancel|/events(?:/stream)?)?");
     private static final Pattern DOCUMENT = Pattern.compile("/ai/learning/knowledge/documents/[A-Za-z0-9][A-Za-z0-9._-]{0,119}");
     private static final Pattern TICKET_APPROVAL = Pattern.compile("/ai/learning/ticket-approvals/" + UUID + "(?:/(review|execute))?");
     public static String servletPath(String contextPath, String requestUri) {
@@ -60,7 +60,7 @@ public final class EndpointPolicy {
         if ("POST".equals(method) && Set.of("/ai/multiagent/orchestrate", "/ai/multiagent/runs", "/ai/multiagent/orchestrate/stream").contains(path))
             return allow(method, "agent.execute");
         var run = RUN.matcher(path);
-        if (run.matches() && (run.group(2) == null || "/events".equals(run.group(2))) && "GET".equals(method))
+        if (run.matches() && !"/cancel".equals(run.group(2)) && "GET".equals(method))
             return own(method, "run.readOwn", "run", run.group(1));
         if (run.matches() && "/cancel".equals(run.group(2)) && "POST".equals(method))
             return own(method, "run.writeOwn", "run", run.group(1));

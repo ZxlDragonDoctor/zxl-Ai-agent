@@ -2,6 +2,8 @@ package com.zxl.zxlaiagent.multiagent.security;
 
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.*;
+import com.zxl.zxlaiagent.agent.stream.PreparedAgentStream;
+import com.zxl.zxlaiagent.agent.stream.PreparedAgentStreamInterceptor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.zxl.zxlaiagent.multiagent.model.WorkflowException;
 import com.zxl.zxlaiagent.security.*;
@@ -36,6 +38,25 @@ public final class FormalMultiAgentController {
                                                     @RequestParam(defaultValue = "0") long after) {
         var actor = AuthenticatedRequest.require(request).ref();
         return safe(() -> service.eventsAfter(actor, executionId, after));
+    }
+    @GetMapping(value = "/runs/{executionId}/events/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public PreparedAgentStream stream(HttpServletRequest request, @PathVariable String executionId,
+                                      @RequestParam(defaultValue = "0") long after,
+                                      @RequestHeader(value = "Last-Event-ID", required = false) String lastId) {
+        var actor = AuthenticatedRequest.require(request).ref();
+        long cursor = lastId == null || lastId.isEmpty() ? after : eventId(lastId);
+        return safe(() -> {
+            service.eventsAfter(actor, executionId, cursor);
+            return PreparedAgentStreamInterceptor.attach(request, DurableEventStream.prepare(service, actor, executionId, cursor));
+        });
+    }
+    private static long eventId(String value) {
+        try {
+            if (!value.matches("[0-9]{1,19}")) throw new NumberFormatException();
+            return Long.parseLong(value);
+        } catch (NumberFormatException invalid) {
+            throw new SecurityFailure("INVALID_EVENT_CURSOR", 400);
+        }
     }
     @PostMapping("/runs/{executionId}/cancel")
     public ScopedMultiAgentService.CancelAcknowledgement cancel(HttpServletRequest request,@PathVariable String executionId){var actor=AuthenticatedRequest.require(request).ref();return safe(()->service.cancel(actor,executionId));}

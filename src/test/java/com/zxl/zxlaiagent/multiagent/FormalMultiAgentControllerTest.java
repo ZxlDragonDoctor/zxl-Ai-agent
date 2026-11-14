@@ -64,6 +64,18 @@ class FormalMultiAgentControllerTest {
         mvc.perform(post(path).contextPath("/api").cookie(cookie())).andExpect(status().isNotFound());
         verify(service).eventsAfter(actor.ref(), id, 2L);
     }
+    @Test void eventStreamUsesReconnectHeaderAndRejectsInvalidCursor() throws Exception {
+        String id = UUID.randomUUID().toString();
+        String path = "/api/ai/multiagent/runs/" + id + "/events/stream";
+        var mvc = mvc();
+        when(service.eventsAfter(actor.ref(), id, 5L)).thenThrow(new SecurityFailure("NOT_FOUND", 404));
+        mvc.perform(get(path).contextPath("/api").cookie(cookie()).header("Last-Event-ID", "-1"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get(path).contextPath("/api").cookie(cookie()).param("after", "2")
+                        .header("Last-Event-ID", "5"))
+                .andExpect(status().isNotFound());
+        verify(service).eventsAfter(actor.ref(), id, 5L);
+    }
     @Test void globalObserverAndHarnessRemainClosed()throws Exception{
         var mvc=mvc();for(String suffix:List.of("agents","events","harness/research-1","harness/benchmark"))mvc.perform(get("/api/ai/multiagent/"+suffix).contextPath("/api").cookie(cookie())).andExpect(status().isNotFound());verifyNoInteractions(service);
     }
