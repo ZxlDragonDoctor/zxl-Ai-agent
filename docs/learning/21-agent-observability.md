@@ -17,7 +17,9 @@
 
 许可等待结束只说明拿到了本地容量。传输首帧计时从构造 HTTP 流开始，包含本地授权和网络开销。任务 ID 来自模型时可能是自由文本，日志仅接受可解析为 UUID 的值。
 
-计时器接入 Micrometer 的全局注册表。部署仍需配置实际注册表或导出器才能采集指标。分布式追踪和完整的失败排查页面验收仍在本课后续范围内。
+用 `-Dagent.observability.jmx-enabled=true` 启用本地 JMX 指标导出。用 JConsole 连接 JVM，在 MBeans 中找到 `com.zxl.agent:type=ModelMetrics` 并读取 `Snapshot`。每条记录只含固定计时器名、结果标签、次数、总耗时和近期最大值。均值可用总耗时除以次数。此快照没有直方图，无法从中计算 p95。
+
+[本地 JMX 指标和真实模型超时截图](../images/lesson21-export-2026-11-15/README.md)
 
 正式 Research Agent 已记录知识 MCP 工具完成或失败时的网关耗时。日志可用运行 ID 找到同一次调用，用调用摘要关联工具记录。工具名称使用固定协议名。参数、返回正文和原始模型调用 ID 均不进入这份日志。
 
