@@ -1,5 +1,7 @@
 package com.zxl.zxlaiagent.multiagent.agents;
 
+import com.zxl.zxlaiagent.agent.model.AgentExecutionEvent;
+import com.zxl.zxlaiagent.knowledge.mcp.FormalKnowledgeMcpProtocol;
 import com.zxl.zxlaiagent.multiagent.model.AgentCapability;
 import com.zxl.zxlaiagent.multiagent.model.Task;
 import com.zxl.zxlaiagent.multiagent.execution.TaskPromptRenderer;
@@ -8,7 +10,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
 
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -89,9 +96,40 @@ public class ResearchAgent extends AbstractBaseAgent {
                     deliverTaskEvent(scope,com.zxl.zxlaiagent.multiagent.model.AgentEvent.of(agentId,
                             event.type().equals("TOOL_REQUESTED")||event.type().equals("TOOL_STARTED")?com.zxl.zxlaiagent.multiagent.model.EventType.TOOL_CALLED:com.zxl.zxlaiagent.multiagent.model.EventType.TOOL_RESULT,
                             java.util.Map.of("taskId",task.getId(),"event",event.withIdentity(null,context.runId()))));
+                    logToolResult(context.runId(), task.getId(), event);
                     return null;
                 }),new com.zxl.zxlaiagent.research.ResearchRunner.ModelGate(){
                     public <T>T call(java.util.function.Supplier<T> action){return controlledModelCall(task,scope,action);}
                 });
+    }
+
+    private static void logToolResult(String runId, String taskId, AgentExecutionEvent event) {
+        String outcome = switch (event.type()) {
+            case "TOOL_COMPLETED" -> "completed";
+            case "TOOL_FAILED" -> "failed";
+            default -> null;
+        };
+        if (outcome == null || event.durationMs() == null || !log.isInfoEnabled()) return;
+        log.info("Agent tool finished runId={} taskId={} callRef={} tool={} outcome={} durationMs={}",
+                runId, diagnosticTaskId(taskId), toolCallReference(runId, taskId, event.callId()),
+                FormalKnowledgeMcpProtocol.EXPOSED_NAME, outcome, event.durationMs());
+    }
+
+    private static String diagnosticTaskId(String taskId) {
+        try {
+            return UUID.fromString(taskId).toString();
+        } catch (IllegalArgumentException | NullPointerException ignored) {
+            return "non-uuid";
+        }
+    }
+
+    private static String toolCallReference(String runId, String taskId, String modelCallId) {
+        try {
+            String input = runId + "\n" + taskId + "\n" + modelCallId;
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(input.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException("SHA-256 unavailable", impossible);
+        }
     }
 }

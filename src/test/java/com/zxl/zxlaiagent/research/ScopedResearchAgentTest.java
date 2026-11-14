@@ -100,6 +100,29 @@ class ScopedResearchAgentTest {
             assertTrue(fixture.events().stream().allMatch(e->fixture.run.id.equals(e.getData().get("executionId"))));
         }
     }
+    @Test void toolOutcomeLogsTrustedCorrelationWithoutLoggingPayloadOrRawModelIdentifier() throws Exception {
+        var logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ResearchAgent.class);
+        var logs = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
+        logs.start();
+        logger.addAppender(logs);
+        try (var fixture = new Fixture(OperationBoundary.unrestricted())) {
+            when(fixture.factory.create(eq(ACTOR),eq(fixture.run.id),anyList(),any(OperationBoundary.class)))
+                    .thenReturn(fixture.runner());
+            fixture.agent().executeTask(fixture.task).get(3, TimeUnit.SECONDS);
+            var message = logs.list.stream().map(ch.qos.logback.classic.spi.ILoggingEvent::getFormattedMessage)
+                    .filter(log -> log.startsWith("Agent tool finished ")).findFirst().orElseThrow();
+            assertTrue(message.contains("runId=" + fixture.run.id));
+            assertTrue(message.contains("taskId=" + fixture.task.getId()));
+            assertTrue(message.matches(".* callRef=[0-9a-f]{64} .*outcome=completed durationMs=[0-9]+"));
+            assertFalse(message.contains("synthetic-call"));
+            assertFalse(message.contains("synthetic research"));
+            assertFalse(message.contains("synthetic evidence"));
+            assertFalse(message.contains(ACTOR.subjectId()));
+        } finally {
+            logger.detachAppender(logs);
+            logs.stop();
+        }
+    }
     @Test void formalFactoryMissingCannotInvokeLegacyRunner() throws Exception {
         try(var fixture=new Fixture(OperationBoundary.unrestricted())){
             var agent=new ResearchAgent(mock(ChatModel.class),new TaskPromptRenderer(new ObjectMapper()),fixture.legacy);
