@@ -36,11 +36,11 @@ public final class FormalKnowledgeMcpServer {
     public static Running start(int port,FormalKnowledgeMcpTool tool,String internalToken){
         InternalServiceHttpClient.requireToken(internalToken);
         if(port<0||port>65535)throw new IllegalArgumentException("Invalid port");
-        var transport=new SingleClientSseTransport(new ObjectMapper().enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION).enable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS));
+        var transport=new SingleClientSseTransport(new ObjectMapper().enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION).enable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS), true);
         var context=new AnnotationConfigWebApplicationContext();context.getEnvironment().setActiveProfiles("lesson17-mcp");context.register(MvcConfiguration.class);
         context.addBeanFactoryPostProcessor(factory->factory.registerSingleton("mcpRouter",transport.getRouterFunction()));
         var mcp=McpServer.sync(transport).serverInfo("zxl-knowledge-authorized","2.0.0")
-                .capabilities(McpSchema.ServerCapabilities.builder().tools(false).build()).tool(FormalKnowledgeMcpProtocol.wireDefinition(),tool::call).build();
+                .capabilities(McpSchema.ServerCapabilities.builder().tools(false).build()).tool(FormalKnowledgeMcpProtocol.wireDefinition(),tool::transportCall).build();
         var factory=new TomcatServletWebServerFactory(port);
         try{factory.setAddress(InetAddress.getByName("127.0.0.1"));}catch(Exception failure){throw new IllegalStateException(failure);}
         factory.addConnectorCustomizers(connector->{

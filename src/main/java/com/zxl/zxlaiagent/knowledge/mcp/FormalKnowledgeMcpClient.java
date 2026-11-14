@@ -1,5 +1,6 @@
 package com.zxl.zxlaiagent.knowledge.mcp;
 
+import com.zxl.zxlaiagent.knowledge.gateway.KnowledgeTrace;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zxl.zxlaiagent.security.*;
 import com.zxl.zxlaiagent.tools.support.ToolResults;
@@ -107,7 +108,10 @@ public final class FormalKnowledgeMcpClient implements AutoCloseable {
             // SDK 0.7.0 subscribes DefaultMcpSession's Mono.create on this thread; its SSE transport
             // starts HttpClient.sendAsync eagerly. Initialization already completed outside the gate.
             var pending=authorization.gateAll(actor,required,Phase.TOOL_DISPATCH,runId,()->{
-                check(end,cancelled);return connected.callTool(new McpSchema.CallToolRequest(FormalKnowledgeMcpProtocol.NAME,sent)).toFuture();
+                check(end,cancelled);
+                try (var ignored = KnowledgeTrace.open(KnowledgeTrace.fromRun(runId))) {
+                    return connected.callTool(new McpSchema.CallToolRequest(FormalKnowledgeMcpProtocol.NAME,sent)).toFuture();
+                }
             });
             final McpSchema.CallToolResult response;
             try{response=await(pending,end,cancelled);}finally{pending.cancel(true);}

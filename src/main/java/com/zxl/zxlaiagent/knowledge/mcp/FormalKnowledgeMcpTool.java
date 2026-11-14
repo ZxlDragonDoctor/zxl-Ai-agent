@@ -1,5 +1,6 @@
 package com.zxl.zxlaiagent.knowledge.mcp;
 
+import com.zxl.zxlaiagent.knowledge.gateway.KnowledgeTrace;
 import com.zxl.zxlaiagent.knowledge.retrieval.*;
 import com.zxl.zxlaiagent.security.*;
 import com.zxl.zxlaiagent.tools.model.ToolResult;
@@ -11,11 +12,22 @@ import java.util.concurrent.*;
 
 /** No ambient tenant. Each opaque ticket resolves one actor; scoped lookup owns actual data gates. */
 public final class FormalKnowledgeMcpTool implements AutoCloseable {
+ static final String INTERNAL_TRACE = "__transport_traceparent";
+ private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(FormalKnowledgeMcpTool.class);
  @FunctionalInterface public interface Lookup {Object retrieve(ActorRef actor,RetrievalService.Request request);}
  private final ServiceCallAuthorizer tickets;private final AuthorizationService authorization;private final Lookup lookup;
  private final ThreadPoolExecutor workers=new ThreadPoolExecutor(2,2,30,TimeUnit.SECONDS,new ArrayBlockingQueue<>(8),r->{var t=new Thread(r,"formal-knowledge-mcp-query");t.setDaemon(true);return t;},new ThreadPoolExecutor.AbortPolicy());
  public FormalKnowledgeMcpTool(ServiceCallAuthorizer tickets,AuthorizationService authorization,Lookup lookup){this.tickets=Objects.requireNonNull(tickets);this.authorization=Objects.requireNonNull(authorization);this.lookup=Objects.requireNonNull(lookup);}
  public McpSchema.CallToolResult call(Map<String,Object> args){
+  return callWithTrace(args, null);
+ }
+ McpSchema.CallToolResult transportCall(Map<String,Object> args) {
+  if (args == null) return callWithTrace(null, null);
+  var copy = new HashMap<>(args);
+  Object trace = copy.remove(INTERNAL_TRACE);
+  return callWithTrace(copy, trace instanceof String value ? KnowledgeTrace.valid(value) : null);
+ }
+ private McpSchema.CallToolResult callWithTrace(Map<String,Object> args, String parent){
   final Map<String,Object> business;final String ticket;final RetrievalService.Request request;
   try{
    if(args==null||!args.keySet().equals(Set.of("query","topK","mode","budgetMs","authorization"))||!(args.get("authorization") instanceof String value)||value.isBlank()||value.length()>256)throw new IllegalArgumentException();
@@ -28,7 +40,11 @@ public final class FormalKnowledgeMcpTool implements AutoCloseable {
     long remaining=TimeUnit.NANOSECONDS.toMillis(end-System.nanoTime());if(remaining<100)throw new RetrievalDeadline.Expired();
     authorization.decide(actor,FormalKnowledgeMcpProtocol.ACTION,null,Phase.DEQUEUE,null).requireAllowed();
     // Scoped retrieval repeats gates at SQL/embedding/publish; never hold an epoch lock for a remote wait.
-    return lookup.retrieve(actor,new RetrievalService.Request(request.query(),request.mode(),request.topK(),20,false,false,remaining));
+    String child = KnowledgeTrace.child(parent);
+    try (var ignored = KnowledgeTrace.open(child)) {
+        if (child != null) LOG.info("Knowledge MCP span traceparent={} parent={}", child, parent);
+        return lookup.retrieve(actor,new RetrievalService.Request(request.query(),request.mode(),request.topK(),20,false,false,remaining));
+    }
    });
    Object result=future.get(Math.max(1,end-System.nanoTime()),TimeUnit.NANOSECONDS);
    if(System.nanoTime()>=end)throw new TimeoutException();

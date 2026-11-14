@@ -1,5 +1,6 @@
 package com.zxl.zxlaiagent.knowledge.mcp;
 
+import com.zxl.zxlaiagent.knowledge.gateway.KnowledgeTrace;
 import javax.net.ssl.*;
 import java.io.IOException;
 import java.net.*;
@@ -18,7 +19,11 @@ final class InternalServiceHttpClient extends HttpClient {
  static boolean authorized(String value,String token){return value!=null&&value.length()<=263&&MessageDigest.isEqual(("Bearer "+token).getBytes(StandardCharsets.UTF_8),value.getBytes(StandardCharsets.UTF_8));}
  private HttpRequest request(HttpRequest request){
   URI uri=request.uri();if(!Objects.equals(uri.getScheme(),origin.getScheme())||!Objects.equals(uri.getHost(),origin.getHost())||uri.getPort()!=origin.getPort())throw new IllegalStateException("MCP_PROTOCOL_FAILURE");
-  return HttpRequest.newBuilder(request,(name,value)->!name.equalsIgnoreCase("Authorization")).header("Authorization",bearer).build();
+  var builder=HttpRequest.newBuilder(request,(name,value)->!name.equalsIgnoreCase("Authorization")
+    && !name.equalsIgnoreCase(KnowledgeTrace.HEADER)).header("Authorization",bearer);
+  if("POST".equals(request.method()) && KnowledgeTrace.current()!=null)
+    builder.header(KnowledgeTrace.HEADER,KnowledgeTrace.current());
+  return builder.build();
  }
  static HttpClient.Builder builder(String token,URI endpoint){
   requireToken(token);return new AuthBuilder(HttpClient.newBuilder().followRedirects(Redirect.NEVER)

@@ -95,12 +95,15 @@ public final class ScopedKnowledgeClient {
         // Ticket issuance owns its own PG transaction. Never nest it inside the transport gate.
         String ticket = tickets.issue(actor, WorkerRequestContract.AUDIENCE, action, null,
                 ServiceCallAuthorizer.requestHash(method, target, body));
-        var request = HttpRequest.newBuilder(base.resolve(target)).timeout(remaining(end, cancelled))
+        var builder = HttpRequest.newBuilder(base.resolve(target)).timeout(remaining(end, cancelled))
                 .header("Authorization", "Bearer " + serviceToken)
                 .header(WorkerRequestContract.TICKET_HEADER, ticket)
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
-                .method(method, body.length == 0 ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofByteArray(body)).build();
+                .method(method, body.length == 0 ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofByteArray(body));
+        String trace = KnowledgeTrace.current();
+        if (trace != null) builder.header(KnowledgeTrace.HEADER, trace);
+        var request = builder.build();
         CompletableFuture<HttpResponse<byte[]>> pending = boundary.start(Phase.TOOL_DISPATCH,
                 () -> { remaining(end, cancelled); return http.sendAsync(request, ignored -> new LimitedBodySubscriber(MAX_RESPONSE_BYTES)); });
         try {

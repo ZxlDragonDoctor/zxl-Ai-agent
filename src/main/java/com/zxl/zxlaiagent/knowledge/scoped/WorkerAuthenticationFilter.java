@@ -1,5 +1,6 @@
 package com.zxl.zxlaiagent.knowledge.scoped;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zxl.zxlaiagent.knowledge.gateway.KnowledgeTrace;
 import com.zxl.zxlaiagent.security.*;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -9,6 +10,7 @@ import java.security.MessageDigest;
 import java.util.*;
 /** Separate service authentication plus one-use method/path/query/body-bound delegation. */
 public final class WorkerAuthenticationFilter implements Filter {
+ private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(WorkerAuthenticationFilter.class);
  public static final String ACTOR_ATTRIBUTE=WorkerAuthenticationFilter.class.getName()+".actor";
  private final ServiceCallAuthorizer tickets;private final AuthorizationService authorization;private final byte[] bearer;
  public WorkerAuthenticationFilter(ServiceCallAuthorizer tickets,AuthorizationService authorization,String token){if(token==null||!token.matches("[A-Za-z0-9_-]{43,256}")||token.chars().distinct().count()<12)throw new IllegalArgumentException("Explicit high-entropy LESSON17_INTERNAL_SERVICE_TOKEN required");this.tickets=tickets;this.authorization=authorization;this.bearer=("Bearer "+token).getBytes(StandardCharsets.UTF_8);}
@@ -37,9 +39,13 @@ public final class WorkerAuthenticationFilter implements Filter {
     @Override public PrintWriter getWriter(){if(writer==null)writer=new PrintWriter(new OutputStreamWriter(stream,StandardCharsets.UTF_8));return writer;}
     @Override public void flushBuffer(){if(writer!=null)writer.flush();}
    };
-   try {
+   var traces = Collections.list(request.getHeaders(KnowledgeTrace.HEADER));
+   String parent = traces.size() == 1 ? KnowledgeTrace.valid(traces.get(0)) : null;
+   String child = KnowledgeTrace.child(parent);
+   try (var ignored = KnowledgeTrace.open(child)) {
    chain.doFilter(wrapped,buffered);
    buffered.flushBuffer();
+   if (child != null) LOG.info("Knowledge worker span traceparent={} parent={} status={}", child, parent, buffered.getStatus());
    }catch(IOException failure){if(!overflow[0])throw failure;}
    if(overflow[0]){error(response,502,"WORKER_RESPONSE_TOO_LARGE");return;}
    // Admit the complete, bounded result under authority; never hold a PG lock during socket I/O.

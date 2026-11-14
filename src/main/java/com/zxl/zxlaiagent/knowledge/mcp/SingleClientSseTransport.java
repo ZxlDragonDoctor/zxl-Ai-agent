@@ -1,5 +1,6 @@
 package com.zxl.zxlaiagent.knowledge.mcp;
 
+import com.zxl.zxlaiagent.knowledge.gateway.KnowledgeTrace;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -25,6 +26,7 @@ public final class SingleClientSseTransport implements ServerMcpTransport {
     private record Connection(String id,ServerResponse.SseBuilder stream) { }
     private record Pending(Connection owner,Object originalId,long created) { }
     private final ObjectMapper mapper;
+    private final boolean propagateTrace;
     private final AtomicReference<Connection> current=new AtomicReference<>();
     private final AtomicBoolean closed=new AtomicBoolean();
     private final Object ownership=new Object();
@@ -33,7 +35,11 @@ public final class SingleClientSseTransport implements ServerMcpTransport {
     private final RouterFunction<ServerResponse> router;
 
     public SingleClientSseTransport(ObjectMapper mapper){
+        this(mapper, false);
+    }
+    SingleClientSseTransport(ObjectMapper mapper, boolean propagateTrace){
         this.mapper=mapper;
+        this.propagateTrace=propagateTrace;
         router=RouterFunctions.route().GET("/sse",this::open).POST("/mcp/message",this::post).build();
     }
     public RouterFunction<ServerResponse> getRouterFunction(){return router;}
@@ -70,9 +76,23 @@ public final class SingleClientSseTransport implements ServerMcpTransport {
                 if(message instanceof McpSchema.JSONRPCRequest rpc){
                     if(rpc.id()==null||!(rpc.id() instanceof String||rpc.id() instanceof Number)||rpc.id().toString().length()>200)return ServerResponse.badRequest().build();
                     if(pending.size()>=MAX_PENDING)return ServerResponse.status(429).build();
+                    Object params = rpc.params();
+                    if (propagateTrace && "tools/call".equals(rpc.method()) && params instanceof java.util.Map<?,?> input
+                            && input.get("arguments") instanceof java.util.Map<?,?> arguments) {
+                        if (arguments.containsKey(FormalKnowledgeMcpTool.INTERNAL_TRACE)) {
+                            return ServerResponse.badRequest().build();
+                        }
+                        var forwarded = new java.util.LinkedHashMap<Object,Object>(arguments);
+                        var traces = request.headers().header(KnowledgeTrace.HEADER);
+                        String parent = traces.size() == 1 ? KnowledgeTrace.valid(traces.get(0)) : null;
+                        if (parent != null) forwarded.put(FormalKnowledgeMcpTool.INTERNAL_TRACE, parent);
+                        var copy = new java.util.LinkedHashMap<Object,Object>(input);
+                        copy.put("arguments", forwarded);
+                        params = copy;
+                    }
                     pendingId=owner.id()+"/"+UUID.randomUUID();
                     pending.put(pendingId,new Pending(owner,rpc.id(),now));
-                    message=new McpSchema.JSONRPCRequest(rpc.jsonrpc(),rpc.method(),pendingId,rpc.params());
+                    message=new McpSchema.JSONRPCRequest(rpc.jsonrpc(),rpc.method(),pendingId,params);
                 }
             }
             final String routed=pendingId;
