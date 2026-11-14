@@ -34,3 +34,7 @@ DashScope 的流式用量帧可能没有任何回答片段。解析器先读取�
 正式知识请求在 MCP 和 Worker 之间传递 W3C `traceparent`。从运行 ID 去掉连字符得到 trace ID，各服务生成自己的 span ID，记录收到的父 span。追踪头仅用于诊断，租户身份和请求授权继续由原有的一次性票据校验。当前通过各服务日志重建这条链路，OpenTelemetry Collector 的 span 导出仍待接入。
 
 [跨服务追踪与工作台截图](../images/lesson21-trace-2026-11-15/README.md)
+
+清理耗时从应用开始交付终态结果时计起，到本地任务许可、模型许可和协调工作全部退出时结束。计时使用单调时钟，同一次运行最多记录一次。远端是否停止执行需由对应服务提供证据。
+
+[知识 Worker 不可用与本地清理截图](../images/lesson21-cleanup-2026-11-15/README.md)
