@@ -32,7 +32,7 @@
 | 18 | 注入防护与运行隔离 | **进行中**。研究回答使用固定证据字段，本地回源有流式字节上限，工具事件复核后发布。已实测一例恶意来源。文件与网络隔离及完整攻击评估待实施 | [任务包](18-prompt-injection-and-runtime-isolation.md) · [实现记录](18-implementation.md) |
 | 19 | 人工审批与业务写入 | **已验收**。真实模型和 MCP 生成草稿，浏览器双人审批，PostgreSQL 写入及回执重放已核对 | [课程](19-human-approval-and-ticket-write.md) · [真实链路截图](../images/lesson19-live-2026-11-13/README.md) |
 | 20 | 执行事件与断线恢复 | **已验收**。正式多 Agent 支持 SSE 自动重连、重启后恢复列表和发布超时后的终态补记 | [课程与工程任务](20-execution-events-and-reconnection.md) |
-| 21 | 日志、指标与追踪 | 学习任务已发布；现有局部耗时不等于全链路追踪完成 | [学习任务](21-agent-observability.md) |
+| 21 | 日志、指标与追踪 | **进行中**。运行 ID 已关联模型队列、调用耗时和首帧日志；完整链路和导出验收待接通 | [学习任务](21-agent-observability.md) |
 | 22 | Agent 评估与持续改进 | 路线已规划；复用第十三/十四课评估起点，完整业务集尚待建设 | [路线第 6 阶段](enterprise-agent-roadmap.md) |
 | 23 | 预算、路由与降级 | 路线已规划；已有截止控制不等于用量预留/结算完成 | [路线第 6 阶段](enterprise-agent-roadmap.md) |
 | 24 | 可复现部署与交付 | 路线已规划；局部启动脚本不等于新环境部署验收完成 | [路线第 7 阶段](enterprise-agent-roadmap.md) |
