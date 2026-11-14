@@ -13,6 +13,50 @@ import java.util.function.Supplier;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ScopedMultiAgentRuntimeTest {
+    @Test void overlappingCallsKeepCorrelationLocalAndMetricsBounded() throws Exception {
+        var settings = new RuntimeSettings();
+        var registry = new io.micrometer.core.instrument.simple.SimpleMeterRegistry();
+        io.micrometer.core.instrument.Metrics.addRegistry(registry);
+        var workers = java.util.concurrent.Executors.newFixedThreadPool(2);
+        var rendezvous = new java.util.concurrent.CyclicBarrier(2);
+        try (var runtime = new ExecutionRuntime(settings)) {
+            var results = new ArrayList<java.util.concurrent.Future<String>>();
+            for (int i = 0; i < 2; i++) {
+                var entry = scoped(settings, OperationBoundary.unrestricted());
+                var task = Task.create("synthetic");
+                TaskLifecycle.start(task, "worker");
+                runtime.bind(task, entry);
+                results.add(workers.submit(() -> {
+                    org.slf4j.MDC.put("agentRunId", "outer");
+                    try {
+                        return runtime.modelCall(task, () -> {
+                            try { rendezvous.await(3, java.util.concurrent.TimeUnit.SECONDS); }
+                            catch (Exception failure) { throw new AssertionError(failure); }
+                            assertEquals(entry.run.id, org.slf4j.MDC.get("agentRunId"));
+                            assertEquals(task.getId(), org.slf4j.MDC.get("agentTaskId"));
+                            return entry.run.id;
+                        });
+                    } finally {
+                        assertEquals("outer", org.slf4j.MDC.get("agentRunId"));
+                        assertNull(org.slf4j.MDC.get("agentTaskId"));
+                        org.slf4j.MDC.clear();
+                    }
+                }));
+            }
+            assertNotEquals(results.get(0).get(), results.get(1).get());
+            for (String metric : List.of("agent.model.queue", "agent.model.admitted")) {
+                var timer = registry.get(metric).tag("outcome", "completed").timer();
+                assertEquals(2, timer.count());
+                assertEquals(List.of("outcome"), timer.getId().getTags().stream()
+                        .map(io.micrometer.core.instrument.Tag::getKey).toList());
+            }
+        } finally {
+            workers.shutdownNow();
+            io.micrometer.core.instrument.Metrics.removeRegistry(registry);
+            registry.close();
+        }
+    }
+
     @Test void modelTelemetryCorrelatesTheRunWithoutLoggingFailurePayload() throws Exception {
         var logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ExecutionRuntime.class);
         var entries = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
