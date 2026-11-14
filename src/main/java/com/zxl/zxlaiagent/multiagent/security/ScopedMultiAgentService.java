@@ -17,6 +17,7 @@ import java.util.function.Supplier;
 @Service
 @ConditionalOnProperty(name="agent.security.mode",havingValue="required")
 public final class ScopedMultiAgentService {
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(ScopedMultiAgentService.class);
     private final OrchestratorAgent orchestrator;private final AuthorizationService authorization;
     private final SecurityDatabase database;
     private final DurableRunStore journal = new DurableRunStore();
@@ -47,7 +48,7 @@ public final class ScopedMultiAgentService {
     private WorkflowRun.ReportTransaction reportTransaction(ActorRef actor, String id, ActorBoundary boundary) {
         return new WorkflowRun.ReportTransaction() {
             @Override public <T> T commit(Supplier<T> mutation, Supplier<WorkflowRun.Report> snapshot) {
-                return database.tx(connection -> boundary.sql(connection, Phase.RESULT_PUBLISH, sql -> {
+                T committed = database.tx(connection -> boundary.sql(connection, Phase.RESULT_PUBLISH, sql -> {
                     T result = mutation.get();
                     var report = snapshot.get();
                     var event = new PublicRunEvent(report.sequence(), report.status(), report.startedAt(),
@@ -58,6 +59,15 @@ public final class ScopedMultiAgentService {
                             encode(event), publicationWindowMs);
                     return result;
                 })).result();
+                var report = snapshot.get();
+                if (report.finishedAt() > 0) {
+                    var runtime = report.runtime();
+                    LOG.info("Agent run terminal runId={} outcome={} deadlineExceeded={} activeTasks={} activeModelCalls={}",
+                            id, report.status(),
+                            report.error() != null && "RUN_DEADLINE_EXCEEDED".equals(report.error().code()),
+                            runtime.activeTasks(), runtime.activeModelCalls());
+                }
+                return committed;
             }
         };
     }
