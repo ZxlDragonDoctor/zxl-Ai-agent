@@ -54,6 +54,48 @@ public final class DurableRunStore {
         }
     }
 
+    /** The database clock owns the publication cutoff. No writer may renew an expired budget. */
+    public void appendLeased(Connection c, String tenantId, String runId, long sequence, String status,
+                             String json, long publicationBudgetMs) throws SQLException {
+        requireTransaction(c);
+        UUID id = UUID.fromString(runId);
+        if (sequence == 1) {
+            try (var insert = statement(c, """
+                    INSERT INTO lesson17.durable_agent_run (tenant_id,run_id,latest_sequence,publication_expires_at)
+                    VALUES (?,?,1,clock_timestamp()+(? * interval '1 millisecond')) ON CONFLICT DO NOTHING
+                    """, tenantId, id, publicationBudgetMs)) {
+                if (insert.executeUpdate() != 1) throw publicationExpired();
+            }
+            insertEvent(c, tenantId, id, sequence, status, json);
+            return;
+        }
+        try (var lock = statement(c, """
+                SELECT 1 FROM lesson17.durable_agent_run
+                WHERE tenant_id=? AND run_id=? FOR UPDATE
+                """, tenantId, id); var rows = lock.executeQuery()) {
+            if (!rows.next()) throw publicationExpired();
+        }
+        try (var check = statement(c, """
+                SELECT publication_expires_at>clock_timestamp() FROM lesson17.durable_agent_run
+                WHERE tenant_id=? AND run_id=?
+                """, tenantId, id); var rows = check.executeQuery()) {
+            if (!rows.next() || !rows.getBoolean(1)) throw publicationExpired();
+        }
+        append(c, tenantId, runId, sequence, status, json);
+        if (!ACTIVE.contains(status)) {
+            try (var clear = statement(c, """
+                    UPDATE lesson17.durable_agent_run SET publication_expires_at=NULL
+                    WHERE tenant_id=? AND run_id=?
+                    """, tenantId, id)) {
+                clear.executeUpdate();
+            }
+        }
+    }
+
+    private static SecurityFailure publicationExpired() {
+        return new SecurityFailure("RUN_PUBLICATION_EXPIRED", 409);
+    }
+
     public List<RunSnapshot> listOwned(Connection c, String tenantId, String subjectId, int limit)
             throws SQLException {
         requireTransaction(c);
@@ -74,8 +116,7 @@ public final class DurableRunStore {
         return List.copyOf(result);
     }
 
-    /** Candidate enumeration for a caller that can prove the owning execution instance is stopped. */
-    public List<TenantRunSnapshot> listRecoverable(Connection c, int limit) throws SQLException {
+    public List<TenantRunSnapshot> listExpired(Connection c, int limit) throws SQLException {
         requireTransaction(c);
         requireLimit(limit);
         var result = new ArrayList<TenantRunSnapshot>();
@@ -84,12 +125,31 @@ public final class DurableRunStore {
                 FROM lesson17.durable_agent_run r
                 JOIN lesson17.durable_agent_run_event e ON e.tenant_id=r.tenant_id AND e.run_id=r.run_id
                     AND e.event_sequence=r.latest_sequence
-                WHERE e.status IN ('queued','planning','running','synthesizing')
-                ORDER BY r.updated_at,r.tenant_id,r.run_id LIMIT ?
+                WHERE r.publication_expires_at<=clock_timestamp()
+                    AND e.status IN ('queued','planning','running','synthesizing')
+                ORDER BY r.publication_expires_at,r.tenant_id,r.run_id LIMIT ?
                 """, limit); var rows = query.executeQuery()) {
             while (rows.next()) result.add(new TenantRunSnapshot(rows.getString(4), rows.getString(5), read(rows)));
         }
         return List.copyOf(result);
+    }
+
+    public boolean interruptExpired(Connection c, String tenantId, String runId, long sequence, String json)
+            throws SQLException {
+        requireTransaction(c);
+        try (var lock = statement(c, """
+                SELECT 1 FROM lesson17.durable_agent_run WHERE tenant_id=? AND run_id=?
+                    AND publication_expires_at<=clock_timestamp() FOR UPDATE
+                """, tenantId, UUID.fromString(runId)); var rows = lock.executeQuery()) {
+            if (!rows.next() || !interruptIfCurrent(c, tenantId, runId, sequence, json)) return false;
+        }
+        try (var clear = statement(c, """
+                UPDATE lesson17.durable_agent_run SET publication_expires_at=NULL
+                WHERE tenant_id=? AND run_id=?
+                """, tenantId, UUID.fromString(runId))) {
+            clear.executeUpdate();
+        }
+        return true;
     }
 
     /** Caller must prove the owning instance is stopped before invoking this compare-and-set. */

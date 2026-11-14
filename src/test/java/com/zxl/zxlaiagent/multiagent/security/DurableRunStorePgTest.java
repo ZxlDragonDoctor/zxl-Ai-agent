@@ -11,6 +11,59 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DurableRunStorePgTest {
     @Test
+    void expiryFencesFormerPublisherAndLeavesLegacyAndCompletedRunsAlone() {
+        var store = new DurableRunStore();
+        var tenant = "lease-" + UUID.randomUUID();
+        var run = UUID.randomUUID().toString();
+        var legacy = UUID.randomUUID().toString();
+        var completed = UUID.randomUUID().toString();
+        try (var db = SecurityDatabase.fromEnvironment()) {
+            db.tx(c -> {
+                try (var insert = SecurityDatabase.statement(c, "INSERT INTO lesson17.tenant(tenant_id) VALUES (?)", tenant)) {
+                    insert.executeUpdate();
+                }
+                store.appendLeased(c, tenant, run, 1, "queued", "{}", 60_000);
+                store.append(c, tenant, legacy, 1, "running", "{}");
+                store.appendLeased(c, tenant, completed, 1, "queued", "{}", 60_000);
+                store.appendLeased(c, tenant, completed, 2, "completed", "{}", 60_000);
+                assertTrue(store.listExpired(c, 50).stream().noneMatch(row -> row.tenantId().equals(tenant)));
+                return null;
+            });
+            try {
+                db.tx(c -> {
+                    try (var expire = SecurityDatabase.statement(c, """
+                            UPDATE lesson17.durable_agent_run
+                            SET publication_expires_at=clock_timestamp()-interval '1 second'
+                            WHERE tenant_id=? AND publication_expires_at IS NOT NULL
+                            """, tenant)) {
+                        expire.executeUpdate();
+                    }
+                    return null;
+                });
+                assertThrows(SecurityFailure.class, () -> db.tx(c -> {
+                    store.appendLeased(c, tenant, run, 2, "completed", "{}", 60_000);
+                    return null;
+                }));
+                db.tx(c -> {
+                    var expired = store.listExpired(c, 50).stream().filter(row -> row.tenantId().equals(tenant)).toList();
+                    assertEquals(java.util.List.of(run), expired.stream().map(DurableRunStore.TenantRunSnapshot::runId).toList());
+                    assertTrue(store.interruptExpired(c, tenant, run, 1, "{}"));
+                    assertFalse(store.interruptExpired(c, tenant, run, 1, "{}"));
+                    assertEquals("interrupted", store.get(c, tenant, run).orElseThrow().status());
+                    return null;
+                });
+            } finally {
+                db.tx(c -> {
+                    try (var delete = SecurityDatabase.statement(c, "DELETE FROM lesson17.tenant WHERE tenant_id=?", tenant)) {
+                        delete.executeUpdate();
+                    }
+                    return null;
+                });
+            }
+        }
+    }
+
+    @Test
     void cursorReplayIsolationAndRollbackShareTheSnapshotTransaction() {
         var store = new DurableRunStore();
         var run = UUID.randomUUID().toString();

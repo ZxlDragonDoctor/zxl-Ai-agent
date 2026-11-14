@@ -53,11 +53,24 @@ public final class ScopedMultiAgentService {
                     var event = new PublicRunEvent(report.sequence(), report.status(), report.startedAt(),
                             report.finishedAt(), report.tasks().size(), report.result(),
                             report.error() == null ? null : report.error().code());
-                    journal.append(sql, actor.tenantId(), id, event.sequence(), event.status(), encode(event));
+                    long publicationWindowMs = Math.max(0, report.runtime().deadlineAt() - report.startedAt()) + 15_000;
+                    journal.appendLeased(sql, actor.tenantId(), id, event.sequence(), event.status(),
+                            encode(event), publicationWindowMs);
                     return result;
                 })).result();
             }
         };
+    }
+
+    void recoverExpiredRuns() {
+        for (var row : database.tx(connection -> journal.listExpired(connection, 20))) {
+            var saved = decode(row.snapshot().json());
+            var interrupted = new PublicRunEvent(Math.incrementExact(row.snapshot().sequence()),
+                    "interrupted", saved.startedAt(), System.currentTimeMillis(), saved.taskCount(),
+                    null, "RUN_PUBLICATION_EXPIRED");
+            database.tx(connection -> journal.interruptExpired(connection, row.tenantId(), row.runId(),
+                    row.snapshot().sequence(), encode(interrupted)));
+        }
     }
 
     public record PublicRunEvent(long sequence, String status, long startedAt, long finishedAt,
@@ -101,11 +114,14 @@ public final class ScopedMultiAgentService {
             authorization.requireOwned(actor,new ResourceRef("run",id),Phase.HISTORY_READ);
             var live = authorization.gateAll(actor, readPermissions(id), Phase.RESULT_PUBLISH, id,
                     () -> orchestrator.runStatusScoped(id));
-            if (live != null) return live;
             return database.tx(connection -> authorization.sqlGate(connection, actor, readPermissions(id),
                     Phase.HISTORY_READ, id, sql -> journal.get(sql, actor.tenantId(), id)
+                            .filter(snapshot -> live == null || "interrupted".equals(snapshot.status()))
                             .map(snapshot -> savedView(id, snapshot))
-                            .orElseThrow(() -> new SecurityFailure("NOT_FOUND", 404)))).result();
+                            .orElseGet(() -> {
+                                if (live == null) throw new SecurityFailure("NOT_FOUND", 404);
+                                return live;
+                            }))).result();
         });
     }
     private OrchestratorAgent.ScopedRunView savedView(String id, DurableRunStore.Snapshot snapshot) {
@@ -140,7 +156,10 @@ public final class ScopedMultiAgentService {
         var saved = database.tx(connection -> authorization.sqlGate(connection, actor, admission(),
                 Phase.HISTORY_READ, null, sql -> journal.listOwned(sql, actor.tenantId(), actor.subjectId(), 50)
                         .stream().map(row -> savedView(row.runId(), row.snapshot())).toList())).result();
-        saved.forEach(view -> runs.putIfAbsent(view.run().executionId(), view));
+        saved.forEach(view -> {
+            if ("interrupted".equals(view.run().report().status())) runs.put(view.run().executionId(), view);
+            else runs.putIfAbsent(view.run().executionId(), view);
+        });
         return new WorkspaceRuns(List.copyOf(runs.values()));
     }
     private static void requireActor(ActorRef actor){if(actor==null)throw new SecurityFailure("UNAUTHENTICATED",401);}
