@@ -20,3 +20,4 @@ export interface DurableRunEvent {
 export async function readDurableRunEvents(id: string, after: number) {
   return request<{ lastSequence: number; events: DurableRunEvent[] }>(runPath(id) + '/events?after=' + after)
 }
+export const durableRunStreamUrl = (id: string, after: number) => runPath(id) + "/events/stream?after=" + after
