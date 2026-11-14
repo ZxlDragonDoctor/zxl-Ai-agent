@@ -20,6 +20,16 @@ class FormalKnowledgeMcpPgTest {
  private Map<String,Object> business(){return new HashMap<>(Map.of("query","same-query","topK",1,"mode","keyword","budgetMs",3000));}
  private Map<String,Object> wire(ActorRef actor){var args=business();args.put("authorization",tickets.issue(actor,FormalKnowledgeMcpProtocol.AUDIENCE,"knowledge.read",null,FormalKnowledgeMcpProtocol.requestHash(args)));return args;}
  private static String text(McpSchema.CallToolResult result){return ((McpSchema.TextContent)result.content().get(0)).text();}
+ @Test void workerOutageIsReportedAsDependencyFailure() {
+  try (var tool = new FormalKnowledgeMcpTool(tickets, policy, (actor, request) -> {
+   throw new SecurityFailure("KNOWLEDGE_WORKER_UNAVAILABLE", 503);
+  })) {
+   var result = tool.call(wire(alice));
+   assertTrue(result.isError());
+   assertTrue(text(result).contains("MCP_REMOTE_BUSINESS_FAILURE"));
+   assertFalse(text(result).contains("MCP_NOT_AUTHORIZED"));
+  }
+ }
  private McpSchema.CallToolResult scopedCall(FormalKnowledgeMcpClient client,ActorRef actor,List<AuthorizationService.Permission> extra,String runId)throws Exception{
   try{return (McpSchema.CallToolResult)client.getClass().getMethod("call",ActorRef.class,String.class,Map.class,Duration.class,java.util.function.BooleanSupplier.class,List.class,String.class)
     .invoke(client,actor,FormalKnowledgeMcpProtocol.EXPOSED_NAME,Map.of("query","same-query"),Duration.ofSeconds(5),(java.util.function.BooleanSupplier)()->false,extra,runId);}

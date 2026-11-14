@@ -59,7 +59,19 @@ public final class FormalKnowledgeMcpTool implements AutoCloseable {
   catch(RejectedExecutionException full){return fail("MCP_CAPACITY","知识查询容量已满");}
   catch(InterruptedException stopped){Thread.currentThread().interrupt();return fail("MCP_CANCELLED","本地等待已取消");}
   catch(TimeoutException|RetrievalDeadline.Expired timeout){return fail("MCP_DEADLINE_EXCEEDED","查询预算耗尽");}
-  catch(ExecutionException failed){if(failed.getCause() instanceof SecurityFailure)return fail("MCP_NOT_AUTHORIZED","当前权限不允许查询");if(failed.getCause() instanceof RetrievalDeadline.Expired)return fail("MCP_DEADLINE_EXCEEDED","查询预算耗尽");if(failed.getCause() instanceof RetrievalDeadline.Cancelled)return fail("MCP_CANCELLED","查询已取消");return fail("MCP_REMOTE_BUSINESS_FAILURE","知识服务不可用");}
+  catch(ExecutionException failed){
+   if(failed.getCause() instanceof SecurityFailure workerFailure){
+    return switch(workerFailure.code()){
+     case "KNOWLEDGE_WORKER_UNAVAILABLE" -> fail("MCP_REMOTE_BUSINESS_FAILURE","知识服务不可用");
+     case "KNOWLEDGE_WORKER_TIMEOUT" -> fail("MCP_DEADLINE_EXCEEDED","查询预算耗尽");
+     case "KNOWLEDGE_CANCELLED" -> fail("MCP_CANCELLED","查询已取消");
+     default -> fail("MCP_NOT_AUTHORIZED","当前权限不允许查询");
+    };
+   }
+   if(failed.getCause() instanceof RetrievalDeadline.Expired)return fail("MCP_DEADLINE_EXCEEDED","查询预算耗尽");
+   if(failed.getCause() instanceof RetrievalDeadline.Cancelled)return fail("MCP_CANCELLED","查询已取消");
+   return fail("MCP_REMOTE_BUSINESS_FAILURE","知识服务不可用");
+  }
   catch(RetrievalDeadline.Cancelled stopped){return fail("MCP_CANCELLED","查询已取消");}
   catch(RuntimeException failed){return fail("MCP_REMOTE_BUSINESS_FAILURE","知识服务不可用");}
   finally{if(future!=null)future.cancel(true);workers.purge();}
