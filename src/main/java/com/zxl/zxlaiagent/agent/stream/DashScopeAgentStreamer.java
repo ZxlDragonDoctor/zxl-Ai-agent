@@ -7,6 +7,8 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -32,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.BooleanSupplier;
 import reactor.core.Disposable;
@@ -77,6 +80,7 @@ public class DashScopeAgentStreamer {
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("model", model);
         request.put("stream", true);
+        request.put("stream_options", Map.of("include_usage", true));
         request.put("messages", messages(systemPrompt, history));
         request.put("enable_thinking", thinkingEnabled);
         if (thinkingEnabled && thinkingBudget > 0) request.put("thinking_budget", thinkingBudget);
@@ -102,6 +106,7 @@ public class DashScopeAgentStreamer {
         var firstFrameNanos = new AtomicLong(-1);
         var frameCount = new AtomicInteger();
         var gateNanos = new AtomicLong();
+        var usage = new AtomicReference<>(new ProviderUsage(null, null, null));
         boolean streamEnded = false;
         try {
             var frames = client.post().uri("/chat/completions")
@@ -125,6 +130,14 @@ public class DashScopeAgentStreamer {
                         }
                         JsonNode chunk = readJson(data);
                         if (chunk.has("error")) throw new IllegalStateException("模型服务返回了错误响应");
+                        JsonNode reported = chunk.path("usage");
+                        if (reported.isObject()) {
+                            var counts = new ProviderUsage(tokenCount(reported.path("prompt_tokens")),
+                                    tokenCount(reported.path("completion_tokens")), tokenCount(reported.path("total_tokens")));
+                            if (counts.prompt() != null || counts.completion() != null || counts.total() != null) {
+                                usage.set(counts);
+                            }
+                        }
                         JsonNode choice = chunk.path("choices").path(0);
                         if (choice.isMissingNode()) return;
                         JsonNode finish = choice.path("finish_reason");
@@ -162,10 +175,12 @@ public class DashScopeAgentStreamer {
             throw new IllegalStateException("连接模型服务失败，请检查网络后重试", e);
         } finally {
             if (subscription != null) subscription.dispose();
-            LOG.info("Model transport timing runId={}, taskId={}, requestKind={}, dispatchMs={}, firstFrameMs={}, frames={}, frameGateMs={}, elapsedMs={}, streamEnded={}",
+            var counts = usage.get();
+            LOG.info("Model transport timing runId={}, taskId={}, requestKind={}, dispatchMs={}, firstFrameMs={}, frames={}, frameGateMs={}, elapsedMs={}, streamEnded={}, promptTokens={}, completionTokens={}, totalTokens={}",
                     org.slf4j.MDC.get("agentRunId"), org.slf4j.MDC.get("agentTaskId"),
                     tools.length > 0 ? "tools" : "answer", timingMs(dispatchNanos[0]), timingMs(firstFrameNanos.get()),
-                    frameCount.get(), timingMs(gateNanos.get()), timingMs(System.nanoTime() - transportStarted), streamEnded);
+                    frameCount.get(), timingMs(gateNanos.get()), timingMs(System.nanoTime() - transportStarted), streamEnded,
+                    counts.prompt(), counts.completion(), counts.total());
         }
         boundary.check(Phase.RESULT_PUBLISH);
         if (!sawCompletion[0]) throw new IllegalStateException("模型输出连接提前中断，请重试");
@@ -179,7 +194,18 @@ public class DashScopeAgentStreamer {
         }
         if (answer.isEmpty() && toolCalls.isEmpty()) throw new IllegalStateException("模型未返回回答或工具调用，请重试");
         AssistantMessage message = new AssistantMessage(answer.toString(), Map.of(), toolCalls);
-        return new ChatResponse(List.of(new Generation(message)));
+        return new ChatResponse(List.of(new Generation(message)), ChatResponseMetadata.builder().usage(usage.get()).build());
+    }
+
+    private static Integer tokenCount(JsonNode value) {
+        return value.isIntegralNumber() && value.canConvertToInt() && value.intValue() >= 0 ? value.intValue() : null;
+    }
+
+    private record ProviderUsage(Integer prompt, Integer completion, Integer total) implements Usage {
+        @Override public Integer getPromptTokens() { return prompt; }
+        @Override public Integer getCompletionTokens() { return completion; }
+        @Override public Integer getTotalTokens() { return total; }
+        @Override public Object getNativeUsage() { return this; }
     }
 
     private static long timingMs(long nanos) {

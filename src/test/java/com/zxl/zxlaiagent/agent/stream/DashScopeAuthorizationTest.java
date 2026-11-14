@@ -18,20 +18,25 @@ class DashScopeAuthorizationTest {
     static final class Fixture implements AutoCloseable {
         final CountDownLatch arrived = new CountDownLatch(1), release = new CountDownLatch(1);
         final AtomicInteger requests = new AtomicInteger();
+        final AtomicReference<String> body = new AtomicReference<>();
         final HttpServer server;
         Fixture() throws Exception {
             this(1);
         }
         Fixture(int frameCount) throws Exception {
+            this(frameCount, "");
+        }
+        Fixture(int frameCount, String finalFrame) throws Exception {
             server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
             server.createContext("/chat/completions", exchange -> {
+                body.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
                 requests.incrementAndGet(); arrived.countDown();
                 try {
                     if (!release.await(8, TimeUnit.SECONDS)) return;
                     var frames = new StringBuilder();
                     for (int i = 0; i < frameCount; i++) frames.append("data: {\"choices\":[{\"delta\":{\"content\":\"safe\"},\"finish_reason\":")
                             .append(i == frameCount - 1 ? "\"stop\"" : "null").append("}]}\n\n");
-                    byte[] bytes = frames.append("data: [DONE]\n\n").toString().getBytes(StandardCharsets.UTF_8);
+                    byte[] bytes = frames.append(finalFrame).append("data: [DONE]\n\n").toString().getBytes(StandardCharsets.UTF_8);
                     exchange.getResponseHeaders().set("Content-Type", "text/event-stream");
                     exchange.sendResponseHeaders(200, bytes.length); exchange.getResponseBody().write(bytes);
                 } catch (InterruptedException interrupted) { Thread.currentThread().interrupt(); }
@@ -44,6 +49,29 @@ class DashScopeAuthorizationTest {
                     "http://127.0.0.1:" + server.getAddress().getPort(), "synthetic-model", false, 0);
         }
         public void close() { release.countDown(); server.stop(0); }
+    }
+
+    @Test void acceptsUsageOnlyFrameAndKeepsMissingCountsDistinctFromZero() throws Exception {
+        try (var fixture = new Fixture(1, """
+                data: {"choices":[],"usage":{"prompt_tokens":12,"completion_tokens":0,"total_tokens":12}}
+
+                """)) {
+            fixture.release.countDown();
+            var response = fixture.streamer().stream("system", List.of(), new ToolCallback[0], (kind, value) -> {}, () -> false);
+            var usage = response.getMetadata().getUsage();
+            assertEquals(12, usage.getPromptTokens());
+            assertEquals(0, usage.getCompletionTokens());
+            assertEquals(12, usage.getTotalTokens());
+            assertTrue(new ObjectMapper().readTree(fixture.body.get()).path("stream_options").path("include_usage").asBoolean());
+        }
+        try (var fixture = new Fixture()) {
+            fixture.release.countDown();
+            var usage = fixture.streamer().stream("system", List.of(), new ToolCallback[0],
+                    (kind, value) -> {}, () -> false).getMetadata().getUsage();
+            assertNull(usage.getPromptTokens());
+            assertNull(usage.getCompletionTokens());
+            assertNull(usage.getTotalTokens());
+        }
     }
 
     @Test void deniedDispatchNeverSubscribesOrCallsTransport() throws Exception {
@@ -143,7 +171,7 @@ class DashScopeAuthorizationTest {
             var timing = entries.list.stream().map(event -> event.getFormattedMessage())
                     .filter(message -> message.startsWith("Model transport timing")).toList();
             assertEquals(1, timing.size());
-            assertTrue(timing.get(0).matches(".*dispatchMs=\\d+, firstFrameMs=\\d+, frames=4, frameGateMs=\\d+, elapsedMs=\\d+, streamEnded=true"));
+            assertTrue(timing.get(0).matches(".*dispatchMs=\\d+, firstFrameMs=\\d+, frames=4, frameGateMs=\\d+, elapsedMs=\\d+, streamEnded=true, promptTokens=null, completionTokens=null, totalTokens=null"));
             assertFalse(timing.get(0).contains("synthetic-private-prompt"));
             assertFalse(timing.get(0).contains("synthetic-token"));
         } finally {
