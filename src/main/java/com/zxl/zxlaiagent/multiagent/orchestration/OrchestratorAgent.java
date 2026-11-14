@@ -105,7 +105,7 @@ public class OrchestratorAgent implements AgentInterface {
                     entry.coordinating = true; entry.waitingFor = null;
                 }
                 try { executeRun(entry, userInput); }
-                finally { entry.coordinating = false; activePlans.remove(run.id); }
+                finally { activePlans.remove(run.id); entry.coordinationFinished(); }
             };
             entry.queuedWork = work;
             if(entry.scoped)entry.boundary.start(Phase.DEQUEUE,()->control.admit(()->{runtime.dispatch(work);return null;}));
@@ -146,7 +146,7 @@ public class OrchestratorAgent implements AgentInterface {
             executePlan(entry, userInput);
             String result = synthesize(entry, userInput);
             synchronized (run) {
-                entry.control.check(); WorkflowOutcome outcome = run.finishSuccess(result); entry.result.complete(outcome);
+                entry.control.check(); WorkflowOutcome outcome = run.finishSuccess(result); entry.complete(outcome);
                 publish(entry,outcome.successful() ? EventType.PLAN_COMPLETED : EventType.PLAN_FAILED, Map.of("executionId", run.id, "outcome", outcome));
             }
         } catch (Exception e) { finishError(entry, WorkflowError.from(e)); }
@@ -209,12 +209,12 @@ public class OrchestratorAgent implements AgentInterface {
             var pendingKey=new PendingKey(entry.run.id,task);pendingTasks.put(pendingKey, actual);
             actual.whenComplete((value, error) -> {
                 try { pendingTasks.remove(pendingKey, actual); runtime.unbind(task); }
-                finally { try { occupancy.close(); } finally { agent.close(); } }
+                finally { try { agent.close(); } finally { occupancy.close(); } }
             });
             cleanupAttached=true;
             entry.run.emit(stage, null, null); return new Work(task, actual, clock.getAsLong());
         } catch (Exception e) {
-            if(!cleanupAttached){runtime.unbind(task); occupancy.close(); agent.close();}
+            if(!cleanupAttached){runtime.unbind(task); try { agent.close(); } finally { occupancy.close(); }}
             if (entry.control.stopReason() == null) terminateTask(entry,task, WorkflowError.from(e), false);
             throw e;
         }
@@ -287,7 +287,7 @@ public class OrchestratorAgent implements AgentInterface {
             if (entry.queuedWork != null) runtime.removeQueued(entry.queuedWork);
             if (stop != null) runtime.removeStoppedWork(entry);
             entry.waitingFor = null;
-            WorkflowOutcome outcome = cancelled ? entry.run.finishCancelled(failure) : entry.run.finishFailure(failure); entry.result.complete(outcome);
+            WorkflowOutcome outcome = cancelled ? entry.run.finishCancelled(failure) : entry.run.finishFailure(failure); entry.complete(outcome);
             publish(entry,EventType.PLAN_FAILED, Map.of("executionId", entry.run.id, "outcome", outcome));
             }catch(RuntimeException rejected){
                 if(!entry.scoped)throw rejected;
@@ -298,7 +298,7 @@ public class OrchestratorAgent implements AgentInterface {
                 if(entry.run.synthesisTask!=null)TaskLifecycle.cancel(entry.run.synthesisTask,neutral);
                 if(entry.queuedWork!=null)runtime.removeQueued(entry.queuedWork);
                 runtime.removeStoppedWork(entry);entry.waitingFor=null;
-                entry.result.complete(entry.run.finishDenied());
+                entry.complete(entry.run.finishDenied());
             }
         }
     }

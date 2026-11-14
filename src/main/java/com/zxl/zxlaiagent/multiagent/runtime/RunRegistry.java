@@ -58,6 +58,7 @@ public final class RunRegistry {
     }
     public record View(String executionId, WorkflowRun.Report report, RuntimeView runtime) {}
     public static final class Entry {
+        private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(Entry.class);
         public final WorkflowRun run;
         public final ExecutionControl control;
         public final OperationBoundary boundary;
@@ -65,13 +66,43 @@ public final class RunRegistry {
         public final TrustedRunContext trustedContext;
         public final CompletableFuture<WorkflowOutcome> result = new CompletableFuture<>();
         private final AtomicInteger tasks = new AtomicInteger(), models = new AtomicInteger();
+        private final java.util.concurrent.atomic.AtomicReference<Long> terminalNanos = new java.util.concurrent.atomic.AtomicReference<>();
+        private final java.util.concurrent.atomic.AtomicBoolean cleanupRecorded = new java.util.concurrent.atomic.AtomicBoolean();
         public volatile boolean coordinating;
         public volatile Runnable queuedWork;
         public volatile long queueStartedNanos;
         public volatile String waitingFor;
-        private Entry(WorkflowRun run, ExecutionControl control, OperationBoundary boundary, boolean scoped, TrustedRunContext trustedContext) { this.run = run; this.control = control; this.boundary = boundary; this.scoped = scoped; this.trustedContext = trustedContext; }
-        public ExecutionLease taskLease() { tasks.incrementAndGet(); return new ExecutionLease(tasks::decrementAndGet); }
-        public ExecutionLease modelLease() { models.incrementAndGet(); return new ExecutionLease(models::decrementAndGet); }
+        private Entry(WorkflowRun run, ExecutionControl control, OperationBoundary boundary, boolean scoped, TrustedRunContext trustedContext) {
+            this.run = run;
+            this.control = control;
+            this.boundary = boundary;
+            this.scoped = scoped;
+            this.trustedContext = trustedContext;
+        }
+        public void complete(WorkflowOutcome outcome) {
+            if (scoped) terminalNanos.compareAndSet(null, System.nanoTime());
+            recordCleanup();
+            result.complete(outcome);
+        }
+        public ExecutionLease taskLease() { return lease(tasks); }
+        public ExecutionLease modelLease() { return lease(models); }
+        private ExecutionLease lease(AtomicInteger counter) {
+            counter.incrementAndGet();
+            return new ExecutionLease(() -> {
+                counter.decrementAndGet();
+                recordCleanup();
+            });
+        }
+        public void coordinationFinished() {
+            coordinating = false;
+            recordCleanup();
+        }
+        private void recordCleanup() {
+            Long start = terminalNanos.get();
+            if (start == null || !reclaimable() || !cleanupRecorded.compareAndSet(false, true)) return;
+            long elapsed = System.nanoTime() - start;
+            LOG.info("Agent run cleanup runId={} cleanupMs={}", run.id, TimeUnit.NANOSECONDS.toMillis(elapsed));
+        }
         public int activeTasks() { return tasks.get(); }
         public RuntimeView view() {
             boolean terminal = run.outcome() != null;

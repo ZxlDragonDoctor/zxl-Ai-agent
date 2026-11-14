@@ -108,6 +108,7 @@ public final class ExecutionRuntime implements AutoCloseable {
         OperationBoundary scope = entry == null ? OperationBoundary.unrestricted() : entry.boundary;
         ExecutionControl control = entry == null ? null : entry.control;
         boolean acquired = false;
+        boolean permitReleased = false;
         long queued = clock.getAsLong();
         long admittedAt = queued;
         String outcome = "failed";
@@ -134,7 +135,11 @@ public final class ExecutionRuntime implements AutoCloseable {
                     scope.check(Phase.RESULT_PUBLISH);
                     outcome = "completed";
                     return value;
-                } finally { models.decrementAndGet(); }
+                } finally {
+                    models.decrementAndGet();
+                    modelPermits.release();
+                    permitReleased = true;
+                }
             }
         } catch (InterruptedException e) {
             outcome = "interrupted";
@@ -151,7 +156,7 @@ public final class ExecutionRuntime implements AutoCloseable {
             outcome = stop == null ? "interrupted" : modelOutcome(stop.code());
             throw failure;
         } finally {
-            if (acquired) modelPermits.release();
+            if (acquired && !permitReleased) modelPermits.release();
             if (captured.scoped()) {
                 long ended = clock.getAsLong();
                 long queueNanos = (acquired ? admittedAt : ended) - queued;

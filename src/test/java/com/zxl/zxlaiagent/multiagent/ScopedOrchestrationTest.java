@@ -88,16 +88,33 @@ class ScopedOrchestrationTest {
         assertThrows(WorkflowException.class,()->run.finishSuccess("sensitive result"));assertNull(run.outcome());assertNull(run.latestReport());assertTrue(events.snapshot().isEmpty());
     }
     @Test void deniedStageReportRetainsActualLeaseUntilTheWorkerReturns() throws Exception {
+        var logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(RunRegistry.Entry.class);
+        var entries = new java.util.concurrent.CopyOnWriteArrayList<String>();
+        var appender = new ch.qos.logback.core.AppenderBase<ch.qos.logback.classic.spi.ILoggingEvent>() {
+            @Override protected void append(ch.qos.logback.classic.spi.ILoggingEvent event) {
+                entries.add(event.getFormattedMessage());
+            }
+        };
+        appender.start();
+        logger.addAppender(appender);
+        try {
         var allowed=new AtomicBoolean(true);var work=new CompletableFuture<String>();
         OperationBoundary boundary=new OperationBoundary(){public void check(Phase phase){if(!allowed.get())throw new SecurityFailure("ACTION_DENIED",403);}public <T>T start(Phase phase,Supplier<T> action){check(phase);return action.get();}};
         worker("planner",task->{allowed.set(false);return work;});
         var handle=orchestrator.submitScoped("secret",Map.of(),5000L,id->submission(id,boundary));
         var outcome=handle.result().get(2,TimeUnit.SECONDS);assertFalse(outcome.successful());
         assertTrue(orchestrator.runStatusScoped(handle.executionId()).run().runtime().cleanupPending());
+        assertTrue(entries.stream().noneMatch(line -> line.contains(handle.executionId())));
         work.complete("late secret");
         var until=System.nanoTime()+TimeUnit.SECONDS.toNanos(2);
         while(orchestrator.runStatusScoped(handle.executionId()).run().runtime().cleanupPending()&&System.nanoTime()<until)Thread.yield();
         assertFalse(orchestrator.runStatusScoped(handle.executionId()).run().runtime().cleanupPending());assertNull(handle.result().get().result());
+        while (entries.stream().noneMatch(line -> line.contains(handle.executionId())) && System.nanoTime() < until) Thread.yield();
+        assertEquals(1, entries.stream().filter(line -> line.startsWith("Agent run cleanup runId=" + handle.executionId())).count());
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
     }
     @Test void sameModelTaskIdsAcrossRunsDoNotOverwritePendingOwnership() throws Exception {
         var started=new CountDownLatch(2);var code=new CompletableFuture<String>();var research=new CompletableFuture<String>();
