@@ -144,12 +144,11 @@ public final class ExecutionRuntime implements AutoCloseable {
             outcome = "denied";
             throw denied;
         } catch (WorkflowException failure) {
-            outcome = switch (failure.getCode()) {
-                case "RUN_DEADLINE_EXCEEDED", "CAPACITY_QUEUE_TIMEOUT" -> "timeout";
-                case "RUN_CANCELLED" -> "cancelled";
-                case "EXECUTION_INTERRUPTED" -> "interrupted";
-                default -> "failed";
-            };
+            outcome = modelOutcome(failure.getCode());
+            throw failure;
+        } catch (CancellationException failure) {
+            var stop = control == null ? null : control.stopReason();
+            outcome = stop == null ? "interrupted" : modelOutcome(stop.code());
             throw failure;
         } finally {
             if (acquired) modelPermits.release();
@@ -168,6 +167,15 @@ public final class ExecutionRuntime implements AutoCloseable {
                 }
             }
         }
+    }
+
+    private static String modelOutcome(String code) {
+        return switch (code) {
+            case "RUN_DEADLINE_EXCEEDED", "CAPACITY_QUEUE_TIMEOUT" -> "timeout";
+            case "RUN_CANCELLED" -> "cancelled";
+            case "EXECUTION_INTERRUPTED" -> "interrupted";
+            default -> "failed";
+        };
     }
 
     private static String diagnosticTaskId(String id) {
