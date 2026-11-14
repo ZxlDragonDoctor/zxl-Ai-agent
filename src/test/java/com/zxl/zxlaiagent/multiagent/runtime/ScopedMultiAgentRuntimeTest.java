@@ -13,6 +13,30 @@ import java.util.function.Supplier;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ScopedMultiAgentRuntimeTest {
+    @Test void modelTelemetryCorrelatesTheRunWithoutLoggingFailurePayload() throws Exception {
+        var logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ExecutionRuntime.class);
+        var entries = new ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent>();
+        entries.start();
+        logger.addAppender(entries);
+        var settings = new RuntimeSettings();
+        try (var runtime = new ExecutionRuntime(settings)) {
+            var entry = scoped(settings, boundary(new ArrayList<>(), new AtomicBoolean(true)));
+            var task = Task.create("private prompt fixture");
+            TaskLifecycle.start(task, "worker");
+            runtime.bind(task, entry);
+            assertThrows(IllegalStateException.class, () -> runtime.modelCall(task, () -> {
+                throw new IllegalStateException("private response fixture");
+            }));
+            var messages = entries.list.stream().map(event -> event.getFormattedMessage()).toList();
+            assertTrue(messages.stream().anyMatch(line -> line.contains(entry.run.id)
+                    && line.contains(task.getId()) && line.contains("outcome=failed")));
+            assertTrue(messages.stream().noneMatch(line -> line.contains("private")));
+        } finally {
+            logger.detachAppender(entries);
+            entries.stop();
+        }
+    }
+
     @Test void changingModelTaskIdCannotDetachItsTrustedControl() {
         var settings=new RuntimeSettings();var registry=new RunRegistry(settings);
         var entry=registry.register(new WorkflowRun("synthetic",r->{}),new ExecutionControl(System.currentTimeMillis(),Duration.ofSeconds(5),System::nanoTime));

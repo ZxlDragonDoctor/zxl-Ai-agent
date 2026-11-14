@@ -162,7 +162,8 @@ public class DashScopeAgentStreamer {
             throw new IllegalStateException("连接模型服务失败，请检查网络后重试", e);
         } finally {
             if (subscription != null) subscription.dispose();
-            LOG.info("Model transport timing requestKind={}, dispatchMs={}, firstFrameMs={}, frames={}, frameGateMs={}, elapsedMs={}, streamEnded={}",
+            LOG.info("Model transport timing runId={}, taskId={}, requestKind={}, dispatchMs={}, firstFrameMs={}, frames={}, frameGateMs={}, elapsedMs={}, streamEnded={}",
+                    org.slf4j.MDC.get("agentRunId"), org.slf4j.MDC.get("agentTaskId"),
                     tools.length > 0 ? "tools" : "answer", timingMs(dispatchNanos[0]), timingMs(firstFrameNanos.get()),
                     frameCount.get(), timingMs(gateNanos.get()), timingMs(System.nanoTime() - transportStarted), streamEnded);
         }

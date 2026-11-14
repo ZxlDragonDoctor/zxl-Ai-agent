@@ -11,6 +11,7 @@ import com.zxl.zxlaiagent.security.execution.OperationBoundary;
 
 /** 协调线程只等待，工作线程负责阻塞 I/O；两者不会互相占满同一个池。 */
 public final class ExecutionRuntime implements AutoCloseable {
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(ExecutionRuntime.class);
     private final RuntimeSettings settings;
     private final LongSupplier clock;
     private final ThreadPoolExecutor coordinators, workers;
@@ -107,14 +108,17 @@ public final class ExecutionRuntime implements AutoCloseable {
         OperationBoundary scope = entry == null ? OperationBoundary.unrestricted() : entry.boundary;
         ExecutionControl control = entry == null ? null : entry.control;
         boolean acquired = false;
+        long queued = clock.getAsLong();
+        long admittedAt = queued;
+        String outcome = "failed";
         try {
-            long queued = clock.getAsLong();
             while (!acquired) {
                 if (control != null) control.check();
                 scope.check(Phase.DEQUEUE);
                 checkQueue(queued, "models");
                 acquired = modelPermits.tryAcquire(25, TimeUnit.MILLISECONDS);
             }
+            admittedAt = clock.getAsLong();
             checkQueue(queued, "models");
             Supplier<ExecutionLease> begin = () -> {
                 if (!TaskLifecycle.recordModelCall(task)) throw new WorkflowException("TASK_ALREADY_TERMINAL", "tasks." + task.getId(), "任务已结束，不能调用模型");
@@ -126,14 +130,61 @@ public final class ExecutionRuntime implements AutoCloseable {
                     // The transport owns actual subscription authorization. Never hold a PG gate
                     // around this blocking wait; check its current run scope before and after it.
                     scope.check(Phase.MODEL_DISPATCH);
-                    T value = call.get();
+                    T value = captured.scoped() ? callWithModelCorrelation(entry.run.id, task, call) : call.get();
                     scope.check(Phase.RESULT_PUBLISH);
+                    outcome = "completed";
                     return value;
                 } finally { models.decrementAndGet(); }
             }
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt(); throw new WorkflowException("EXECUTION_INTERRUPTED", "models", "模型容量等待被中断", e);
-        } finally { if (acquired) modelPermits.release(); }
+            outcome = "interrupted";
+            Thread.currentThread().interrupt();
+            throw new WorkflowException("EXECUTION_INTERRUPTED", "models", "模型容量等待被中断", e);
+        } catch (com.zxl.zxlaiagent.security.SecurityFailure denied) {
+            outcome = "denied";
+            throw denied;
+        } catch (WorkflowException failure) {
+            outcome = switch (failure.getCode()) {
+                case "RUN_DEADLINE_EXCEEDED", "CAPACITY_QUEUE_TIMEOUT" -> "timeout";
+                case "RUN_CANCELLED" -> "cancelled";
+                case "EXECUTION_INTERRUPTED" -> "interrupted";
+                default -> "failed";
+            };
+            throw failure;
+        } finally {
+            if (acquired) modelPermits.release();
+            if (captured.scoped()) {
+                long ended = clock.getAsLong();
+                long queueNanos = (acquired ? admittedAt : ended) - queued;
+                long admittedNanos = acquired ? ended - admittedAt : 0;
+                LOG.info("Agent model timing runId={} taskId={} outcome={} queueMs={} admittedMs={}",
+                        entry.run.id, diagnosticTaskId(task.getId()), outcome,
+                        TimeUnit.NANOSECONDS.toMillis(queueNanos), TimeUnit.NANOSECONDS.toMillis(admittedNanos));
+                io.micrometer.core.instrument.Metrics.timer("agent.model.queue", "outcome", outcome)
+                        .record(queueNanos, TimeUnit.NANOSECONDS);
+                if (acquired) {
+                    io.micrometer.core.instrument.Metrics.timer("agent.model.admitted", "outcome", outcome)
+                            .record(admittedNanos, TimeUnit.NANOSECONDS);
+                }
+            }
+        }
+    }
+
+    private static String diagnosticTaskId(String id) {
+        try { return UUID.fromString(id).toString(); }
+        catch (IllegalArgumentException | NullPointerException ignored) { return "non-uuid"; }
+    }
+
+    private static <T> T callWithModelCorrelation(String runId, Task task, Supplier<T> call) {
+        var previous = org.slf4j.MDC.getCopyOfContextMap();
+        try {
+            org.slf4j.MDC.put("agentRunId", runId);
+            org.slf4j.MDC.put("agentTaskId", diagnosticTaskId(task.getId()));
+            return call.get();
+        } finally {
+            if (previous == null) org.slf4j.MDC.clear();
+            else org.slf4j.MDC.setContextMap(previous);
+        }
     }
     public synchronized AgentLease tryAgent(String type, Collection<AgentInterface> agents) {
         if (!roleWaiters.getOrDefault(type, new ArrayDeque<>()).isEmpty()) return null;
