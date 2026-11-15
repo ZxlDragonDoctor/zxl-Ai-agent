@@ -1,0 +1,18 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson19-browser-fixture",
+  "variant": "current",
+  "runs": [
+    {
+      "id": "budget-1",
+      "runId": "7b4ff31a-15b0-4ba1-8801-38085359122f",
+      "status": "timeout",
+      "sources": [],
+      "tools": [],
+      "writes": 0,
+      "elapsedMs": 1026,
+      "tokens": null
+    }
+  ]
+}

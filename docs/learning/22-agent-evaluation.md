@@ -28,3 +28,13 @@ CLI 按案例列出遗漏、额外引用、额外工具及未授权写入。比�
 使用 `node scripts/lesson22/collect.mjs dataset.json dev case-a.json case-b.json > baseline.json` 汇总已采集的单题证据。汇总要求文件属于同一数据集、分组、模型、知识库版本和变体。重复的案例或运行 ID 会导致错误。缺失案例由评分器标记为失败。
 
 把评分器生成的对照 JSON 导入知识图谱第 22 课的「评估报告」。真实冒烟结果随页面提供。对照验收使用人工构造的缺失引用证据来检查 UI 的退化提示。全套 30 题的批量执行及真实候选版本比较仍待完成。 [报告页验收](../images/lesson22-panel-2026-11-15/README.md)
+
+## 正式运行采集
+
+`scripts/lesson22/run-formal.mjs` 用专用测试租户登录，通过正式编排接口顺序运行显式选定的案例，等待终态和本地清理，然后通过 PostgreSQL 独立查询测试租户内新增的已批准工单。配置本机工作台的 `LESSON22_ORIGIN`、测试用户的 `LESSON22_TENANT`、`LESSON22_LOGIN`、`LESSON22_PASSWORD`，以及 `LESSON22_PSQL` 和 PostgreSQL 客户端环境变量。验收期间保持测试租户独占。采集器暂不从模型日志导入用量。
+
+```sh
+node scripts/lesson22/run-formal.mjs docs/learning/examples/lesson22-cases.json dev qwen-plus fixture-v1 current budget-1 > budget.json
+```
+
+该入口支持知识引用和模型等待超时。权限、审批、工具故障和其他预算阶段仍需要独立场景。对照实际重跑结果发现，模型在工具调用前失败会同时影响终态、引用与工具三项断言。此次对照保持同一实现，观察到了运行波动，尚未执行受控版本比较。
