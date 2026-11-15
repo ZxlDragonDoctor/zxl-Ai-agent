@@ -8,3 +8,17 @@
 4. 从一个失败用例回到运行 ID 和日志，找出可复现的问题。修复后重跑开发集，最后用保留集复核。
 
 面试练习：一次改动提高了平均得分，但让跨租户引用断言失败。你会怎样确定它能否上线？
+
+## 首批实现
+
+`examples/lesson22-cases.json` 固定了 30 个案例。开发集 18 条，保留集 12 条，覆盖引用、拒答、权限、工具失败、审批和预算。文档 ID 与身份是待配置的合成测试数据。
+
+评分器读取真实运行证据或明确标记的测试夹具。为证据记录案例文件的 SHA-256、模型、知识库版本和变体名称。每条运行记录包含 `id`、`status`、`sources`、`tools`、`writes`、`elapsedMs`、`tokens`，以及可选的 `runId`。取不到 token 时填写 `null`。引用从结果证据提取，写入次数需查业务写入记录。
+
+```sh
+node scripts/lesson22/score.mjs docs/learning/examples/lesson22-cases.json dev baseline.json candidate.json
+```
+
+CLI 按案例列出遗漏、额外引用、额外工具及未授权写入。比较时要求案例摘要、分组、模型和知识库版本相同。候选未通过时退出码为 1，可在 CI 中阻止发布。当前测试覆盖评分规则。固定测试数据部署、真实运行采集和工作台报告仍待接入。
+
+[第 22 课图谱阅读卡验收截图](../images/lesson22-2026-11-15/01-learning-graph.png)
