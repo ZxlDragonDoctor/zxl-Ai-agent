@@ -42,6 +42,7 @@ export function score(dataset, evidence, split, datasetSha256) {
   return {
     datasetVersion: dataset.version, datasetSha256, split,
     model: evidence.model, knowledgeVersion: evidence.knowledgeVersion, variant: evidence.variant,
+    ...(evidence.promptMode === undefined ? {} : { promptMode: evidence.promptMode }),
     total: results.length, passed: results.filter(item => !item.errors.length).length, results,
   }
 }

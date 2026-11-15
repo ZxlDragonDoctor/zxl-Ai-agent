@@ -32,3 +32,19 @@ test('never scores a foreign report as the submitted run', async () => {
     countWrites: async () => assert.fail('must not count'),
   }), /does not match/)
 })
+
+test('uses the pinned prompt variant for research cases', async () => {
+  for (const promptMode of ['original', 'research-directed']) {
+    await runCases([{ ...item, category: 'abstention' }], {
+      promptMode,
+      submit: async (goal) => {
+        assert.equal(goal, promptMode === 'original' ? 'Example'
+          : 'Use one research task to look up the following employee knowledge question.\nExample')
+        return { executionId }
+      },
+      detail: async () => ({ run: { executionId, runtime: {},
+        report: { status: 'completed', tasks: [], startedAt: 1, finishedAt: 2 } }, events: [] }),
+      countWrites: async () => 0,
+    })
+  }
+})

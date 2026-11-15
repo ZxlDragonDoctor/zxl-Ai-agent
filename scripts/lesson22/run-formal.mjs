@@ -5,10 +5,13 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { pathToFileURL } from 'node:url'
 import { projectRun } from './project-run.mjs'
 
-export async function runCases(cases, { submit, detail, countWrites, wait = delay, now = Date.now }) {
+export async function runCases(cases, {
+  submit, detail, countWrites, wait = delay, now = Date.now, promptMode = 'research-directed',
+}) {
+  if (!['original', 'research-directed'].includes(promptMode)) throw new Error('Unknown prompt mode')
   const runs = []
   for (const item of cases) {
-    const goal = ['grounding', 'abstention'].includes(item.category)
+    const goal = promptMode === 'research-directed' && ['grounding', 'abstention'].includes(item.category)
       ? 'Use one research task to look up the following employee knowledge question.\n' + item.input.prompt
       : item.input.prompt
     const { executionId } = await submit(goal, item.input.budgetMs)
@@ -31,6 +34,7 @@ export async function runCases(cases, { submit, detail, countWrites, wait = dela
 async function main() {
   const [datasetPath, split, model, knowledgeVersion, variant, ...ids] = process.argv.slice(2)
   const env = process.env
+  const promptMode = env.LESSON22_PROMPT_MODE ?? 'research-directed'
   const base = new URL(env.LESSON22_ORIGIN)
   const tenant = env.LESSON22_TENANT
   if (base.protocol !== 'http:' || base.hostname !== '127.0.0.1' || !base.port
@@ -85,10 +89,10 @@ async function main() {
   }
   const runs = await runCases(cases, {
     submit: (goal, timeoutMs) => request('/ai/multiagent/runs', { goal, timeoutMs }),
-    detail: id => request('/ai/multiagent/runs/' + id), countWrites,
+    detail: id => request('/ai/multiagent/runs/' + id), countWrites, promptMode,
   })
   console.log(JSON.stringify({ datasetSha256: createHash('sha256').update(bytes).digest('hex'),
-    model, knowledgeVersion, variant, runs }, null, 2))
+    model, knowledgeVersion, variant, promptMode, runs }, null, 2))
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await main()

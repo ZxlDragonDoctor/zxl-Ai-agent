@@ -13,9 +13,12 @@ export function collect(dataset, split, digest, inputs) {
     if (typeof value !== 'string' || !value.trim()) throw new Error('Missing ' + key)
     metadata[key] = value
   }
+  const promptMode = inputs[0].promptMode
+  if (promptMode !== undefined) metadata.promptMode = promptMode
   const runs = new Map()
   const runIds = new Set()
   for (const input of inputs) {
+    if (input.promptMode !== promptMode) throw new Error('Evidence mismatch: promptMode')
     for (const key of Object.keys(metadata)) {
       if (metadata[key] !== input[key]) throw new Error('Evidence mismatch: ' + key)
     }
