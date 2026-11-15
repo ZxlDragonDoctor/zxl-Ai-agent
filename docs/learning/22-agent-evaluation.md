@@ -46,3 +46,12 @@ node scripts/lesson22/run-formal.mjs docs/learning/examples/lesson22-cases.json 
 对照报告的 `coverage` 同时记录基线、候选和两边都有证据的题数。只有两边都测过的题才参与比较退化和改善。候选证据不完整时，发布检查仍然失败。比如 18 道开发题只测了同一道，成对覆盖就是 1/18。
 
 保留集中的两道空召回题已在独立空库租户实跑。报告面板区分实测通过、实测失败、缺少证据。 [真实保留集和配对覆盖验收](../images/lesson22-coverage-2026-11-15/README.md)
+
+五道知识引用题使用 `examples/lesson22-grounding-docs.json` 中的合成资料。每道题分配一个独立测试租户，其中只发布该题对应的文档，避免向量召回受其他题文档影响。先为租户建员工与知识维护者账号，再提供 `LESSON22_MAINTAINER`、`LESSON22_MAINTAINER_PASSWORD` 和正式采集使用的环境变量。
+
+```sh
+node scripts/lesson22/publish-grounding.mjs docs/learning/examples/lesson22-grounding-docs.json expense-guide
+node scripts/lesson22/run-formal.mjs docs/learning/examples/lesson22-cases.json dev qwen-plus lesson22-grounding-v1 research-directed grounding-1 > grounding-1.json
+```
+
+真实开发集验收覆盖两道引用题。会议室显示设备题引用了指定的 `meeting-display`，费用报销题在工具调用前失败。两次工单写入均为零。 [报告与截图](../images/lesson22-grounding-2026-11-15/README.md)
