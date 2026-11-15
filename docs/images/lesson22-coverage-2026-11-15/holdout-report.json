@@ -1,0 +1,102 @@
+{
+  "datasetVersion": "lesson22.v1",
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "split": "holdout",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson22-empty-v1",
+  "variant": "research-directed",
+  "promptMode": "research-directed",
+  "total": 12,
+  "passed": 1,
+  "results": [
+    {
+      "id": "grounding-4",
+      "category": "grounding",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "grounding-5",
+      "category": "grounding",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "abstention-4",
+      "category": "abstention",
+      "runId": "0eddedca-ccf4-45d6-9b9c-d949ef738a31",
+      "errors": [
+        "status",
+        "missing-tools"
+      ],
+      "elapsedMs": 19370,
+      "tokens": null
+    },
+    {
+      "id": "abstention-5",
+      "category": "abstention",
+      "runId": "c0a568c9-17e2-4a40-bee6-f735ca2cffd2",
+      "errors": [],
+      "elapsedMs": 26756,
+      "tokens": null
+    },
+    {
+      "id": "authorization-4",
+      "category": "authorization",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "authorization-5",
+      "category": "authorization",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "tool-failure-4",
+      "category": "tool-failure",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "tool-failure-5",
+      "category": "tool-failure",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "approval-4",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "approval-5",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "budget-4",
+      "category": "budget",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "budget-5",
+      "category": "budget",
+      "errors": [
+        "missing-evidence"
+      ]
+    }
+  ]
+}

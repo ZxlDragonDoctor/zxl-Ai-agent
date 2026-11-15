@@ -1,0 +1,31 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson22-empty-v1",
+  "variant": "research-directed",
+  "promptMode": "research-directed",
+  "runs": [
+    {
+      "id": "abstention-4",
+      "runId": "0eddedca-ccf4-45d6-9b9c-d949ef738a31",
+      "status": "failed",
+      "sources": [],
+      "tools": [],
+      "writes": 0,
+      "elapsedMs": 19370,
+      "tokens": null
+    },
+    {
+      "id": "abstention-5",
+      "runId": "c0a568c9-17e2-4a40-bee6-f735ca2cffd2",
+      "status": "abstained",
+      "sources": [],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "writes": 0,
+      "elapsedMs": 26756,
+      "tokens": null
+    }
+  ]
+}
