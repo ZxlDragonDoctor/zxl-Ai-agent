@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { setTimeout as delay } from 'node:timers/promises'
 import { pathToFileURL } from 'node:url'
 import { projectRun } from './project-run.mjs'
+import { formalSession } from './formal-session.mjs'
 
 export async function runCases(cases, {
   submit, detail, countWrites, wait = delay, now = Date.now, promptMode = 'research-directed',
@@ -51,31 +52,7 @@ async function main() {
         || (item.category === 'abstention' && item.input.scenario === 'no-result' && /^lesson22-/.test(tenant))))) {
     throw new Error('Select grounding, model-wait or an abstention case in a dedicated lesson22 tenant')
   }
-  const cookies = new Map()
-  let csrf
-  async function request(path, body) {
-    const response = await fetch(base.origin + '/api' + path, {
-      redirect: 'error', signal: AbortSignal.timeout(10_000),
-      method: body === undefined ? 'GET' : 'POST',
-      headers: { Cookie: [...cookies.values()].join('; '), Origin: base.origin,
-        ...(body === undefined ? {} : { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf }) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    })
-    if (!response.ok) throw new Error('Formal evaluation request failed: HTTP ' + response.status)
-    for (const cookie of response.headers.getSetCookie()) {
-      const pair = cookie.split(';', 1)[0]
-      cookies.set(pair.split('=', 1)[0], pair)
-    }
-    return response.json()
-  }
-  csrf = (await request('/auth/status')).csrfToken
-  const session = await request('/auth/login', {
-    tenantId: tenant, loginName: env.LESSON22_LOGIN, password: env.LESSON22_PASSWORD,
-  })
-  if (session.principal?.tenantId !== tenant || session.principal?.role !== 'employee') {
-    throw new Error('Expected fixture employee session')
-  }
-  csrf = session.csrfToken
+  const request = await formalSession(base.origin, tenant, env.LESSON22_LOGIN, env.LESSON22_PASSWORD, 'employee')
   function countWrites(report) {
     if (!Number.isSafeInteger(report.startedAt) || !Number.isSafeInteger(report.finishedAt)) {
       throw new Error('Invalid report timestamps')

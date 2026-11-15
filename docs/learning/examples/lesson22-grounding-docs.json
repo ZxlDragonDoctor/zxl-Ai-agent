@@ -1,0 +1,27 @@
+[
+  {
+    "documentId": "expense-guide",
+    "sourceName": "Expense reimbursement guide.md",
+    "content": "# Expense reimbursement guide\n\nFind the expense reimbursement steps in Employee Hub → Finance → Reimbursements. Open the Expense Claims checklist before submitting a request.\n\nCreate a claim in the expense portal, attach the itemized receipts, select the project cost center, and submit it to your manager for approval."
+  },
+  {
+    "documentId": "meeting-display",
+    "sourceName": "Meeting room display setup.md",
+    "content": "# Meeting room display setup\n\nTo set up a meeting room display, turn on the screen with the wall console and select the USB-C input. Connect the labeled USB-C cable to your laptop and choose Duplicate or Mirror in display settings.\n\nIf the laptop does not support video over USB-C, use the meeting room HDMI adapter and select HDMI on the wall console."
+  },
+  {
+    "documentId": "account-recovery",
+    "sourceName": "Employee account recovery.md",
+    "content": "# Employee account recovery\n\nThe Identity Support team handles employee account recovery and locked accounts. In the internal Service Desk, select Identity and Access → Account Recovery to reach that team.\n\nProvide your employee username and a contact method. Leave passwords and recovery codes out of the request."
+  },
+  {
+    "documentId": "equipment-return",
+    "sourceName": "Equipment return checklist.md",
+    "content": "# Equipment return checklist\n\nFind the equipment return checklist in Employee Hub → Workplace Services → Equipment Returns. The checklist is the first download on that page.\n\nUse the checklist to record the equipment serial number and included accessories, then book a handover appointment with the Asset Desk."
+  },
+  {
+    "documentId": "accessibility-guide",
+    "sourceName": "Workplace accessibility accommodation.md",
+    "content": "# Workplace accessibility accommodation\n\nTo request an accessibility accommodation, open Employee Hub → People Services → Workplace Accessibility and select Request an Accommodation. The confidential form asks for your contact details and the workplace barrier you need help with.\n\nThe Workplace Accessibility team will contact you privately to discuss possible adjustments."
+  }
+]
