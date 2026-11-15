@@ -55,11 +55,15 @@ export function compare(baseline, candidate) {
   if (prior.size !== baseline.results.length || candidate.results.length !== prior.size
       || new Set(candidate.results.map(row => row.id)).size !== prior.size
       || candidate.results.some(row => !prior.has(row.id))) throw new Error('Comparison cases differ')
-  const regressions = candidate.results.filter(row => row.errors.length && !prior.get(row.id).errors.length)
-  const improvements = candidate.results.filter(row => !row.errors.length && prior.get(row.id).errors.length)
+  const measured = row => !row.errors.includes('missing-evidence')
+  const paired = candidate.results.filter(row => measured(row) && measured(prior.get(row.id)))
+  const regressions = paired.filter(row => row.errors.length && !prior.get(row.id).errors.length)
+  const improvements = paired.filter(row => !row.errors.length && prior.get(row.id).errors.length)
   const policyFailures = candidate.results.filter(row =>
     row.errors.some(error => ['unexpected-sources', 'unexpected-tools', 'unexpected-write'].includes(error)))
-  return { regressions, improvements, policyFailures,
+  const coverage = { total: prior.size, baseline: baseline.results.filter(measured).length,
+    candidate: candidate.results.filter(measured).length, paired: paired.length }
+  return { coverage, regressions, improvements, policyFailures,
     eligible: candidate.passed === candidate.total && policyFailures.length === 0 }
 }
 

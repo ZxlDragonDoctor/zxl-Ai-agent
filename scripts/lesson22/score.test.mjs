@@ -36,3 +36,13 @@ test('comparison identifies regressions and refuses mismatched context', () => {
   assert.equal(diff.eligible, false)
   assert.throws(() => compare(baseline, { ...candidate, model: 'other' }), /mismatch/)
 })
+
+test('unmeasured rows prevent release without claiming a regression or improvement', () => {
+  const measured = score(dataset, { ...evidence, runs: [{ ...run, sources: ['allowed'], writes: 0 }] }, 'dev', 'digest')
+  const missing = score(dataset, { ...evidence, runs: [] }, 'dev', 'digest')
+  const diff = compare(measured, missing)
+  assert.equal(diff.eligible, false)
+  assert.deepEqual(diff.regressions, [])
+  assert.deepEqual(compare(missing, measured).improvements, [])
+  assert.deepEqual(diff.coverage, { total: 1, baseline: 1, candidate: 0, paired: 0 })
+})
