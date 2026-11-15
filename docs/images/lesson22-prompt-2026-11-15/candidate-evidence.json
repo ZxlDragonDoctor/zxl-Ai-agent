@@ -1,0 +1,21 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson22-empty-v1",
+  "variant": "research-directed",
+  "promptMode": "research-directed",
+  "runs": [
+    {
+      "id": "abstention-1",
+      "runId": "f68bb77a-1790-4e4a-bcdd-613caa0978a5",
+      "status": "completed",
+      "sources": [],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "writes": 0,
+      "elapsedMs": 32433,
+      "tokens": null
+    }
+  ]
+}

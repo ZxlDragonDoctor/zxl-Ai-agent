@@ -1,0 +1,19 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson22-empty-v1",
+  "variant": "original",
+  "promptMode": "original",
+  "runs": [
+    {
+      "id": "abstention-1",
+      "runId": "50666470-7fa8-49ec-9278-f4507f78acd2",
+      "status": "failed",
+      "sources": [],
+      "tools": [],
+      "writes": 0,
+      "elapsedMs": 19411,
+      "tokens": null
+    }
+  ]
+}
