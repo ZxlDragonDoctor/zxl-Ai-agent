@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
+const noEvidence = '当前有效知识中没有找到匹配资料；未生成缺乏证据的结论。 / No matching current evidence.'
+
 // Project a current, owner-visible formal orchestration report into scorer evidence.
 export function projectRun(id, view, writes, tokens = null) {
   const report = view?.run?.report
@@ -14,12 +16,18 @@ export function projectRun(id, view, writes, tokens = null) {
   }
   const sources = new Set()
   const hitsByTask = new Map()
+  const emptySuccesses = new Set()
   for (const item of view.events) {
     const { taskId, event } = item.data ?? {}
     if (event?.type !== 'TOOL_COMPLETED' || event.toolName !== 'knowledge__knowledge_lookup_v2') continue
-    const hits = JSON.parse(event.content).data?.hits
+    const result = JSON.parse(event.content)
+    const hits = result.data?.hits
     if (!Array.isArray(hits)) throw new Error('Knowledge tool evidence is incomplete')
     hitsByTask.set(taskId, [...(hitsByTask.get(taskId) ?? []), ...hits])
+    if (result.success === true && hits.length === 0
+        && Array.isArray(result.data.degradations) && result.data.degradations.length === 0) {
+      emptySuccesses.add(taskId)
+    }
   }
   for (const task of report.tasks) {
     if (task.capability !== 'research' || task.status !== 'COMPLETED') continue
@@ -40,9 +48,12 @@ export function projectRun(id, view, writes, tokens = null) {
     }
     if (cited.size) throw new Error('Citation has no source mapping')
   }
+  const abstained = report.status === 'completed' && report.tasks.length > 0 && report.tasks.every(task =>
+    task.capability === 'research' && task.status === 'COMPLETED' && task.result === noEvidence
+      && emptySuccesses.has(task.id) && hitsByTask.get(task.id)?.length === 0)
   return {
     id, runId: view.run.executionId,
-    status: report.error?.code === 'RUN_DEADLINE_EXCEEDED' ? 'timeout' : report.status,
+    status: report.error?.code === 'RUN_DEADLINE_EXCEEDED' ? 'timeout' : abstained ? 'abstained' : report.status,
     sources: [...sources].sort(),
     tools: [...new Set(view.events.map(item => item.data?.event)
       .filter(event => event?.type === 'TOOL_STARTED' && typeof event.toolName === 'string')

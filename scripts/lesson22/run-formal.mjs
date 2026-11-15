@@ -8,7 +8,10 @@ import { projectRun } from './project-run.mjs'
 export async function runCases(cases, { submit, detail, countWrites, wait = delay, now = Date.now }) {
   const runs = []
   for (const item of cases) {
-    const { executionId } = await submit(item.input.prompt, item.input.budgetMs)
+    const goal = ['grounding', 'abstention'].includes(item.category)
+      ? 'Use one research task to look up the following employee knowledge question.\n' + item.input.prompt
+      : item.input.prompt
+    const { executionId } = await submit(goal, item.input.budgetMs)
     if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(executionId)) throw new Error('Invalid execution ID')
     const deadline = now() + item.input.budgetMs + 30_000
     while (now() < deadline) {
@@ -40,8 +43,9 @@ async function main() {
   const dataset = JSON.parse(bytes)
   const cases = ids.map(id => dataset.cases.find(item => item.id === id && item.split === split))
   if (new Set(ids).size !== ids.length || cases.some(item => !item || item.input.persona !== 'employee'
-      || !(item.category === 'grounding' || (item.category === 'budget' && item.input.scenario === 'model-wait')))) {
-    throw new Error('This runner supports explicit read-only grounding and model-wait cases in one split')
+      || !(item.category === 'grounding' || (item.category === 'budget' && item.input.scenario === 'model-wait')
+        || (item.category === 'abstention' && item.input.scenario === 'no-result' && /^lesson22-/.test(tenant))))) {
+    throw new Error('Select grounding, model-wait or an abstention case in a dedicated lesson22 tenant')
   }
   const cookies = new Map()
   let csrf
