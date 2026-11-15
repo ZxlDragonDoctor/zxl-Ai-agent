@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import bundled from '../../../docs/images/lesson22-live-2026-11-15/report.json'
 
 defineProps<{ zh: boolean }>()
@@ -12,6 +12,13 @@ const comparison = ref<{ baseline: Report; candidate: Report } | null>(null)
 const singleReport = ref<Report | null>(null)
 const invalid = ref(false)
 let importVersion = 0
+const pairedRows = computed(() => {
+  const reports = comparison.value
+  if (!reports) return []
+  const beforeById = new Map(reports.baseline.results.map(row => [row.id, row]))
+  return reports.candidate.results.map(after => ({ before: beforeById.get(after.id)!, after }))
+})
+const pairedCount = computed(() => pairedRows.value.filter(({ before, after }) => measured(before) && measured(after)).length)
 
 function readReport(value: Partial<Report>): Report {
   const keys = ['datasetVersion', 'datasetSha256', 'split', 'model', 'knowledgeVersion', 'variant'] as const
@@ -59,8 +66,22 @@ async function importReport(event: Event) {
   }
 }
 
-function passed(report: Report) {
-  return report.results.filter(row => !row.errors.length).length
+function measured(row: Row) {
+  return !row.errors.includes('missing-evidence')
+}
+
+function reportSummary(report: Report, zh: boolean) {
+  const observed = report.results.filter(measured)
+  const passed = observed.filter(row => !row.errors.length).length
+  return zh
+    ? `实测 ${observed.length}/${report.results.length} · 通过 ${passed} · 失败 ${observed.length - passed}`
+    : `Measured ${observed.length}/${report.results.length} · Passed ${passed} · Failed ${observed.length - passed}`
+}
+
+function rowResult(row: Row, zh: boolean) {
+  if (!measured(row)) return zh ? '缺少证据' : 'Missing evidence'
+  if (!row.errors.length) return zh ? '通过' : 'Passed'
+  return (zh ? '失败 · ' : 'Failed · ') + row.errors.join(', ')
 }
 </script>
 
@@ -81,22 +102,23 @@ function passed(report: Report) {
     <template v-if="singleReport">
       <p role="status">
         {{ singleReport.variant }} · {{ singleReport.split }} ·
-        {{ passed(singleReport) }}/{{ singleReport.results.length }} {{ zh ? '通过' : 'passed' }}
+        {{ reportSummary(singleReport, zh) }}
       </p>
       <ul>
         <li v-for="row in singleReport.results" :key="row.id">
-          <code>{{ row.id }}</code> · {{ row.errors.length ? row.errors.join(', ') : zh ? '通过' : 'Passed' }}
+          <code>{{ row.id }}</code> · {{ rowResult(row, zh) }}
         </li>
       </ul>
     </template>
     <template v-if="comparison">
-      <p role="status">
-        {{ zh ? '基线' : 'Baseline' }} {{ passed(comparison.baseline) }}/{{ comparison.baseline.results.length }}
-        → {{ zh ? '候选' : 'Candidate' }} {{ passed(comparison.candidate) }}/{{ comparison.candidate.results.length }}
-      </p>
+      <div role="status">
+        <p>{{ zh ? '基线' : 'Baseline' }} · {{ reportSummary(comparison.baseline, zh) }}</p>
+        <p>{{ zh ? '候选' : 'Candidate' }} · {{ reportSummary(comparison.candidate, zh) }}</p>
+        <p>{{ zh ? '双方均有实测证据' : 'Measured in both' }} {{ pairedCount }}/{{ pairedRows.length }}</p>
+      </div>
       <ul>
-        <li v-for="row in comparison.candidate.results" :key="row.id">
-          <code>{{ row.id }}</code> · {{ row.errors.length ? row.errors.join(', ') : zh ? '通过' : 'Passed' }}
+        <li v-for="{ before, after } in pairedRows" :key="after.id">
+          <code>{{ after.id }}</code> · {{ rowResult(before, zh) }} → {{ rowResult(after, zh) }}
         </li>
       </ul>
     </template>
