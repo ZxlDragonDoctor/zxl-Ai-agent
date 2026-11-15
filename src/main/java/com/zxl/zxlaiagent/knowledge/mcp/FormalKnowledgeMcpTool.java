@@ -1,6 +1,7 @@
 package com.zxl.zxlaiagent.knowledge.mcp;
 
 import com.zxl.zxlaiagent.knowledge.gateway.KnowledgeTrace;
+import com.zxl.zxlaiagent.knowledge.gateway.KnowledgeSpanExport;
 import com.zxl.zxlaiagent.knowledge.retrieval.*;
 import com.zxl.zxlaiagent.security.*;
 import com.zxl.zxlaiagent.tools.model.ToolResult;
@@ -41,9 +42,15 @@ public final class FormalKnowledgeMcpTool implements AutoCloseable {
     authorization.decide(actor,FormalKnowledgeMcpProtocol.ACTION,null,Phase.DEQUEUE,null).requireAllowed();
     // Scoped retrieval repeats gates at SQL/embedding/publish; never hold an epoch lock for a remote wait.
     String child = KnowledgeTrace.child(parent);
+    var start = java.time.Instant.now();
+    boolean failed = true;
     try (var ignored = KnowledgeTrace.open(child)) {
         if (child != null) LOG.info("Knowledge MCP span traceparent={} parent={}", child, parent);
-        return lookup.retrieve(actor,new RetrievalService.Request(request.query(),request.mode(),request.topK(),20,false,false,remaining));
+        var result = lookup.retrieve(actor,new RetrievalService.Request(request.query(),request.mode(),request.topK(),20,false,false,remaining));
+        failed = false;
+        return result;
+    } finally {
+        KnowledgeSpanExport.finished(KnowledgeSpanExport.Operation.MCP, child, parent, start, failed);
     }
    });
    Object result=future.get(Math.max(1,end-System.nanoTime()),TimeUnit.NANOSECONDS);

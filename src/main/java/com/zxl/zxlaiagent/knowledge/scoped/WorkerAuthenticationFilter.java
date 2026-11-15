@@ -1,6 +1,7 @@
 package com.zxl.zxlaiagent.knowledge.scoped;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zxl.zxlaiagent.knowledge.gateway.KnowledgeTrace;
+import com.zxl.zxlaiagent.knowledge.gateway.KnowledgeSpanExport;
 import com.zxl.zxlaiagent.security.*;
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
@@ -42,6 +43,9 @@ public final class WorkerAuthenticationFilter implements Filter {
    var traces = Collections.list(request.getHeaders(KnowledgeTrace.HEADER));
    String parent = traces.size() == 1 ? KnowledgeTrace.valid(traces.get(0)) : null;
    String child = KnowledgeTrace.child(parent);
+   var start = java.time.Instant.now();
+   boolean failed = true;
+   try {
    try (var ignored = KnowledgeTrace.open(child)) {
    chain.doFilter(wrapped,buffered);
    buffered.flushBuffer();
@@ -52,6 +56,10 @@ public final class WorkerAuthenticationFilter implements Filter {
    // Revocation after this admission cannot recall bytes whose network send has already begun.
    byte[] admitted=authorization.gate(actor,action,null,Phase.RESULT_PUBLISH,null,bytes::toByteArray);
    response.getOutputStream().write(admitted);response.getOutputStream().flush();
+   failed = response.getStatus() >= 400;
+   } finally {
+    KnowledgeSpanExport.finished(KnowledgeSpanExport.Operation.WORKER, child, parent, start, failed);
+   }
   }catch(SecurityFailure denied){error(response,denied.status(),denied.code());}catch(IllegalArgumentException invalid){error(response,400,"INVALID_WORKER_REQUEST");}
  }
  private void error(HttpServletResponse response,int status,String code)throws IOException{response.resetBuffer();response.setStatus(status);response.setContentType("application/json");new ObjectMapper().writeValue(response.getOutputStream(),Map.of("code",code,"message",code));}
