@@ -22,3 +22,5 @@ node scripts/lesson22/score.mjs docs/learning/examples/lesson22-cases.json dev b
 CLI 按案例列出遗漏、额外引用、额外工具及未授权写入。比较时要求案例摘要、分组、模型和知识库版本相同。候选未通过时退出码为 1，可在 CI 中阻止发布。当前测试覆盖评分规则。固定测试数据部署、真实运行采集和工作台报告仍待接入。
 
 [第 22 课图谱阅读卡验收截图](../images/lesson22-2026-11-15/01-learning-graph.png)
+
+正式工作台的独立冒烟题已通过真实模型、MCP 和 PostgreSQL 验证。提取器要求同一任务的工具结果支持正文引用，写入次数由数据库回执提供。全套 30 题和评估报告页面仍待接入。 [截图与报告](../images/lesson22-live-2026-11-15/README.md)

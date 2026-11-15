@@ -1,0 +1,22 @@
+{
+  "datasetSha256": "fb728971aa58ee3192930c2a41f9a479be4e4269b9ca4c245481731e299d090e",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson19-browser-fixture",
+  "variant": "observed",
+  "runs": [
+    {
+      "id": "portal-sso-grounding",
+      "runId": "670c2610-833a-42d7-a2c6-22bae7170d6a",
+      "status": "completed",
+      "sources": [
+        "lesson19-portal-sso-403"
+      ],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "writes": 0,
+      "elapsedMs": 43245,
+      "tokens": 4056
+    }
+  ]
+}

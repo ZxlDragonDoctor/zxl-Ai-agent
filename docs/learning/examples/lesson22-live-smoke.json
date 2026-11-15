@@ -1,0 +1,23 @@
+{
+  "version": "lesson22.live-smoke.v1",
+  "cases": [
+    {
+      "id": "portal-sso-grounding",
+      "split": "dev",
+      "category": "grounding",
+      "input": {
+        "prompt": "请从知识库检索员工门户 SSO 403 的处理建议并提供引用。安排一个 research 子任务。",
+        "persona": "employee",
+        "budgetMs": 120000
+      },
+      "expected": {
+        "status": "completed",
+        "requiredSources": ["lesson19-portal-sso-403"],
+        "allowedSources": ["lesson19-portal-sso-403"],
+        "requiredTools": ["knowledge__knowledge_lookup_v2"],
+        "allowedTools": ["knowledge__knowledge_lookup_v2"],
+        "maxWrites": 0
+      }
+    }
+  ]
+}
