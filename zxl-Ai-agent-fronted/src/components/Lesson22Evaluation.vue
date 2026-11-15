@@ -9,6 +9,7 @@ type Report = { datasetVersion: string; datasetSha256: string; split: string; mo
   knowledgeVersion: string; variant: string; results: Row[] }
 
 const comparison = ref<{ baseline: Report; candidate: Report } | null>(null)
+const singleReport = ref<Report | null>(null)
 const invalid = ref(false)
 let importVersion = 0
 
@@ -33,10 +34,17 @@ async function importReport(event: Event) {
   const version = ++importVersion
   invalid.value = false
   comparison.value = null
+  singleReport.value = null
   try {
     if (file.size > 1024 * 1024) throw new Error('Report too large')
     const text = await file.text()
-    const { baseline: before, candidate: after } = JSON.parse(text)
+    const payload = JSON.parse(text)
+    if (Array.isArray(payload?.results)) {
+      const report = readReport(payload)
+      if (version === importVersion) singleReport.value = report
+      return
+    }
+    const { baseline: before, candidate: after } = payload
     const baseline = readReport(before)
     const candidate = readReport(after)
     const identity = ['datasetVersion', 'datasetSha256', 'split', 'model', 'knowledgeVersion'] as const
@@ -66,10 +74,21 @@ function passed(report: Report) {
       </li>
     </ul>
     <label>
-      {{ zh ? '导入评分对照 JSON' : 'Import evaluation comparison JSON' }}
+      {{ zh ? '导入评分报告或对照 JSON' : 'Import evaluation report or comparison JSON' }}
       <input type="file" accept=".json,application/json" @change="importReport">
     </label>
     <p v-if="invalid" role="alert">{{ zh ? '文件格式无效，或两份报告的评估条件不一致。' : 'Invalid report file or mismatched evaluation conditions.' }}</p>
+    <template v-if="singleReport">
+      <p role="status">
+        {{ singleReport.variant }} · {{ singleReport.split }} ·
+        {{ passed(singleReport) }}/{{ singleReport.results.length }} {{ zh ? '通过' : 'passed' }}
+      </p>
+      <ul>
+        <li v-for="row in singleReport.results" :key="row.id">
+          <code>{{ row.id }}</code> · {{ row.errors.length ? row.errors.join(', ') : zh ? '通过' : 'Passed' }}
+        </li>
+      </ul>
+    </template>
     <template v-if="comparison">
       <p role="status">
         {{ zh ? '基线' : 'Baseline' }} {{ passed(comparison.baseline) }}/{{ comparison.baseline.results.length }}
