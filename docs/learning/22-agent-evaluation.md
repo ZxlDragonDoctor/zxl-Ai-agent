@@ -23,4 +23,8 @@ CLI 按案例列出遗漏、额外引用、额外工具及未授权写入。比�
 
 [第 22 课图谱阅读卡验收截图](../images/lesson22-2026-11-15/01-learning-graph.png)
 
-正式工作台的独立冒烟题已通过真实模型、MCP 和 PostgreSQL 验证。提取器要求同一任务的工具结果支持正文引用，写入次数由数据库回执提供。全套 30 题和评估报告页面仍待接入。 [截图与报告](../images/lesson22-live-2026-11-15/README.md)
+正式工作台的独立冒烟题已通过真实模型、MCP 和 PostgreSQL 验证。提取器要求同一任务的工具结果支持正文引用，写入次数由数据库回执提供。 [截图与报告](../images/lesson22-live-2026-11-15/README.md)
+
+使用 `node scripts/lesson22/collect.mjs dataset.json dev case-a.json case-b.json > baseline.json` 汇总已采集的单题证据。汇总要求文件属于同一数据集、分组、模型、知识库版本和变体。重复的案例或运行 ID 会导致错误。缺失案例由评分器标记为失败。
+
+把评分器生成的对照 JSON 导入知识图谱第 22 课的「评估报告」。真实冒烟结果随页面提供。对照验收使用人工构造的缺失引用证据来检查 UI 的退化提示。全套 30 题的批量执行及真实候选版本比较仍待完成。 [报告页验收](../images/lesson22-panel-2026-11-15/README.md)
