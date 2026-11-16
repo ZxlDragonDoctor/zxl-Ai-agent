@@ -12,6 +12,18 @@ const run = { id: 'a', status: 'completed', sources: ['allowed', 'foreign'], too
   writes: 1, elapsedMs: 20, tokens: null }
 const evidence = { datasetSha256: 'digest', model: 'fixture', knowledgeVersion: 'v1', variant: 'base', runs: [run] }
 
+test('worker outage requires the matching observed MCP failure', () => {
+  const outage = { version: 'v1', cases: [{ id: 'a', split: 'dev', category: 'tool-failure',
+    input: { scenario: 'worker-unavailable' }, expected: { status: 'failed', maxWrites: 0 } }] }
+  const actual = { ...run, status: 'failed', writes: 0 }
+  for (const toolErrors of [undefined, ['MCP_NETWORK_FAILURE'], 'MCP_REMOTE_BUSINESS_FAILURE']) {
+    assert.deepEqual(score(outage, { ...evidence, runs: [{ ...actual, toolErrors }] }, 'dev', 'digest')
+      .results[0].errors, ['missing-tool-error'])
+  }
+  assert.equal(score(outage, { ...evidence, runs: [{ ...actual,
+    toolErrors: ['MCP_REMOTE_BUSINESS_FAILURE'] }] }, 'dev', 'digest').passed, 1)
+})
+
 test('successful text does not hide an unexpected source or write', () => {
   const report = score(dataset, evidence, 'dev', 'digest')
   assert.equal(report.passed, 0)

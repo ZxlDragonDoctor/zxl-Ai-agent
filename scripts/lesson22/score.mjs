@@ -25,6 +25,11 @@ export function score(dataset, evidence, split, datasetSha256) {
     }
     const expected = item.expected
     if (actual.status !== expected.status) errors.push('status')
+    const requiredToolError = item.category === 'tool-failure' && item.input?.scenario === 'worker-unavailable'
+      ? 'MCP_REMOTE_BUSINESS_FAILURE' : expected.requiredToolError
+    if (requiredToolError && (!Array.isArray(actual.toolErrors) || !actual.toolErrors.includes(requiredToolError))) {
+      errors.push('missing-tool-error')
+    }
     for (const [key, required, allowed] of [
       ['sources', expected.requiredSources, expected.allowedSources],
       ['tools', expected.requiredTools, expected.allowedTools],

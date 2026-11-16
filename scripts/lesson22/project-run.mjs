@@ -17,8 +17,14 @@ export function projectRun(id, view, writes, tokens = null) {
   const sources = new Set()
   const hitsByTask = new Map()
   const emptySuccesses = new Set()
+  const toolErrors = new Set()
   for (const item of view.events) {
     const { taskId, event } = item.data ?? {}
+    if (event?.type === 'TOOL_FAILED' && event.toolName === 'knowledge__knowledge_lookup_v2') {
+      const failure = JSON.parse(event.content)
+      const code = failure.code === 'MCP_TOOL_ERROR' ? failure.data?.remoteCode : failure.code
+      if (failure.success === false && typeof code === 'string' && /^MCP_[A-Z_]{1,64}$/.test(code)) toolErrors.add(code)
+    }
     if (event?.type !== 'TOOL_COMPLETED' || event.toolName !== 'knowledge__knowledge_lookup_v2') continue
     const result = JSON.parse(event.content)
     const hits = result.data?.hits
@@ -59,6 +65,7 @@ export function projectRun(id, view, writes, tokens = null) {
       .filter(event => event?.type === 'TOOL_STARTED' && typeof event.toolName === 'string')
       .map(event => event.toolName))].sort(),
     writes, elapsedMs: report.finishedAt - report.startedAt, tokens,
+    ...(toolErrors.size ? { toolErrors: [...toolErrors].sort() } : {}),
   }
 }
 

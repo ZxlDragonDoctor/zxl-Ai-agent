@@ -12,7 +12,7 @@ export async function runCases(cases, {
   if (!['original', 'research-directed'].includes(promptMode)) throw new Error('Unknown prompt mode')
   const runs = []
   for (const item of cases) {
-    const goal = promptMode === 'research-directed' && ['grounding', 'abstention'].includes(item.category)
+    const goal = promptMode === 'research-directed' && ['grounding', 'abstention', 'tool-failure'].includes(item.category)
       ? 'Use one research task to look up the following employee knowledge question.\n' + item.input.prompt
       : item.input.prompt
     const { executionId } = await submit(goal, item.input.budgetMs)
@@ -49,8 +49,10 @@ async function main() {
   const cases = ids.map(id => dataset.cases.find(item => item.id === id && item.split === split))
   if (new Set(ids).size !== ids.length || cases.some(item => !item || item.input.persona !== 'employee'
       || !(item.category === 'grounding' || (item.category === 'budget' && item.input.scenario === 'model-wait')
-        || (item.category === 'abstention' && item.input.scenario === 'no-result' && /^lesson22-/.test(tenant))))) {
-    throw new Error('Select grounding, model-wait or an abstention case in a dedicated lesson22 tenant')
+        || (item.category === 'abstention' && item.input.scenario === 'no-result' && /^lesson22-/.test(tenant))
+        || (item.category === 'tool-failure' && item.input.scenario === 'worker-unavailable'
+          && env.LESSON22_SCENARIO === 'worker-unavailable' && /^lesson22-/.test(tenant))))) {
+    throw new Error('Choose a supported case and the matching dedicated fixture')
   }
   const request = await formalSession(base.origin, tenant, env.LESSON22_LOGIN, env.LESSON22_PASSWORD, 'employee')
   function countWrites(report) {
