@@ -57,3 +57,5 @@ node scripts/lesson22/run-formal.mjs docs/learning/examples/lesson22-cases.json 
 真实开发集验收覆盖两道引用题。会议室显示设备题引用了指定的 `meeting-display`，费用报销题在工具调用前失败。两次工单写入均为零。 [报告与截图](../images/lesson22-grounding-2026-11-15/README.md)
 
 引用组累计实测 5 题，4 题通过。账户恢复、设备归还和无障碍协助三题均使用单文档租户通过，费用报销题保留为实测失败。账号可用 `scripts/lesson22/Lesson22GroundingSeed.java` 离线建立，运行时需要应用类路径及数据库环境变量，密码从采集脚本使用的环境变量读取。 [开发集与保留集报告](../images/lesson22-grounding-2026-11-16/README.md)
+
+Worker 未启动时，正式 MCP 仍接收真实模型选定的知识调用。评分除了检查失败终态和工具已启动，还要求从失败工具事件中提取 `MCP_REMOTE_BUSINESS_FAILURE`，以区分调用前的模型失败。采集时设置 `LESSON22_SCENARIO=worker-unavailable` 并使用独立测试租户与专用服务。 [故障报告与截图](../images/lesson22-worker-fault-2026-11-16/README.md)

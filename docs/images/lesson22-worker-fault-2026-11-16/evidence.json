@@ -1,0 +1,24 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson22-fault-v1",
+  "variant": "worker-absent",
+  "promptMode": "research-directed",
+  "runs": [
+    {
+      "id": "tool-failure-1",
+      "runId": "847d319e-0e2a-4e80-8485-c133cfda050d",
+      "status": "failed",
+      "sources": [],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "writes": 0,
+      "elapsedMs": 23320,
+      "tokens": null,
+      "toolErrors": [
+        "MCP_REMOTE_BUSINESS_FAILURE"
+      ]
+    }
+  ]
+}
