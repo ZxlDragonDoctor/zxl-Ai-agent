@@ -1,0 +1,37 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson22-grounding-v1",
+  "variant": "research-directed",
+  "promptMode": "research-directed",
+  "runs": [
+    {
+      "id": "grounding-4",
+      "runId": "d727ef4e-2696-4ce4-b1e1-6c6c9d68db8c",
+      "status": "completed",
+      "sources": [
+        "equipment-return"
+      ],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "writes": 0,
+      "elapsedMs": 36154,
+      "tokens": null
+    },
+    {
+      "id": "grounding-5",
+      "runId": "4be4fc8f-a952-4c2d-a93d-7af6245cffb3",
+      "status": "completed",
+      "sources": [
+        "accessibility-guide"
+      ],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "writes": 0,
+      "elapsedMs": 32216,
+      "tokens": null
+    }
+  ]
+}

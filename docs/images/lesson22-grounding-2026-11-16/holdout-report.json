@@ -1,0 +1,99 @@
+{
+  "datasetVersion": "lesson22.v1",
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "split": "holdout",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson22-grounding-v1",
+  "variant": "research-directed",
+  "promptMode": "research-directed",
+  "total": 12,
+  "passed": 2,
+  "results": [
+    {
+      "id": "grounding-4",
+      "category": "grounding",
+      "runId": "d727ef4e-2696-4ce4-b1e1-6c6c9d68db8c",
+      "errors": [],
+      "elapsedMs": 36154,
+      "tokens": null
+    },
+    {
+      "id": "grounding-5",
+      "category": "grounding",
+      "runId": "4be4fc8f-a952-4c2d-a93d-7af6245cffb3",
+      "errors": [],
+      "elapsedMs": 32216,
+      "tokens": null
+    },
+    {
+      "id": "abstention-4",
+      "category": "abstention",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "abstention-5",
+      "category": "abstention",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "authorization-4",
+      "category": "authorization",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "authorization-5",
+      "category": "authorization",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "tool-failure-4",
+      "category": "tool-failure",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "tool-failure-5",
+      "category": "tool-failure",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "approval-4",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "approval-5",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "budget-4",
+      "category": "budget",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "budget-5",
+      "category": "budget",
+      "errors": [
+        "missing-evidence"
+      ]
+    }
+  ]
+}
