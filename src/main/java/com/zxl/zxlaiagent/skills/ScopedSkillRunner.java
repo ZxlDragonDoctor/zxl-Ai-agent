@@ -45,11 +45,9 @@ public final class ScopedSkillRunner {
         if(!admission.tryAcquire())return trace.finish(snapshot,SkillRunner.Status.CAPACITY,"当前执行容量已满，请稍后重试。 / Skill capacity reached.",null,"SKILL_CAPACITY");
         try{
             boundary.check(Phase.DEQUEUE);trace.running("CLARIFY");
-            boolean product=java.util.regex.Pattern.compile("(?i)vpn|sso|邮箱|email|mail|网络|network|客户端|client|登录|login|权限|permission|office|打印|printer").matcher(question).find();
-            boolean code=java.util.regex.Pattern.compile("(?i)(?<![a-z0-9])[a-z]{0,8}[-_ ]?\\d{2,6}(?![a-z0-9])").matcher(question).find();
-            if(!product||!code){
+            if(!SkillInput.ready(question)){
                 trace.complete("CLARIFY","NEEDS_INPUT","SKILL_ERROR_CODE_REQUIRED");
-                return trace.finish(snapshot,SkillRunner.Status.NEEDS_INPUT,"请补充产品、错误码及现象，例如 VPN 401；尚未查询知识或创建工单。 / Provide product, error code and symptoms; no lookup or ticket created.",null,"SKILL_ERROR_CODE_REQUIRED");
+                return trace.finish(snapshot,SkillRunner.Status.NEEDS_INPUT,SkillInput.CLARIFICATION,null,"SKILL_ERROR_CODE_REQUIRED");
             }
             trace.complete("CLARIFY","SUCCEEDED","OK");trace.running("LOOKUP");check(end,cancelled);boundary.check(Phase.DISCOVERY);
             var runner=research.create(actor,runId,additional);
