@@ -59,3 +59,5 @@ node scripts/lesson22/run-formal.mjs docs/learning/examples/lesson22-cases.json 
 引用组累计实测 5 题，4 题通过。账户恢复、设备归还和无障碍协助三题均使用单文档租户通过，费用报销题保留为实测失败。账号可用 `scripts/lesson22/Lesson22GroundingSeed.java` 离线建立，运行时需要应用类路径及数据库环境变量，密码从采集脚本使用的环境变量读取。 [开发集与保留集报告](../images/lesson22-grounding-2026-11-16/README.md)
 
 Worker 未启动时，正式 MCP 仍接收真实模型选定的知识调用。评分除了检查失败终态和工具已启动，还要求从失败工具事件中提取 `MCP_REMOTE_BUSINESS_FAILURE`，以区分调用前的模型失败。采集时设置 `LESSON22_SCENARIO=worker-unavailable` 并使用独立测试租户与专用服务。 [故障报告与截图](../images/lesson22-worker-fault-2026-11-16/README.md)
+
+审批评分从提交草稿阶段开始。使用 `node scripts/lesson22/project-approval.mjs dataset.json approval-1 observation.json model fixture-v1 current` 将观察结果转成评分证据。观察文件包含提案 API 响应、运行 ID、提交耗时和 PostgreSQL 实测行。数据库行须包含 proposalId、outcome、version、reviewerAbsent 和实际回执数 writes。草稿阶段的模型与检索证据单独记录。 [本批验收进度](../images/lesson22-approval-2026-11-16/README.md)
