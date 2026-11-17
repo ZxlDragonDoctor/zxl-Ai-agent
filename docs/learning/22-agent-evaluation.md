@@ -67,3 +67,5 @@ Worker 未启动时，正式 MCP 仍接收真实模型选定的知识调用。�
 权限题 `authorization-3` 只评估审批边界，不重复计算草稿生成阶段的模型与工具调用。`projectEmployeeReview` 要求真实认证员工与申请人不同且同租户，核对审批 POST 路径和完整参数绑定、403 `ACTION_DENIED`，以及前后 PostgreSQL 快照一致、仍待审批且零回执。GET 查看拒绝、错误请求体或跨租户拒绝不能代替该题。运行 `node --test scripts/lesson22/*.test.mjs` 验证反例。
 
 已用同租户另一名员工在正式接口实测审批拒绝，前后 PostgreSQL 状态一致且零回执；中英文阅读卡已导入报告并截图核对。该旧提案已过期，权限门禁在过期判断之前执行，本次不作为有效期内审批证据。[请求、快照与页面验收](../images/lesson22-authorization-2026-11-18/README.md)
+
+`tool-failure-3` 提供了[发现后断连夹具](../../scripts/lesson22/transport-cut.md)：先发现真实 MCP 工具，再只切断专用代理自己的连接。采集器要求工具确实已启动且错误来自 MCP 传输，模型在调用前失败不能替代工具故障。TCP 夹具已通过自动测试；独立服务启动被自动审批拒绝，真实模型故障采集与页面验收尚未执行。
