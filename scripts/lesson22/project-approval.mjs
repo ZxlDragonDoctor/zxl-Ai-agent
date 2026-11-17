@@ -1,3 +1,23 @@
+/** authorization-3 evaluates the review boundary, separately from draft generation. */
+export function projectEmployeeReview(observation) {
+  const { before, after, actorId, tenantId, role, response, request, method, path, runId, elapsedMs } = observation
+  const fields = ['tenantId', 'proposalId', 'requesterId', 'operationId', 'fingerprint', 'outcome', 'version', 'reviewerAbsent', 'writes']
+  if (!before || !after || fields.some(key => before[key] === undefined || before[key] !== after[key])
+      || !before.proposalId || !before.requesterId || !before.operationId || !/^[a-f0-9]{64}$/.test(before.fingerprint)
+      || before.outcome !== 'PENDING' || before.version !== 1 || before.reviewerAbsent !== true
+      || before.writes !== 0 || !actorId || actorId === before.requesterId || role !== 'employee'
+      || !tenantId || tenantId !== before.tenantId || method !== 'POST'
+      || path !== '/ai/learning/ticket-approvals/' + before.proposalId + '/review'
+      || request?.decision !== 'APPROVED' || request.version !== before.version
+      || request.operationId !== before.operationId || request.fingerprint !== before.fingerprint
+      || response?.status !== 403 || response.code !== 'ACTION_DENIED'
+      || !runId || !Number.isFinite(elapsedMs) || elapsedMs < 0) {
+    throw new Error('Verified employee denial and unchanged PostgreSQL snapshots required')
+  }
+  return { id: 'authorization-3', runId, proposalId: before.proposalId, status: 'denied',
+    sources: [], tools: [], writes: after.writes, elapsedMs, tokens: null }
+}
+
 export function projectApproval(id, observation) {
   const { response, row, runId, elapsedMs } = observation
   if (!row || !response || response.proposalId !== row.proposalId || !runId

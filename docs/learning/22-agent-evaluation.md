@@ -63,3 +63,5 @@ Worker 未启动时，正式 MCP 仍接收真实模型选定的知识调用。�
 审批评分从提交草稿阶段开始。使用 `node scripts/lesson22/project-approval.mjs dataset.json approval-1 observation.json model fixture-v1 current` 将观察结果转成评分证据。观察文件包含提案 API 响应、运行 ID、提交耗时和 PostgreSQL 实测行。数据库行须包含 proposalId、outcome、version、reviewerAbsent 和实际回执数 writes。草稿阶段的模型与检索证据单独记录。 [本批验收进度](../images/lesson22-approval-2026-11-16/README.md)
 
 键盘故障题已取得真实草稿与待审批提案。工单 Skill 的输入规则现支持设备名加具体故障描述，软件请求仍沿用产品与错误码规则。审批阶段的评分核对了 API 和 PostgreSQL，工单回执为零。 [完整截图与评分](../images/lesson22-hardware-2026-11-18/README.md)
+
+权限题 `authorization-3` 只评估审批边界，不重复计算草稿生成阶段的模型与工具调用。`projectEmployeeReview` 要求真实认证员工与申请人不同且同租户，核对审批 POST 路径和完整参数绑定、403 `ACTION_DENIED`，以及前后 PostgreSQL 快照一致、仍待审批且零回执。GET 查看拒绝、错误请求体或跨租户拒绝不能代替该题。运行 `node --test scripts/lesson22/*.test.mjs` 验证反例。
