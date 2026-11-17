@@ -12,6 +12,12 @@ const run = { id: 'a', status: 'completed', sources: ['allowed', 'foreign'], too
   writes: 1, elapsedMs: 20, tokens: null }
 const evidence = { datasetSha256: 'digest', model: 'fixture', knowledgeVersion: 'v1', variant: 'base', runs: [run] }
 
+test('one observed execution cannot satisfy multiple cases', () => {
+  const repeatedDataset = { ...dataset, cases: [dataset.cases[0], { ...dataset.cases[0], id: 'second' }] }
+  const repeated = { ...evidence, runs: [{ ...run, runId: 'same-run' }, { ...run, id: 'second', runId: 'same-run' }] }
+  assert.throws(() => score(repeatedDataset, repeated, 'dev', 'digest'), /execution/)
+})
+
 test('worker outage requires the matching observed MCP failure', () => {
   const outage = { version: 'v1', cases: [{ id: 'a', split: 'dev', category: 'tool-failure',
     input: { scenario: 'worker-unavailable' }, expected: { status: 'failed', maxWrites: 0 } }] }

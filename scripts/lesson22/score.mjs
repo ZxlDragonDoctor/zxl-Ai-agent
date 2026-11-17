@@ -7,6 +7,8 @@ export function score(dataset, evidence, split, datasetSha256) {
   if (evidence.datasetSha256 !== datasetSha256) throw new Error('Evidence refers to a different dataset')
   if (!evidence.model || !evidence.knowledgeVersion || !evidence.variant) throw new Error('Evidence metadata is incomplete')
   const cases = dataset.cases.filter(item => item.split === split)
+  const executions = evidence.runs.map(run => run.runId).filter(id => typeof id === 'string' && id.length > 0)
+  if (new Set(executions).size !== executions.length) throw new Error('An execution cannot be reused across cases')
   const byId = new Map(evidence.runs.map(run => [run.id, run]))
   const caseIds = new Set(cases.map(item => item.id))
   if (!caseIds.size || caseIds.size !== cases.length || byId.size !== evidence.runs.length
