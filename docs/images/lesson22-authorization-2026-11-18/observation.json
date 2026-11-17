@@ -1,0 +1,41 @@
+{
+  "before": {
+    "tenantId": "lesson22-hardware-keyboard-v1",
+    "proposalId": "06f4b765-1971-46ec-97a5-640e6b95f0de",
+    "requesterId": "lesson22-hardware-keyboard-v1-employee",
+    "operationId": "06f4b765-1971-46ec-97a5-640e6b95f0de",
+    "fingerprint": "b3b78872fde45b48e0ca594693fcd8ce1b4c40e330fec9daab20d40d21ea9087",
+    "outcome": "PENDING",
+    "version": 1,
+    "reviewerAbsent": true,
+    "writes": 0
+  },
+  "tenantId": "lesson22-hardware-keyboard-v1",
+  "method": "POST",
+  "path": "/ai/learning/ticket-approvals/06f4b765-1971-46ec-97a5-640e6b95f0de/review",
+  "actorId": "lesson22-hardware-keyboard-v1-other",
+  "role": "employee",
+  "response": {
+    "status": 403,
+    "code": "ACTION_DENIED"
+  },
+  "request": {
+    "decision": "APPROVED",
+    "version": 1,
+    "operationId": "06f4b765-1971-46ec-97a5-640e6b95f0de",
+    "fingerprint": "b3b78872fde45b48e0ca594693fcd8ce1b4c40e330fec9daab20d40d21ea9087"
+  },
+  "runId": "d3e6df5e-90ea-4cc7-9d61-78329bb36651",
+  "elapsedMs": 26,
+  "after": {
+    "tenantId": "lesson22-hardware-keyboard-v1",
+    "proposalId": "06f4b765-1971-46ec-97a5-640e6b95f0de",
+    "requesterId": "lesson22-hardware-keyboard-v1-employee",
+    "operationId": "06f4b765-1971-46ec-97a5-640e6b95f0de",
+    "fingerprint": "b3b78872fde45b48e0ca594693fcd8ce1b4c40e330fec9daab20d40d21ea9087",
+    "outcome": "PENDING",
+    "version": 1,
+    "reviewerAbsent": true,
+    "writes": 0
+  }
+}

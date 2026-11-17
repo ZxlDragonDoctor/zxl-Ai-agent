@@ -1,0 +1,19 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson22-keyboard-v1",
+  "variant": "employee-review-stage",
+  "runs": [
+    {
+      "id": "authorization-3",
+      "runId": "d3e6df5e-90ea-4cc7-9d61-78329bb36651",
+      "proposalId": "06f4b765-1971-46ec-97a5-640e6b95f0de",
+      "status": "denied",
+      "sources": [],
+      "tools": [],
+      "writes": 0,
+      "elapsedMs": 26,
+      "tokens": null
+    }
+  ]
+}
