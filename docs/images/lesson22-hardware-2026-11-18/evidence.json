@@ -1,0 +1,19 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson22-keyboard-v1",
+  "variant": "proposal-stage",
+  "runs": [
+    {
+      "id": "approval-1",
+      "runId": "06f4b765-1971-46ec-97a5-640e6b95f0de",
+      "proposalId": "06f4b765-1971-46ec-97a5-640e6b95f0de",
+      "status": "pending_approval",
+      "sources": [],
+      "tools": [],
+      "writes": 0,
+      "elapsedMs": 303,
+      "tokens": null
+    }
+  ]
+}

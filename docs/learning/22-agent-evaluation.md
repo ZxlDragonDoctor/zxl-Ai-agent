@@ -61,3 +61,5 @@ node scripts/lesson22/run-formal.mjs docs/learning/examples/lesson22-cases.json 
 Worker 未启动时，正式 MCP 仍接收真实模型选定的知识调用。评分除了检查失败终态和工具已启动，还要求从失败工具事件中提取 `MCP_REMOTE_BUSINESS_FAILURE`，以区分调用前的模型失败。采集时设置 `LESSON22_SCENARIO=worker-unavailable` 并使用独立测试租户与专用服务。 [故障报告与截图](../images/lesson22-worker-fault-2026-11-16/README.md)
 
 审批评分从提交草稿阶段开始。使用 `node scripts/lesson22/project-approval.mjs dataset.json approval-1 observation.json model fixture-v1 current` 将观察结果转成评分证据。观察文件包含提案 API 响应、运行 ID、提交耗时和 PostgreSQL 实测行。数据库行须包含 proposalId、outcome、version、reviewerAbsent 和实际回执数 writes。草稿阶段的模型与检索证据单独记录。 [本批验收进度](../images/lesson22-approval-2026-11-16/README.md)
+
+键盘故障题已取得真实草稿与待审批提案。工单 Skill 的输入规则现支持设备名加具体故障描述，软件请求仍沿用产品与错误码规则。审批阶段的评分核对了 API 和 PostgreSQL，工单回执为零。 [完整截图与评分](../images/lesson22-hardware-2026-11-18/README.md)
