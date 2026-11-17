@@ -1,0 +1,98 @@
+{
+  "datasetVersion": "lesson22.v1",
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "split": "holdout",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson22-access-v1",
+  "variant": "access-boundary",
+  "total": 12,
+  "passed": 2,
+  "results": [
+    {
+      "id": "grounding-4",
+      "category": "grounding",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "grounding-5",
+      "category": "grounding",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "abstention-4",
+      "category": "abstention",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "abstention-5",
+      "category": "abstention",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "authorization-4",
+      "category": "authorization",
+      "runId": "8527cdb9-5b1e-42e4-9005-0483e5e250f0",
+      "errors": [],
+      "elapsedMs": 226,
+      "tokens": null
+    },
+    {
+      "id": "authorization-5",
+      "category": "authorization",
+      "runId": "34699cb5-32a0-4ce7-b0d6-bb6c61a7488f",
+      "errors": [],
+      "elapsedMs": 270,
+      "tokens": null
+    },
+    {
+      "id": "tool-failure-4",
+      "category": "tool-failure",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "tool-failure-5",
+      "category": "tool-failure",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "approval-4",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "approval-5",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "budget-4",
+      "category": "budget",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "budget-5",
+      "category": "budget",
+      "errors": [
+        "missing-evidence"
+      ]
+    }
+  ]
+}

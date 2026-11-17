@@ -1,0 +1,28 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson22-access-v1",
+  "variant": "access-boundary",
+  "runs": [
+    {
+      "id": "authorization-2",
+      "runId": "3a8dba75-4627-4373-9c79-cb109095c6db",
+      "status": "denied",
+      "sources": [],
+      "tools": [],
+      "writes": 0,
+      "elapsedMs": 211,
+      "tokens": null
+    },
+    {
+      "id": "authorization-1",
+      "runId": "688784d5-bc57-49a1-a792-18544d9f99ac",
+      "status": "denied",
+      "sources": [],
+      "tools": [],
+      "writes": 0,
+      "elapsedMs": 477,
+      "tokens": null
+    }
+  ]
+}

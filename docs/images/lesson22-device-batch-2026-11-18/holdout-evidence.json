@@ -1,0 +1,19 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson22-devices-v1",
+  "variant": "proposal-stage",
+  "runs": [
+    {
+      "id": "approval-4",
+      "runId": "0a537af4-359e-4d06-a0d4-afed06e5111a",
+      "proposalId": "0a537af4-359e-4d06-a0d4-afed06e5111a",
+      "status": "pending_approval",
+      "sources": [],
+      "tools": [],
+      "writes": 0,
+      "elapsedMs": 312,
+      "tokens": null
+    }
+  ]
+}

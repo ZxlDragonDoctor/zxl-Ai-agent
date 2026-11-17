@@ -1,0 +1,112 @@
+[
+  {
+    "id": "authorization-2",
+    "runId": "3a8dba75-4627-4373-9c79-cb109095c6db",
+    "elapsedMs": 211,
+    "beforeWrites": 0,
+    "afterWrites": 0,
+    "method": "GET",
+    "hasResourceBody": false,
+    "writes": 0,
+    "owner": {
+      "subjectId": "lesson22-access-nov18-v2-owner",
+      "tenantId": "lesson22-access-nov18-v2",
+      "loginName": "lesson22-access-nov18-v2-owner",
+      "role": "employee"
+    },
+    "actor": {
+      "subjectId": "lesson22-access-nov18-v2-other",
+      "tenantId": "lesson22-access-nov18-v2",
+      "loginName": "lesson22-access-nov18-v2-other",
+      "role": "employee"
+    },
+    "resourceId": "802eea71-8563-40a4-8d20-94422da3cd27",
+    "requestedId": "802eea71-8563-40a4-8d20-94422da3cd27",
+    "path": "/conversations/802eea71-8563-40a4-8d20-94422da3cd27",
+    "ownerRead": 200,
+    "response": {
+      "status": 404,
+      "code": "NOT_FOUND"
+    }
+  },
+  {
+    "id": "authorization-1",
+    "runId": "688784d5-bc57-49a1-a792-18544d9f99ac",
+    "elapsedMs": 477,
+    "beforeWrites": 0,
+    "afterWrites": 0,
+    "method": "GET",
+    "hasResourceBody": false,
+    "writes": 0,
+    "owner": {
+      "subjectId": "lesson22-access-nov18-v2-owner",
+      "tenantId": "lesson22-access-nov18-v2",
+      "loginName": "lesson22-access-nov18-v2-owner",
+      "role": "employee"
+    },
+    "actor": {
+      "subjectId": "lesson22-access-nov18-v2-foreign",
+      "tenantId": "lesson22-access-nov18-v2-foreign",
+      "loginName": "lesson22-access-nov18-v2-foreign",
+      "role": "employee"
+    },
+    "resourceId": "procurement-private",
+    "requestedId": "procurement-private",
+    "path": "/ai/learning/knowledge/documents/procurement-private",
+    "ownerRead": 200,
+    "response": {
+      "status": 404,
+      "code": "NOT_FOUND"
+    }
+  },
+  {
+    "id": "authorization-4",
+    "runId": "8527cdb9-5b1e-42e4-9005-0483e5e250f0",
+    "elapsedMs": 226,
+    "beforeWrites": 0,
+    "afterWrites": 0,
+    "method": "GET",
+    "hasResourceBody": false,
+    "writes": 0,
+    "actor": {
+      "subjectId": "lesson22-access-nov18-v2-revoked",
+      "tenantId": "lesson22-access-nov18-v2",
+      "loginName": "lesson22-access-nov18-v2-revoked",
+      "role": "employee"
+    },
+    "path": "/ai/learning/knowledge/documents",
+    "priorRead": 200,
+    "authorityChanged": true,
+    "sameSessionReplay": true,
+    "response": {
+      "status": 401,
+      "code": "UNAUTHENTICATED"
+    }
+  },
+  {
+    "id": "authorization-5",
+    "runId": "34699cb5-32a0-4ce7-b0d6-bb6c61a7488f",
+    "method": "GET",
+    "actor": {
+      "subjectId": "lesson22-access-nov18-archive",
+      "tenantId": "lesson22-access-nov18",
+      "loginName": "lesson22-access-nov18-archive",
+      "role": "employee"
+    },
+    "path": "/conversations/15a942a7-8b3e-4584-9649-0bbe3feaa2da",
+    "archiveId": "15a942a7-8b3e-4584-9649-0bbe3feaa2da",
+    "readOnly": true,
+    "priorRead": 200,
+    "authorityChanged": true,
+    "sameSessionReplay": true,
+    "hasResourceBody": false,
+    "response": {
+      "status": 401,
+      "code": "UNAUTHENTICATED"
+    },
+    "beforeWrites": 0,
+    "afterWrites": 0,
+    "writes": 0,
+    "elapsedMs": 270
+  }
+]

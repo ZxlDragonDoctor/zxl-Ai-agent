@@ -1,0 +1,35 @@
+[
+  {
+    "id": "approval-2",
+    "error": "Draft submission button did not become available within 75 seconds; see the actual failure screenshot."
+  },
+  {
+    "id": "approval-3",
+    "error": "Draft submission button did not become available within 75 seconds; see the actual failure screenshot."
+  },
+  {
+    "id": "approval-4",
+    "tenant": "lesson22-devices-v1",
+    "proposalId": "0a537af4-359e-4d06-a0d4-afed06e5111a",
+    "runId": "0a537af4-359e-4d06-a0d4-afed06e5111a",
+    "response": {
+      "proposalId": "0a537af4-359e-4d06-a0d4-afed06e5111a",
+      "outcome": "PENDING",
+      "expiresAt": "2026-11-17T16:49:46.027Z"
+    },
+    "elapsedMs": 312,
+    "originalPrompt": "Draft a ticket for a missing access badge.",
+    "row": {
+      "proposalId": "0a537af4-359e-4d06-a0d4-afed06e5111a",
+      "title": "Draft a ticket for a missing access badge.",
+      "outcome": "PENDING",
+      "version": 1,
+      "reviewerAbsent": true,
+      "writes": 0
+    }
+  },
+  {
+    "id": "approval-5",
+    "error": "Stale previous-case capture rejected; fresh isolated conversation showed execution error and no draft."
+  }
+]
