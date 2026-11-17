@@ -43,13 +43,17 @@ public final class RetrievalService {
         long started=System.nanoTime(); var deadline=new RetrievalDeadline(request.budgetMs());
         List<Stage> stages=new ArrayList<>(); List<String> degradations=new ArrayList<>();
         long profileStarted=System.nanoTime();
-        profileReady(deadline);
+        boolean activeIndex=profileReady(deadline);
         stages.add(stage("index-profile","OK",profileStarted,0));
         String rewritten=request.rewrite()?QueryTerms.supplement(request.query()):null;
         stages.add(new Stage("rewrite",request.rewrite()?(rewritten==null?"UNCHANGED":"DETERMINISTIC_LEXICAL_SUPPLEMENT"):"DISABLED",0,0));
         String lexical=rewritten==null?request.query():rewritten;
         List<Hit> vector=List.of(), keyword=List.of(); int successful=0;
-        if (!"keyword".equals(request.mode())) {
+        if (!"keyword".equals(request.mode()) && !activeIndex) {
+            // PostgreSQL observed no active documents in this tenant. No remote vector
+            // query can contribute candidates; this is not an embedding failure fallback.
+            stages.add(new Stage("vector","SKIPPED_EMPTY_INDEX",0,0)); successful++;
+        } else if (!"keyword".equals(request.mode())) {
             long phase=System.nanoTime();
             try {
                 vector=boundedVector(request,deadline); successful++;
@@ -152,12 +156,12 @@ public final class RetrievalService {
             throw new IllegalArgumentException("query 1..2000, mode vector|keyword|hybrid, topK 1..5, candidateLimit topK..20, budgetMs 100..10000");
     }
     private static final String ACTIVE=" FROM knowledge_chunk k JOIN knowledge_document d ON d.tenant_id=k.tenant_id AND d.document_id=k.document_id AND d.active_revision=k.revision_id JOIN knowledge_revision r ON r.tenant_id=k.tenant_id AND r.document_id=k.document_id AND r.revision_id=k.revision_id WHERE k.tenant_id=? AND k.model_identity=? AND k.dimensions=? AND r.model_identity=k.model_identity AND r.state='ACTIVE' AND d.status='ACTIVE' ";
-    private void profileReady(RetrievalDeadline deadline) {
-        db.tx(boundary,Phase.EVIDENCE_READ,deadline.remaining(),connection->{
+    private boolean profileReady(RetrievalDeadline deadline) {
+        return db.tx(boundary,Phase.EVIDENCE_READ,deadline.remaining(),connection->{
             try(var statement=connection.prepareStatement("SELECT EXISTS(SELECT 1 FROM knowledge_document WHERE tenant_id=? AND status='ACTIVE'), EXISTS(SELECT 1"+ACTIVE+")")){
                 statement.setString(1,tenant);scope(statement,2);
-                try(var row=statement.executeQuery()){row.next();if(row.getBoolean(1)&&!row.getBoolean(2))throw new Failure("NO_COMPATIBLE_INDEX_PROFILE");}
-            }return null;
+                try(var row=statement.executeQuery()){row.next();boolean active=row.getBoolean(1);if(active&&!row.getBoolean(2))throw new Failure("NO_COMPATIBLE_INDEX_PROFILE");return active;}
+            }
         });
     }
     private List<Hit> vector(String literal,int limit,RetrievalDeadline deadline) {

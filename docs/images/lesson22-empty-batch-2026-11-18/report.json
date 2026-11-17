@@ -1,0 +1,146 @@
+{
+  "datasetVersion": "lesson22.v1",
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "split": "dev",
+  "model": "qwen-plus",
+  "knowledgeVersion": "empty-v2",
+  "variant": "research-directed",
+  "promptMode": "research-directed",
+  "total": 18,
+  "passed": 0,
+  "results": [
+    {
+      "id": "grounding-1",
+      "category": "grounding",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "grounding-2",
+      "category": "grounding",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "grounding-3",
+      "category": "grounding",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "abstention-1",
+      "category": "abstention",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "abstention-2",
+      "category": "abstention",
+      "runId": "39bd2f7c-b225-4c0a-afcb-14609c43b79c",
+      "errors": [
+        "status",
+        "missing-tools"
+      ],
+      "elapsedMs": 19551,
+      "tokens": null
+    },
+    {
+      "id": "abstention-3",
+      "category": "abstention",
+      "runId": "6d7adde7-898f-4cac-806f-8df4bb3fddb7",
+      "errors": [
+        "status"
+      ],
+      "elapsedMs": 33793,
+      "tokens": null
+    },
+    {
+      "id": "authorization-1",
+      "category": "authorization",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "authorization-2",
+      "category": "authorization",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "authorization-3",
+      "category": "authorization",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "tool-failure-1",
+      "category": "tool-failure",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "tool-failure-2",
+      "category": "tool-failure",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "tool-failure-3",
+      "category": "tool-failure",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "approval-1",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "approval-2",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "approval-3",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "budget-1",
+      "category": "budget",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "budget-2",
+      "category": "budget",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "budget-3",
+      "category": "budget",
+      "errors": [
+        "missing-evidence"
+      ]
+    }
+  ]
+}

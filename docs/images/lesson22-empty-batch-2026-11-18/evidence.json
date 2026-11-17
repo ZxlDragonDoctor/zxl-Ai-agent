@@ -1,0 +1,31 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "qwen-plus",
+  "knowledgeVersion": "empty-v2",
+  "variant": "research-directed",
+  "promptMode": "research-directed",
+  "runs": [
+    {
+      "id": "abstention-2",
+      "runId": "39bd2f7c-b225-4c0a-afcb-14609c43b79c",
+      "status": "failed",
+      "sources": [],
+      "tools": [],
+      "writes": 0,
+      "elapsedMs": 19551,
+      "tokens": null
+    },
+    {
+      "id": "abstention-3",
+      "runId": "6d7adde7-898f-4cac-806f-8df4bb3fddb7",
+      "status": "completed",
+      "sources": [],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "writes": 0,
+      "elapsedMs": 33793,
+      "tokens": null
+    }
+  ]
+}
