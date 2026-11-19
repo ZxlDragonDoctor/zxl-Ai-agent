@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import bundled from '../../../docs/images/lesson22-live-2026-11-15/report.json'
+import accessDev from '../../../docs/images/lesson22-access-batch-2026-11-18/dev-report.json'
+import accessHoldout from '../../../docs/images/lesson22-access-batch-2026-11-18/holdout-report.json'
+import approvalHoldout from '../../../docs/images/lesson22-device-batch-2026-11-18/holdout-report.json'
+import keyboardApproval from '../../../docs/images/lesson22-hardware-2026-11-18/report.json'
+import emptyDev from '../../../docs/images/lesson22-empty-batch-2026-11-18/report.json'
+import controlledDev from '../../../docs/images/lesson22-controlled-2026-11-19/dev-report.json'
+import controlledHoldout from '../../../docs/images/lesson22-controlled-2026-11-19/holdout-report.json'
 
 defineProps<{ zh: boolean }>()
 
@@ -11,6 +18,16 @@ type Report = { datasetVersion: string; datasetSha256: string; split: string; mo
 const comparison = ref<{ baseline: Report; candidate: Report } | null>(null)
 const singleReport = ref<Report | null>(null)
 const invalid = ref(false)
+const savedId = ref('')
+const savedReports = [
+  { id: 'access-dev', zh: '权限 · 开发集', en: 'Access · Development', report: accessDev },
+  { id: 'access-holdout', zh: '权限 · 保留集', en: 'Access · Holdout', report: accessHoldout },
+  { id: 'keyboard-approval', zh: '键盘草稿 · 待审批', en: 'Keyboard draft · Pending approval', report: keyboardApproval },
+  { id: 'approval-holdout', zh: '门禁卡草稿 · 待审批', en: 'Badge draft · Pending approval', report: approvalHoldout },
+  { id: 'empty-dev', zh: '空库拒答 · 失败记录', en: 'Empty knowledge · Recorded failures', report: emptyDev },
+  { id: 'controlled-dev', zh: '可控机制测试 · 开发集', en: 'Controlled integration · Development', report: controlledDev },
+  { id: 'controlled-holdout', zh: '可控机制测试 · 保留集', en: 'Controlled integration · Holdout', report: controlledHoldout },
+]
 let importVersion = 0
 const pairedRows = computed(() => {
   const reports = comparison.value
@@ -33,12 +50,21 @@ function readReport(value: Partial<Report>): Report {
   return value as Report
 }
 
+function loadSavedReport() {
+  ++importVersion
+  invalid.value = false
+  comparison.value = null
+  const selected = savedReports.find(item => item.id === savedId.value)
+  singleReport.value = selected ? readReport(selected.report) : null
+}
+
 async function importReport(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
   input.value = ''
   const version = ++importVersion
+  savedId.value = ''
   invalid.value = false
   comparison.value = null
   singleReport.value = null
@@ -95,6 +121,14 @@ function rowResult(row: Row, zh: boolean) {
       </li>
     </ul>
     <label>
+      {{ zh ? '已保存的验收报告' : 'Saved acceptance reports' }}
+      <select v-model="savedId" :aria-label="zh ? '已保存的验收报告' : 'Saved acceptance reports'" @change="loadSavedReport">
+        <option value="">{{ zh ? '选择一份报告' : 'Choose a report' }}</option>
+        <option v-for="item in savedReports" :key="item.id" :value="item.id">{{ zh ? item.zh : item.en }}</option>
+      </select>
+    </label>
+    <p v-if="savedId" class="evidence-note">{{ zh ? '历史验收快照；不同场景分开记录，不代表整套课程或当前服务全部通过。权限报告没有新增模型调用。' : 'Historical acceptance snapshots, recorded separately by scenario. They do not certify the entire course or current service. Access checks made no new model calls.' }}</p>
+    <label>
       {{ zh ? '导入评分报告或对照 JSON' : 'Import evaluation report or comparison JSON' }}
       <input type="file" accept=".json,application/json" @change="importReport">
     </label>
@@ -104,6 +138,7 @@ function rowResult(row: Row, zh: boolean) {
         {{ singleReport.variant }} · {{ singleReport.split }} ·
         {{ reportSummary(singleReport, zh) }}
       </p>
+      <p class="evidence-note">{{ zh ? '模型标识 / 知识版本' : 'Model identifier / Knowledge version' }}: {{ singleReport.model }} / {{ singleReport.knowledgeVersion }}</p>
       <ul>
         <li v-for="row in singleReport.results" :key="row.id">
           <code>{{ row.id }}</code> · {{ rowResult(row, zh) }}
@@ -131,5 +166,7 @@ h3, p { margin: 0 0 8px; }
 ul { margin: 0 0 10px; padding-left: 18px; overflow-wrap: anywhere; }
 label { display: block; font-weight: 600; }
 input { display: block; margin: 6px 0 10px; max-width: 100%; }
+select { display: block; width: 100%; margin: 6px 0 10px; padding: 8px; border: 1px solid #b9cbdc; border-radius: 6px; color: inherit; background: #fff; font: inherit; }
+.evidence-note { font-size: 12px; line-height: 1.6; color: #52697e; }
 [role="alert"] { color: #992b25; }
 </style>
