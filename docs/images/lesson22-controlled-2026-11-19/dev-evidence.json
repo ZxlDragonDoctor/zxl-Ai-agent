@@ -1,0 +1,35 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "controlled-java-fixture",
+  "knowledgeVersion": "controlled-stage-fixture-v1",
+  "variant": "controlled-phases-and-faults",
+  "runs": [
+    {
+      "id": "budget-3",
+      "runId": "f1a0f5d1-0a0f-4a19-b766-92606ad87f82",
+      "status": "timeout",
+      "sources": [],
+      "tools": [],
+      "writes": 0,
+      "elapsedMs": 15,
+      "tokens": null,
+      "reachedPhase": "worker-queue",
+      "cleanupConfirmed": true
+    },
+    {
+      "id": "tool-failure-3",
+      "status": "failed",
+      "sources": [],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "toolErrors": [
+        "MCP_NETWORK_FAILURE"
+      ],
+      "faultScenario": "mcp-unavailable",
+      "writes": 0,
+      "elapsedMs": 563,
+      "tokens": null
+    }
+  ]
+}

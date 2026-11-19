@@ -1,0 +1,140 @@
+{
+  "datasetVersion": "lesson22.v1",
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "split": "dev",
+  "model": "controlled-java-fixture",
+  "knowledgeVersion": "controlled-stage-fixture-v1",
+  "variant": "controlled-phases-and-faults",
+  "total": 18,
+  "passed": 2,
+  "results": [
+    {
+      "id": "grounding-1",
+      "category": "grounding",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "grounding-2",
+      "category": "grounding",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "grounding-3",
+      "category": "grounding",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "abstention-1",
+      "category": "abstention",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "abstention-2",
+      "category": "abstention",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "abstention-3",
+      "category": "abstention",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "authorization-1",
+      "category": "authorization",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "authorization-2",
+      "category": "authorization",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "authorization-3",
+      "category": "authorization",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "tool-failure-1",
+      "category": "tool-failure",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "tool-failure-2",
+      "category": "tool-failure",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "tool-failure-3",
+      "category": "tool-failure",
+      "runId": null,
+      "errors": [],
+      "elapsedMs": 563,
+      "tokens": null
+    },
+    {
+      "id": "approval-1",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "approval-2",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "approval-3",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "budget-1",
+      "category": "budget",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "budget-2",
+      "category": "budget",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "budget-3",
+      "category": "budget",
+      "runId": "f1a0f5d1-0a0f-4a19-b766-92606ad87f82",
+      "errors": [],
+      "elapsedMs": 15,
+      "tokens": null
+    }
+  ]
+}

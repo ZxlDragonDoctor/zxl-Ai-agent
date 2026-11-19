@@ -15,7 +15,7 @@ final class ResearchToolResult {
     private static final Set<String> STAGE_NAMES = Set.of(
             "index-profile", "rewrite", "vector", "keyword", "authorization-before-rerank", "rerank", "final-visibility");
     private static final Set<String> STAGE_STATES = Set.of(
-            "OK", "FAILED", "DISABLED", "UNCHANGED", "DETERMINISTIC_LEXICAL_SUPPLEMENT", "DEGRADED");
+            "OK", "FAILED", "DISABLED", "UNCHANGED", "DETERMINISTIC_LEXICAL_SUPPLEMENT", "DEGRADED", "SKIPPED_EMPTY_INDEX");
     private static final Set<String> DEGRADATIONS = Set.of(
             "VECTOR_CHANNEL_FAILED", "KEYWORD_CHANNEL_FAILED", "RERANK_FAILED_OR_BUDGET_EXHAUSTED");
     private static final Set<String> REMOTE_CODES = Set.of("MCP_INVALID_ARGUMENT", "MCP_NOT_AUTHORIZED",
@@ -50,6 +50,9 @@ final class ResearchToolResult {
     }
 
     static String remoteFailure(JsonNode envelope) {
+        if ("MCP_INVALID_RESPONSE".equals(envelope.path("code").asText())) {
+            return ToolResults.json(ToolResult.fail("MCP_INVALID_RESPONSE", "MCP 响应未通过契约校验 / Invalid MCP response", null));
+        }
         String code = envelope.path("data").path("remoteCode").asText();
         String message = "MCP 服务未完成查询 / MCP lookup failed";
         var details = "MCP_TOOL_ERROR".equals(envelope.path("code").asText()) && REMOTE_CODES.contains(code)

@@ -27,11 +27,23 @@ export function score(dataset, evidence, split, datasetSha256) {
     }
     const expected = item.expected
     if (actual.status !== expected.status) errors.push('status')
-    const requiredToolError = item.category === 'tool-failure' && item.input?.scenario === 'worker-unavailable'
-      ? 'MCP_REMOTE_BUSINESS_FAILURE' : expected.requiredToolError
-    if (requiredToolError && (!Array.isArray(actual.toolErrors) || !actual.toolErrors.includes(requiredToolError))) {
+    const scenario = item.input?.scenario
+    const toolFaultErrors = {
+      'worker-unavailable': ['MCP_REMOTE_BUSINESS_FAILURE'],
+      'malformed-reply': ['MCP_INVALID_RESPONSE'],
+      'response-limit': ['MCP_INVALID_RESPONSE'],
+      'mcp-unavailable': ['MCP_NETWORK_FAILURE', 'MCP_PROTOCOL_FAILURE', 'MCP_DEADLINE_EXCEEDED'],
+      'retrieval-timeout': ['MCP_DEADLINE_EXCEEDED'],
+    }
+    const requiredToolErrors = item.category === 'tool-failure' && toolFaultErrors[scenario]
+      || (expected.requiredToolError ? [expected.requiredToolError] : null)
+    if (requiredToolErrors && (!Array.isArray(actual.toolErrors) || !requiredToolErrors.some(code => actual.toolErrors.includes(code)))) {
       errors.push('missing-tool-error')
     }
+    if (item.category === 'tool-failure' && toolFaultErrors[scenario]
+        && scenario !== 'worker-unavailable' && actual.faultScenario !== scenario) errors.push('missing-fault-scenario')
+    if (item.category === 'budget' && ['tool-wait', 'worker-queue', 'planner-wait', 'synthesis-wait'].includes(scenario)
+        && (actual.reachedPhase !== scenario || actual.cleanupConfirmed !== true)) errors.push('missing-phase-proof')
     for (const [key, required, allowed] of [
       ['sources', expected.requiredSources, expected.allowedSources],
       ['tools', expected.requiredTools, expected.allowedTools],

@@ -18,6 +18,34 @@ test('one observed execution cannot satisfy multiple cases', () => {
   assert.throws(() => score(repeatedDataset, repeated, 'dev', 'digest'), /execution/)
 })
 
+test('tool faults require the matching observed error and injected scenario', () => {
+  for (const [scenario, code] of [['malformed-reply', 'MCP_INVALID_RESPONSE'],
+    ['response-limit', 'MCP_INVALID_RESPONSE'], ['mcp-unavailable', 'MCP_NETWORK_FAILURE'],
+    ['retrieval-timeout', 'MCP_DEADLINE_EXCEEDED']]) {
+    const cases = { cases: [{ id: 'a', split: 'dev', category: 'tool-failure', input: { scenario },
+      expected: { status: 'failed', maxWrites: 0 } }] }
+    const actual = { ...run, writes: 0, status: 'failed', toolErrors: [code], faultScenario: scenario }
+    assert.equal(score(cases, { ...evidence, runs: [actual] }, 'dev', 'digest').passed, 1)
+    assert.ok(score(cases, { ...evidence, runs: [{ ...actual, toolErrors: ['MCP_REMOTE_BUSINESS_FAILURE'] }] }, 'dev', 'digest')
+      .results[0].errors.includes('missing-tool-error'))
+    assert.ok(score(cases, { ...evidence, runs: [{ ...actual, faultScenario: 'different-stage' }] }, 'dev', 'digest')
+      .results[0].errors.includes('missing-fault-scenario'))
+  }
+})
+
+test('a timeout only verifies its specified phase after cleanup is confirmed', () => {
+  for (const scenario of ['tool-wait', 'worker-queue', 'planner-wait', 'synthesis-wait']) {
+    const cases = { cases: [{ id: 'a', split: 'dev', category: 'budget', input: { scenario },
+      expected: { status: 'timeout', maxWrites: 0 } }] }
+    const actual = { ...run, writes: 0, status: 'timeout', reachedPhase: scenario, cleanupConfirmed: true }
+    assert.equal(score(cases, { ...evidence, runs: [actual] }, 'dev', 'digest').passed, 1)
+    for (const change of [{ reachedPhase: 'model-wait' }, { reachedPhase: undefined }, { cleanupConfirmed: false }]) {
+      assert.ok(score(cases, { ...evidence, runs: [{ ...actual, ...change }] }, 'dev', 'digest')
+        .results[0].errors.includes('missing-phase-proof'))
+    }
+  }
+})
+
 test('worker outage requires the matching observed MCP failure', () => {
   const outage = { version: 'v1', cases: [{ id: 'a', split: 'dev', category: 'tool-failure',
     input: { scenario: 'worker-unavailable' }, expected: { status: 'failed', maxWrites: 0 } }] }

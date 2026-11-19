@@ -1,0 +1,100 @@
+{
+  "datasetVersion": "lesson22.v1",
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "split": "holdout",
+  "model": "controlled-java-fixture",
+  "knowledgeVersion": "controlled-stage-fixture-v1",
+  "variant": "controlled-phases-and-faults",
+  "total": 12,
+  "passed": 4,
+  "results": [
+    {
+      "id": "grounding-4",
+      "category": "grounding",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "grounding-5",
+      "category": "grounding",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "abstention-4",
+      "category": "abstention",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "abstention-5",
+      "category": "abstention",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "authorization-4",
+      "category": "authorization",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "authorization-5",
+      "category": "authorization",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "tool-failure-4",
+      "category": "tool-failure",
+      "runId": null,
+      "errors": [],
+      "elapsedMs": 1989,
+      "tokens": null
+    },
+    {
+      "id": "tool-failure-5",
+      "category": "tool-failure",
+      "runId": null,
+      "errors": [],
+      "elapsedMs": 1342,
+      "tokens": null
+    },
+    {
+      "id": "approval-4",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "approval-5",
+      "category": "approval",
+      "errors": [
+        "missing-evidence"
+      ]
+    },
+    {
+      "id": "budget-4",
+      "category": "budget",
+      "runId": "a7fa963c-7d33-4434-9071-323b91e77362",
+      "errors": [],
+      "elapsedMs": 5,
+      "tokens": null
+    },
+    {
+      "id": "budget-5",
+      "category": "budget",
+      "runId": "63591efd-a54a-4ff5-96b1-2532c2b172c5",
+      "errors": [],
+      "elapsedMs": 33,
+      "tokens": null
+    }
+  ]
+}
