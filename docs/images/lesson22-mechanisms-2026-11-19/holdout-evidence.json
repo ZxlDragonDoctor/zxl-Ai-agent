@@ -1,0 +1,62 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "controlled-java-fixture",
+  "knowledgeVersion": "controlled-stage-fixture-v2",
+  "variant": "controlled-phases-and-faults",
+  "runs": [
+    {
+      "id": "tool-failure-4",
+      "sources": [],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "writes": 0,
+      "elapsedMs": 1188,
+      "tokens": null,
+      "status": "failed",
+      "toolErrors": [
+        "MCP_INVALID_RESPONSE"
+      ],
+      "faultScenario": "response-limit"
+    },
+    {
+      "id": "budget-4",
+      "sources": [],
+      "tools": [],
+      "writes": 0,
+      "elapsedMs": 8,
+      "tokens": null,
+      "runId": "7a18aae7-2bf5-4e90-a984-dbfc5ccb87ce",
+      "status": "timeout",
+      "reachedPhase": "planner-wait",
+      "cleanupConfirmed": true
+    },
+    {
+      "id": "tool-failure-5",
+      "sources": [],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "writes": 0,
+      "elapsedMs": 1300,
+      "tokens": null,
+      "status": "failed",
+      "toolErrors": [
+        "MCP_DEADLINE_EXCEEDED"
+      ],
+      "faultScenario": "retrieval-timeout"
+    },
+    {
+      "id": "budget-5",
+      "sources": [],
+      "tools": [],
+      "writes": 0,
+      "elapsedMs": 33,
+      "tokens": null,
+      "runId": "80f0d407-7cf2-4b59-9da6-a25bacd04b69",
+      "status": "timeout",
+      "reachedPhase": "synthesis-wait",
+      "cleanupConfirmed": true
+    }
+  ]
+}

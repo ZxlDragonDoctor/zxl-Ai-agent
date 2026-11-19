@@ -1,0 +1,63 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "controlled-java-fixture",
+  "knowledgeVersion": "controlled-stage-fixture-v2",
+  "variant": "controlled-phases-and-faults",
+  "runs": [
+    {
+      "id": "tool-failure-2",
+      "sources": [],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "writes": 0,
+      "elapsedMs": 1120,
+      "tokens": null,
+      "status": "failed",
+      "toolErrors": [
+        "MCP_INVALID_RESPONSE"
+      ],
+      "faultScenario": "malformed-reply"
+    },
+    {
+      "id": "budget-2",
+      "sources": [],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "writes": 0,
+      "elapsedMs": 1165,
+      "tokens": null,
+      "status": "timeout",
+      "reachedPhase": "tool-wait",
+      "cleanupConfirmed": true
+    },
+    {
+      "id": "tool-failure-3",
+      "sources": [],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "writes": 0,
+      "elapsedMs": 575,
+      "tokens": null,
+      "status": "failed",
+      "toolErrors": [
+        "MCP_NETWORK_FAILURE"
+      ],
+      "faultScenario": "mcp-unavailable"
+    },
+    {
+      "id": "budget-3",
+      "sources": [],
+      "tools": [],
+      "writes": 0,
+      "elapsedMs": 11,
+      "tokens": null,
+      "runId": "456f81c4-e833-4df8-8e16-916fd338a70d",
+      "status": "timeout",
+      "reachedPhase": "worker-queue",
+      "cleanupConfirmed": true
+    }
+  ]
+}
