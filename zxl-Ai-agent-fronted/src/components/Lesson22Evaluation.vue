@@ -6,8 +6,8 @@ import accessHoldout from '../../../docs/images/lesson22-access-batch-2026-11-18
 import approvalHoldout from '../../../docs/images/lesson22-device-batch-2026-11-18/holdout-report.json'
 import keyboardApproval from '../../../docs/images/lesson22-hardware-2026-11-18/report.json'
 import emptyDev from '../../../docs/images/lesson22-empty-batch-2026-11-18/report.json'
-import controlledDev from '../../../docs/images/lesson22-controlled-2026-11-19/dev-report.json'
-import controlledHoldout from '../../../docs/images/lesson22-controlled-2026-11-19/holdout-report.json'
+import controlledDev from '../../../docs/images/lesson22-mechanisms-2026-11-19/dev-report.json'
+import controlledHoldout from '../../../docs/images/lesson22-mechanisms-2026-11-19/holdout-report.json'
 
 defineProps<{ zh: boolean }>()
 
