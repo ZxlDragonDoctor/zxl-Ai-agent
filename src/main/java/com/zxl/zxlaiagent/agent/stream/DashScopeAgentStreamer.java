@@ -76,9 +76,36 @@ public class DashScopeAgentStreamer {
     /** Authorization covers subscription start; response waiting never holds the authority transaction. */
     public ChatResponse stream(String systemPrompt, List<Message> history, ToolCallback[] tools,
                                BiConsumer<String, String> onDelta, BooleanSupplier cancelled, OperationBoundary boundary) {
+        return stream(systemPrompt, history, tools, onDelta, cancelled, boundary, null, model);
+    }
+
+    public ChatResponse stream(String systemPrompt, List<Message> history, ToolCallback[] tools,
+            BiConsumer<String, String> onDelta, BooleanSupplier cancelled, OperationBoundary boundary,
+            com.zxl.zxlaiagent.usage.ModelCallBudget budget) {
+        return stream(systemPrompt, history, tools, onDelta, cancelled, boundary, budget, model);
+    }
+
+    /** selectedModel must come from a deployment-owned allowlist, never model/browser arguments. */
+    public ChatResponse streamRouted(String systemPrompt, List<Message> history, ToolCallback[] tools,
+            BiConsumer<String, String> onDelta, BooleanSupplier cancelled, OperationBoundary boundary,
+            java.util.function.Supplier<com.zxl.zxlaiagent.usage.ModelCallBudget> budgets,
+            com.zxl.zxlaiagent.usage.BoundedModelRouter router) {
+        if (router == null) return stream(systemPrompt, history, tools, onDelta, cancelled, boundary, budgets.get());
+        var emitted = new java.util.concurrent.atomic.AtomicBoolean();
+        return router.execute((selected, attempt) -> stream(systemPrompt, history, tools, (type, text) -> {
+            if (text != null && !text.isEmpty()) emitted.set(true);
+            onDelta.accept(type, text);
+        }, cancelled, boundary, budgets.get(), selected), cancelled, emitted::get);
+    }
+
+    /** selectedModel must come from a deployment-owned allowlist, never model/browser arguments. */
+    public ChatResponse stream(String systemPrompt, List<Message> history, ToolCallback[] tools,
+            BiConsumer<String, String> onDelta, BooleanSupplier cancelled, OperationBoundary boundary,
+            com.zxl.zxlaiagent.usage.ModelCallBudget budget, String selectedModel) {
+        if (selectedModel == null || selectedModel.isBlank()) throw new IllegalArgumentException("Model required");
         Objects.requireNonNull(boundary, "Explicit operation boundary required");
         Map<String, Object> request = new LinkedHashMap<>();
-        request.put("model", model);
+        request.put("model", selectedModel);
         request.put("stream", true);
         request.put("stream_options", Map.of("include_usage", true));
         request.put("messages", messages(systemPrompt, history));
@@ -108,7 +135,10 @@ public class DashScopeAgentStreamer {
         var gateNanos = new AtomicLong();
         var usage = new AtomicReference<>(new ProviderUsage(null, null, null));
         boolean streamEnded = false;
+        com.zxl.zxlaiagent.usage.ModelCallBudget.Reservation reservation = null;
+        Throwable primaryFailure = null;
         try {
+            if (budget != null) reservation = budget.reserve();
             var frames = client.post().uri("/chat/completions")
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.TEXT_EVENT_STREAM)
@@ -118,6 +148,19 @@ public class DashScopeAgentStreamer {
                     .doOnNext(event -> {
                         firstFrameNanos.compareAndSet(-1, System.nanoTime() - transportStarted);
                         frameCount.incrementAndGet();
+                        // Account provider-observed counts before publication authorization; never publish raw chunks.
+                        String rawData = event.data();
+                        if (rawData != null && !rawData.isBlank() && !"[DONE]".equals(rawData.trim())) {
+                            JsonNode chunk = readJson(rawData);
+                            JsonNode reported = chunk.path("usage");
+                            if (reported.isObject()) {
+                                var counts = new ProviderUsage(tokenCount(reported.path("prompt_tokens")),
+                                        tokenCount(reported.path("completion_tokens")), tokenCount(reported.path("total_tokens")));
+                                if (counts.prompt() != null || counts.completion() != null || counts.total() != null) {
+                                    usage.set(counts);
+                                }
+                            }
+                        }
                         if (cancelled.getAsBoolean()) throw new CancellationException("输出连接已关闭");
                         long gateStarted = System.nanoTime();
                         try { boundary.check(Phase.RESULT_PUBLISH); }
@@ -130,14 +173,6 @@ public class DashScopeAgentStreamer {
                         }
                         JsonNode chunk = readJson(data);
                         if (chunk.has("error")) throw new IllegalStateException("模型服务返回了错误响应");
-                        JsonNode reported = chunk.path("usage");
-                        if (reported.isObject()) {
-                            var counts = new ProviderUsage(tokenCount(reported.path("prompt_tokens")),
-                                    tokenCount(reported.path("completion_tokens")), tokenCount(reported.path("total_tokens")));
-                            if (counts.prompt() != null || counts.completion() != null || counts.total() != null) {
-                                usage.set(counts);
-                            }
-                        }
                         JsonNode choice = chunk.path("choices").path(0);
                         if (choice.isMissingNode()) return;
                         JsonNode finish = choice.path("finish_reason");
@@ -162,6 +197,12 @@ public class DashScopeAgentStreamer {
                         }
                     });
             if (cancelled.getAsBoolean()) throw new CancellationException("输出连接已关闭");
+            // Claim the budget outside the authority gate: dispatch owns a separate
+            // database transaction and must not acquire a second pooled connection
+            // while the authorization transaction is holding the first one.
+            // If the final gate subsequently denies subscription, keep this claim
+            // conservatively UNKNOWN rather than pretending no dispatch was claimed.
+            if (reservation != null) reservation.dispatch();
             subscription = boundary.start(Phase.MODEL_DISPATCH, () -> {
                 dispatchNanos[0] = System.nanoTime() - transportStarted;
                 return frames.subscribe(ignored -> {}, completed::completeExceptionally, () -> completed.complete(null));
@@ -169,13 +210,29 @@ public class DashScopeAgentStreamer {
             await(completed, cancelled);
             streamEnded = true;
         } catch (WebClientResponseException e) {
-            throw new IllegalStateException("模型服务请求失败（HTTP " + e.getStatusCode().value()
+            var wrapped = new IllegalStateException("模型服务请求失败（HTTP " + e.getStatusCode().value()
                     + "），请检查模型配置、额度及服务状态", e);
+            primaryFailure = wrapped;
+            throw wrapped;
         } catch (WebClientRequestException e) {
-            throw new IllegalStateException("连接模型服务失败，请检查网络后重试", e);
+            var wrapped = new IllegalStateException("连接模型服务失败，请检查网络后重试", e);
+            primaryFailure = wrapped;
+            throw wrapped;
+        } catch (RuntimeException | Error failed) {
+            primaryFailure = failed;
+            throw failed;
         } finally {
             if (subscription != null) subscription.dispose();
             var counts = usage.get();
+            if (reservation != null) {
+                Long actual = counts.prompt() != null && counts.completion() != null && counts.total() != null
+                        && (long) counts.prompt() + counts.completion() == counts.total() ? counts.total().longValue() : null;
+                try { reservation.finish(actual); }
+                catch (RuntimeException | Error accountingFailure) {
+                    if (primaryFailure != null) primaryFailure.addSuppressed(accountingFailure);
+                    else throw accountingFailure;
+                }
+            }
             LOG.info("Model transport timing runId={}, taskId={}, requestKind={}, dispatchMs={}, firstFrameMs={}, frames={}, frameGateMs={}, elapsedMs={}, streamEnded={}, promptTokens={}, completionTokens={}, totalTokens={}",
                     org.slf4j.MDC.get("agentRunId"), org.slf4j.MDC.get("agentTaskId"),
                     tools.length > 0 ? "tools" : "answer", timingMs(dispatchNanos[0]), timingMs(firstFrameNanos.get()),
