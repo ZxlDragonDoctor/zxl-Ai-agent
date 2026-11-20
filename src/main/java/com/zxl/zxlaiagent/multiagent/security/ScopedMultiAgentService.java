@@ -20,6 +20,9 @@ public final class ScopedMultiAgentService {
     private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(ScopedMultiAgentService.class);
     private final OrchestratorAgent orchestrator;private final AuthorizationService authorization;
     private final SecurityDatabase database;
+    private com.zxl.zxlaiagent.usage.ScopedModelBudgetFactory modelBudgets;
+    @org.springframework.beans.factory.annotation.Autowired
+    public void modelBudgets(com.zxl.zxlaiagent.usage.ScopedModelBudgetFactory budgets) { this.modelBudgets=budgets; }
     private final DurableRunStore journal = new DurableRunStore();
     private final ObjectMapper json = new ObjectMapper();
 
@@ -36,6 +39,7 @@ public final class ScopedMultiAgentService {
         try{
             return orchestrator.submitScoped(goal,context==null?Map.of():context,timeoutMs,id->{
                 authorization.registerResourceAuthorized(actor,new ResourceRef("run",id),admission(),id);created.set(id);
+                if(modelBudgets!=null)modelBudgets.initialize(actor,id);
                 var boundary = new ActorBoundary(authorization, actor, readPermissions(id), id);
                 return new OrchestratorAgent.ScopedSubmission(boundary,
                         new TrustedRunContext(actor, id, new PrivateRunEvents(), reportTransaction(actor, id, boundary)));

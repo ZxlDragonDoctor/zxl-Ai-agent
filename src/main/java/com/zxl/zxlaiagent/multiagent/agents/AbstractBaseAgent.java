@@ -34,6 +34,8 @@ public abstract class AbstractBaseAgent implements AgentInterface {
     private volatile boolean scopedExecutionRequired;
     public void requireScopedExecution() { scopedExecutionRequired=true; }
     private volatile com.zxl.zxlaiagent.agent.stream.DashScopeAgentStreamer scopedStreamer;
+    private volatile com.zxl.zxlaiagent.usage.ScopedModelBudgetFactory modelBudgets;
+    public void attachModelBudgets(com.zxl.zxlaiagent.usage.ScopedModelBudgetFactory budgets) { this.modelBudgets=java.util.Objects.requireNonNull(budgets); }
     public void attachScopedStreamer(com.zxl.zxlaiagent.agent.stream.DashScopeAgentStreamer streamer) { this.scopedStreamer=java.util.Objects.requireNonNull(streamer); }
     protected ExecutionRuntime.ExecutionScope executionScope(Task task) {
         return runtime==null?new ExecutionRuntime.ExecutionScope(null):runtime.executionScope(task);
@@ -232,10 +234,15 @@ public abstract class AbstractBaseAgent implements AgentInterface {
         };
         return runtime.modelCall(task,scope,()->{
             scope.control().check();
-            var response=streamer.stream(systemPrompt,java.util.List.of(new org.springframework.ai.chat.messages.UserMessage(userMessage)),
-                    new org.springframework.ai.tool.ToolCallback[0],(type,text)->{},
-                    ()->Thread.currentThread().isInterrupted()||scope.control().stopReason()!=null||task.snapshot().status()!=TaskStatus.IN_PROGRESS,
-                    transportBoundary);
+            var history=java.util.List.<org.springframework.ai.chat.messages.Message>of(new org.springframework.ai.chat.messages.UserMessage(userMessage));
+            var tools=new org.springframework.ai.tool.ToolCallback[0];
+            java.util.function.BooleanSupplier cancelled=()->Thread.currentThread().isInterrupted()
+                    ||scope.control().stopReason()!=null||task.snapshot().status()!=TaskStatus.IN_PROGRESS;
+            var accounting=modelBudgets;
+            var response=accounting==null||!accounting.enabled()
+                    ?streamer.stream(systemPrompt,history,tools,(type,text)->{},cancelled,transportBoundary)
+                    :streamer.streamRouted(systemPrompt,history,tools,(type,text)->{},cancelled,transportBoundary,
+                        ()->accounting.call(scope.trustedContext().actor(),scope.trustedContext().runId()),accounting.router());
             scope.control().check();
             var output=response.getResult().getOutput();
             if(!output.getToolCalls().isEmpty())throw new WorkflowException("UNEXPECTED_MODEL_TOOL","model","当前步骤没有授权工具");

@@ -22,6 +22,17 @@ public final class StreamingResearchModel implements ResearchRunner.Model {
     private final DashScopeAgentStreamer streamer;private final OperationBoundary boundary;
     public StreamingResearchModel(DashScopeAgentStreamer streamer){this.streamer=Objects.requireNonNull(streamer);this.boundary=null;}
     public StreamingResearchModel(DashScopeAgentStreamer streamer,OperationBoundary boundary){this.streamer=Objects.requireNonNull(streamer);this.boundary=Objects.requireNonNull(boundary);}
+    private java.util.function.Supplier<com.zxl.zxlaiagent.usage.ModelCallBudget> budgets;
+    private com.zxl.zxlaiagent.usage.BoundedModelRouter router;
+    public StreamingResearchModel(DashScopeAgentStreamer streamer, OperationBoundary boundary,
+            java.util.function.Supplier<com.zxl.zxlaiagent.usage.ModelCallBudget> budgets) {
+        this(streamer,boundary); this.budgets=Objects.requireNonNull(budgets);
+    }
+    public StreamingResearchModel(DashScopeAgentStreamer streamer, OperationBoundary boundary,
+            java.util.function.Supplier<com.zxl.zxlaiagent.usage.ModelCallBudget> budgets,
+            com.zxl.zxlaiagent.usage.BoundedModelRouter router) {
+        this(streamer,boundary,budgets); this.router=router;
+    }
     @Override public ResearchRunner.Selection select(String question,List<ResearchRunner.Tool> tools,Duration remaining,BooleanSupplier cancelled){
         ToolCallback[] offered=tools.stream().map(tool->(ToolCallback)new ToolCallback(){
             public ToolDefinition getToolDefinition(){return ToolDefinition.builder().name(tool.name()).description(tool.description()).inputSchema(tool.schema()).build();}
@@ -43,7 +54,10 @@ public final class StreamingResearchModel implements ResearchRunner.Model {
         return response.getResult().getOutput().getText();
     }
     private ChatResponse stream(String system,List<org.springframework.ai.chat.messages.Message> history,ToolCallback[] tools,java.util.function.BiConsumer<String,String> delta,BooleanSupplier cancelled){
-        return boundary==null?streamer.stream(system,history,tools,delta,cancelled):streamer.stream(system,history,tools,delta,cancelled,boundary);
+        if (boundary == null) return streamer.stream(system,history,tools,delta,cancelled);
+        if (budgets == null) return streamer.stream(system,history,tools,delta,cancelled,boundary);
+        return router == null ? streamer.stream(system,history,tools,delta,cancelled,boundary,budgets.get())
+                : streamer.streamRouted(system,history,tools,delta,cancelled,boundary,budgets,router);
     }
     private static ChatResponse withSafeDiagnosis(Supplier<ChatResponse> request) {
         try { return request.get(); }

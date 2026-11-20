@@ -33,6 +33,11 @@ class FormalGatewayActivationTest {
                 assertThat(ctx).hasNotFailed().doesNotHaveBean(ScopedKnowledgeClient.class));
     }
 
+    @Test void enabledBudgetCannotSilentlyRunWithoutAccountingFactory() {
+        gateway.withPropertyValues("agent.security.mode=required", TOKEN, "agent.usage.enabled=true").run(ctx ->
+                assertThat(ctx.getStartupFailure()).hasRootCauseMessage("SCOPED_USAGE_CONFIGURATION_REQUIRED"));
+    }
+
     @Test void formalModeInstantiatesOnlyThePreparedChatController() {
         var controllers = new ApplicationContextRunner().withUserConfiguration(AiController.class, FormalAgentChatController.class)
                 .withBean(AgentConversationService.class, () -> mock(AgentConversationService.class));

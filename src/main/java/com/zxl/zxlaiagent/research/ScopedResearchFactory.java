@@ -17,6 +17,8 @@ import java.util.function.BooleanSupplier;
 public final class ScopedResearchFactory {
  private final FormalKnowledgeMcpClient mcp;private final ScopedKnowledgeClient knowledge;
  private final DashScopeAgentStreamer streamer;private final AuthorizationService authorization;
+ private com.zxl.zxlaiagent.usage.ScopedModelBudgetFactory budgets;
+ public ScopedResearchFactory withModelBudgets(com.zxl.zxlaiagent.usage.ScopedModelBudgetFactory budgets){this.budgets=Objects.requireNonNull(budgets);return this;}
  private final ObjectMapper json=new ObjectMapper().enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION).enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
  public ScopedResearchFactory(FormalKnowledgeMcpClient mcp,ScopedKnowledgeClient knowledge,DashScopeAgentStreamer streamer,AuthorizationService authorization){this.mcp=Objects.requireNonNull(mcp);this.knowledge=Objects.requireNonNull(knowledge);this.streamer=Objects.requireNonNull(streamer);this.authorization=Objects.requireNonNull(authorization);}
  public ResearchRunner create(ActorRef actor,String runId){
@@ -74,6 +76,6 @@ public final class ScopedResearchFactory {
    if(response.status()!=200)throw new SecurityFailure(response.status()==401||response.status()==403?"ACTION_DENIED":"RESOURCE_UNAVAILABLE",response.status()==401?401:response.status()==403?403:404);
    try{return json.readTree(response.body());}catch(java.io.IOException invalid){throw new IllegalStateException("EVIDENCE_GATEWAY_FAILED");}
   };
-  return ResearchRunner.authorized(gateway,new StreamingResearchModel(streamer,boundary),new McpEvidenceVerifier(port,boundary),boundary);
+  return ResearchRunner.authorized(gateway,budgets==null||!budgets.enabled()?new StreamingResearchModel(streamer,boundary):new StreamingResearchModel(streamer,boundary,()->budgets.call(actor,runId),budgets.router()),new McpEvidenceVerifier(port,boundary),boundary);
  }
 }

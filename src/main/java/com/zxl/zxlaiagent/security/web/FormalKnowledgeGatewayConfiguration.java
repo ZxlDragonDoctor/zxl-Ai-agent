@@ -31,7 +31,13 @@ public class FormalKnowledgeGatewayConfiguration {
                 serviceToken(environment), tickets, authorization);
     }
     @Bean public ScopedResearchFactory scopedResearchFactory(FormalKnowledgeMcpClient mcp, ScopedKnowledgeClient knowledge,
-            DashScopeAgentStreamer streamer, AuthorizationService authorization) {
-        return new ScopedResearchFactory(mcp, knowledge, streamer, authorization);
+            DashScopeAgentStreamer streamer, AuthorizationService authorization,
+            org.springframework.beans.factory.ObjectProvider<com.zxl.zxlaiagent.usage.ScopedModelBudgetFactory> budgets,
+            Environment environment) {
+        var accounting = budgets.getIfAvailable();
+        if (accounting == null && environment.getProperty("agent.usage.enabled", Boolean.class, false))
+            throw new IllegalStateException("SCOPED_USAGE_CONFIGURATION_REQUIRED");
+        var factory = new ScopedResearchFactory(mcp, knowledge, streamer, authorization);
+        return accounting == null ? factory : factory.withModelBudgets(accounting);
     }
 }

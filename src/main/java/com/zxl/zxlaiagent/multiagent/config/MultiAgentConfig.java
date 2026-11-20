@@ -33,7 +33,8 @@ public class MultiAgentConfig {
                             com.zxl.zxlaiagent.research.ResearchRunner researchRunner,
                             com.zxl.zxlaiagent.agent.stream.DashScopeAgentStreamer scopedStreamer,
                             org.springframework.beans.factory.ObjectProvider<com.zxl.zxlaiagent.research.ScopedResearchFactory> scopedResearch,
-                            org.springframework.core.env.Environment environment) {
+                            org.springframework.core.env.Environment environment,
+                            org.springframework.beans.factory.ObjectProvider<com.zxl.zxlaiagent.usage.ScopedModelBudgetFactory> modelBudgets) {
         this.messageBus = messageBus;
         ChatModel chatModel = MultiAgentModelFactory.create(connection, chat, limits);
         this.orchestratorAgent = new OrchestratorAgent(chatModel, mapper, validator, inputs, limits, System::nanoTime);
@@ -46,6 +47,10 @@ public class MultiAgentConfig {
         // Orchestrator owns scheduling; model calls belong to these worker agents.
         for(AbstractBaseAgent agent:java.util.List.of(plannerAgent,codeAgent,researchAgent,supervisorAgent)) {
             agent.attachScopedStreamer(scopedStreamer);
+            var budgets=modelBudgets.getIfAvailable();
+            if(budgets==null && environment.getProperty("agent.usage.enabled",Boolean.class,false))
+                throw new IllegalStateException("SCOPED_USAGE_CONFIGURATION_REQUIRED");
+            if(budgets!=null)agent.attachModelBudgets(budgets);
             if("required".equals(environment.getProperty("agent.security.mode")))agent.requireScopedExecution();
         }
         plannerAgent.attachMessageBus(messageBus);
