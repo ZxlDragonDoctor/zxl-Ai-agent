@@ -1,0 +1,20 @@
+{
+  "datasetSha256": "96ef08146f62129474ee675bbedbbe1037ac912f6ef974aef5354e9df410e786",
+  "model": "qwen-plus",
+  "knowledgeVersion": "lesson23-http-empty-v1",
+  "variant": "usage-enabled-empty-smoke",
+  "runs": [
+    {
+      "id": "abstention-3",
+      "runId": "01d6262d-e011-495b-a9aa-cf3495656df4",
+      "status": "abstained",
+      "sources": [],
+      "tools": [
+        "knowledge__knowledge_lookup_v2"
+      ],
+      "writes": 0,
+      "elapsedMs": 20016,
+      "tokens": 1869
+    }
+  ]
+}

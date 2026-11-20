@@ -1,0 +1,91 @@
+{
+  "scope": "live authenticated HTTP multi-agent workflow, real qwen-plus, MCP and PG ledger",
+  "model": "qwen-plus",
+  "tenant": "lesson23-http-budget-v1",
+  "runId": "01d6262d-e011-495b-a9aa-cf3495656df4",
+  "discovery": "READY",
+  "status": "completed",
+  "errorCode": null,
+  "result": "当前有效知识中没有找到匹配资料；未生成缺乏证据的结论。 / No matching current evidence.",
+  "cleanupPending": false,
+  "account": {
+    "limit": 20000,
+    "reserved": 0,
+    "spent": 1869,
+    "calls": 2,
+    "entries": [
+      {
+        "state": "SETTLED",
+        "estimate": 4096,
+        "actual": 1027
+      },
+      {
+        "state": "SETTLED",
+        "estimate": 4096,
+        "actual": 842
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "capability": "research",
+      "status": "COMPLETED",
+      "modelCalls": 1
+    }
+  ],
+  "toolEvents": [
+    {
+      "type": "TOOL_STARTED",
+      "toolName": "knowledge__knowledge_lookup_v2"
+    },
+    {
+      "type": "TOOL_COMPLETED",
+      "toolName": "knowledge__knowledge_lookup_v2",
+      "retrieval": {
+        "success": true,
+        "code": "OK",
+        "hits": 0,
+        "degradations": [],
+        "stages": [
+          {
+            "name": "index-profile",
+            "status": "OK",
+            "elapsedMs": 134,
+            "candidateCount": 0
+          },
+          {
+            "name": "rewrite",
+            "status": "DISABLED",
+            "elapsedMs": 0,
+            "candidateCount": 0
+          },
+          {
+            "name": "vector",
+            "status": "SKIPPED_EMPTY_INDEX",
+            "elapsedMs": 0,
+            "candidateCount": 0
+          },
+          {
+            "name": "keyword",
+            "status": "OK",
+            "elapsedMs": 178,
+            "candidateCount": 0
+          },
+          {
+            "name": "authorization-before-rerank",
+            "status": "OK",
+            "elapsedMs": 8,
+            "candidateCount": 0
+          },
+          {
+            "name": "final-visibility",
+            "status": "OK",
+            "elapsedMs": 5,
+            "candidateCount": 0
+          }
+        ]
+      }
+    }
+  ],
+  "businessWrites": 0
+}

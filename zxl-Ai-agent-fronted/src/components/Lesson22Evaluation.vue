@@ -8,6 +8,7 @@ import keyboardApproval from '../../../docs/images/lesson22-hardware-2026-11-18/
 import emptyDev from '../../../docs/images/lesson22-empty-batch-2026-11-18/report.json'
 import controlledDev from '../../../docs/images/lesson22-mechanisms-2026-11-19/dev-report.json'
 import controlledHoldout from '../../../docs/images/lesson22-mechanisms-2026-11-19/holdout-report.json'
+import liveEmptyFix from '../../../docs/images/lesson23-usage-2026-11-20/abstention-report.json'
 
 defineProps<{ zh: boolean }>()
 
@@ -27,6 +28,7 @@ const savedReports = [
   { id: 'empty-dev', zh: '空库拒答 · 失败记录', en: 'Empty knowledge · Recorded failures', report: emptyDev },
   { id: 'controlled-dev', zh: '可控机制测试 · 开发集', en: 'Controlled integration · Development', report: controlledDev },
   { id: 'controlled-holdout', zh: '可控机制测试 · 保留集', en: 'Controlled integration · Holdout', report: controlledHoldout },
+  { id: 'live-empty-fix', zh: '空库修正 · 真实 HTTP 验收', en: 'Empty-index fix · Live HTTP acceptance', report: liveEmptyFix },
 ]
 let importVersion = 0
 const pairedRows = computed(() => {

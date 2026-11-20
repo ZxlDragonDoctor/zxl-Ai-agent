@@ -48,4 +48,24 @@ accepted_calls 是预留受理次数，释放未发送请求不会退还这个�
 
 本批专项 4 项及总回归 30 项通过，前端构建和图谱 37 项回归通过。[数据库测试与中英文阅读截图](../images/lesson23-ledger-2026-11-19/README.md)
 
+## 模型调用接入与有限降级
+
+正式多 Agent 的 planner/code/supervisor 流调用，以及 ScopedResearchFactory 创建的 select/answer 模型调用，现已接入同一可信 actor/run 账户。不同调用与降级尝试使用独立 call ID；后续调用只核对账户策略，不重置已用额度。额度不来自浏览器 context 或模型工具参数。
+
+| 服务端配置 | 默认值与含义 |
+| --- | --- |
+| agent.usage.enabled | false；默认不启用本批可选控制 |
+| agent.usage.run-token-limit | 20000；每个 run 的预留与已知用量约束 |
+| agent.usage.run-call-limit | 8；受理次数上限，释放未发送调用不退还次数 |
+| agent.usage.call-token-estimate | 4096；每次调用固定估额，尚非上下文精确 token 估算 |
+| agent.usage.fallback-model | 未设置；如设置，必须与主模型不同，由部署者选择 |
+
+主模型仍取原有 spring.ai.dashscope.chat.options.model。仅 HTTP 429/503 且没有产生任何输出、没有取消、没有安全或记账错误时，允许一次备用调用。不能从错误消息里猜“503”，不能降级绕过权限拒绝、预算不足或取消。第二次失败直接终止，每次尝试重新预留。主调用没有返回 usage 时，即使备用成功，主调用预留也保守保留 UNKNOWN。
+
+一条真实 qwen-plus 直连验收返回 21 token，PostgreSQL 实际记入 21、在途预留归零，状态 SETTLED。此请求使用独立合成账户和生产 streamer/ledger，不等于已验收完整 HTTP 身份工作流。[真实用量、测试与页面证据](../images/lesson23-usage-2026-11-20/README.md)
+
+随后另用独立测试员工完成认证 HTTP 多 Agent 闭环：规划、Research、实际 MCP 空检索、正确拒答及清理均完成，两笔账本分别结算 1027、842，合计 1869 token，预留归零。实际工具事件确认 SKIPPED_EMPTY_INDEX 且无降级，先前空库修正已在新 Worker 的真实链路验证；这不是跨版本模型质量对照。
+
+当前是每 run 配额，不能限制同租户不断新建 run 的周期总消费。默认关闭，尚未覆盖所有 Love/Manus/独立 HttpAnswerModel、embedding 与 reranker 入口，也没有能力注册表路由、持久模型路由审计、供应商账单核对和 UNKNOWN 运维对账流程。token 预留是本地准入约束，实际 usage 超过估额会如实形成超额，不能据此承诺供应商账单绝不会超限。预算实时事件页面及更多取消、降级和业务 HTTP 场景仍待验收。[调用边界与连接池修复导读](23-usage-integration.md)
+
 面试练习：模型调用取消后没有返回 usage，为什么不能立即退还全部预算？供应商报告的实际用量高于预留时，你会怎样记录并阻止并发请求继续超支？

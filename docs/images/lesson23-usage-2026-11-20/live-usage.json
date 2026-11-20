@@ -1,0 +1,21 @@
+{
+  "model" : "qwen-plus",
+  "scope" : "live-provider direct streamer + PG ledger, not authenticated HTTP workflow",
+  "tenant" : "lesson23-live-6a93d66a-a847-466a-826d-b4aa98b21141",
+  "outcome" : "returned",
+  "answer" : "OK",
+  "reportedTotal" : 21,
+  "elapsedMs" : 1661,
+  "account" : {
+    "limit" : 10000,
+    "reserved" : 0,
+    "spent" : 21,
+    "callLimit" : 2,
+    "calls" : 1
+  },
+  "call" : {
+    "state" : "SETTLED",
+    "estimate" : 4096,
+    "actual" : 21
+  }
+}

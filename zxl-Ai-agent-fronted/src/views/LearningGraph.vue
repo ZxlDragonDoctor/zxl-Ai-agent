@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Lesson22Evaluation from '../components/Lesson22Evaluation.vue'
+import Lesson23UsageEvidence from '../components/Lesson23UsageEvidence.vue'
 import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import KnowledgeGraphCanvas from '../learning/graph/KnowledgeGraphCanvas.vue'
@@ -439,6 +440,7 @@ onMounted(() => {
           <h2>{{ title(selectedNode) }}</h2>
           <p class="learning-reader__summary">{{ summary(selectedNode) }}</p>
           <Lesson22Evaluation v-if="selectedNode.id === 'lesson-22'" :zh="locale === 'zh-CN'" />
+          <Lesson23UsageEvidence v-if="selectedNode.id === 'lesson-23'" :zh="locale === 'zh-CN'" />
           <section v-if="pathNodeIds.length > 1" class="learning-path-route">
             <div><strong>{{ t('learning.pathToNext') }}</strong><small>{{ lessonNumber(nextLesson!) }}</small></div>
             <div class="learning-path-route__steps">
