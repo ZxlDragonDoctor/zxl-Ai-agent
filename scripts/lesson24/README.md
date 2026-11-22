@@ -1,5 +1,19 @@
 # 第24课首批：环境预检
 
+## 三角色 fatjar 启动
+
+```sh
+node scripts/lesson24/launch.mjs --role main --jar /absolute/path/application.jar
+node scripts/lesson24/launch.mjs --role worker --jar /absolute/path/application.jar
+node scripts/lesson24/launch.mjs --role mcp --jar /absolute/path/application.jar
+```
+
+先将该角色所需配置显式注入环境。启动器先运行同一预检，再检查显式 jar 是存在的文件，以无 shell 的参数数组调用 Java `PropertiesLauncher`。main 使用企业入口和 enterprise profile，worker/mcp使用各自入口，不改环境。jar路径包含空格也作为单个参数。启动器不读取本地YAML、密钥文件或 `.env`，不在错误消息或Java参数中打印环境值。
+
+Java子进程标准输入输出直接继承终端；启动器不清洗应用日志，因此应用自身的敏感日志仍需独立审查。退出状态沿用子进程；Java无法启动时返回固定错误码。脚本不负责依赖服务就绪、端口安排、镜像摘要、进程监督、Compose或完整部署验收。存在的jar不等于其内容或版本已验收，构建产物来源由交付记录核对。
+
+测试：`node --test scripts/lesson24/launch.test.mjs`。4项注入spawn测试通过，验证三角色参数、预检失败不启动、环境原样传递、子进程退出与固定错误；未通过测试脚本实际启动Java或模型。
+
 运行：`node scripts/lesson24/preflight.mjs --role main`（也支持worker、mcp）。通过退出0，配置问题退出1，命令参数错误退出2。测试：`node --test scripts/lesson24/preflight.test.mjs`，本批11项通过。
 
 这是明确的**仅环境变量部署契约**，不读取application*.yml、不推断Spring配置优先级、不连接数据库/模型、不检查端口或依赖版本。现有运行如果依靠配置文件，可以正常启动而此检查仍报缺少环境变量；操作者应将部署所需值显式注入环境，不得据此声称已启动或完成部署。输出只含固定角色、错误码、变量名和范围，绝不包含提交给检查器的值。
