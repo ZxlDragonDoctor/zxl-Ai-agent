@@ -1,0 +1,21 @@
+# Invoke the dedicated EnterpriseAgentApplication with --spring.profiles.active=enterprise.
+spring:
+  ai:
+    mcp:
+      client:
+        enabled: false
+    dashscope:
+      api-key: ${SPRING_AI_DASHSCOPE_API_KEY}
+      chat:
+        options:
+          model: ${AGENT_MODEL:qwen-plus}
+agent:
+  security:
+    mode: required
+  usage:
+    enabled: true
+server:
+  address: 127.0.0.1
+  port: ${SERVER_PORT:18301}
+  servlet:
+    context-path: /api
