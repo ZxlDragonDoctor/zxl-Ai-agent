@@ -17,4 +17,6 @@ java -cp "target/classes;$dependencyPath" com.zxl.enterprise.EnterpriseAgentAppl
 
 为兼容原构造器，allTools 是空数组；未授权的旧 ResearchRunner 所有操作明确拒绝。正式 Research 仍通过 ScopedResearchFactory 运行。这不是将旧万能工具助手升级为已授权企业工具，它仍无正式执行授权。
 
-`EnterpriseBootstrapTest` 3项通过：模式降级/混合profile拒绝、profile禁自动MCP、扫描保留正式模块且无旧RAG/工具。`mvn -o -q -DskipTests package`通过（仅打包，不能当测试）。真实新库迁移、服务启动、模型、浏览器与重启验收由主任务另行记录。
+`EnterpriseBootstrapTest` 同时覆盖模式降级/混合profile拒绝、profile禁自动MCP、扫描保留正式模块且无旧RAG/工具，以及真实刷新最小SkillConfiguration依赖图。后者曾复现Gateway bean缺失的启动失败；入口补齐三个独立的拒绝型Gateway/Model/Verifier bean供旧SkillRunner注入，正式ScopedSkillRunner仍使用ScopedResearchFactory。测试仅把后者懒加载隔离数据库和网络，其完整启动由主任务另行核验。
+
+`mvn -o -q -DskipTests package`仅验证打包，不能当测试。真实新库迁移、服务启动、模型、浏览器与重启验收由主任务另行记录。

@@ -40,13 +40,20 @@ public class EnterpriseAgentApplication {
  @Bean public ToolCallback[] allTools(){return new ToolCallback[0];}
  /** Formal Research uses ScopedResearchFactory; legacy unscoped fallback is denied, never networked. */
  @Bean public ResearchRunner researchRunner(){
-  return new ResearchRunner(new ResearchRunner.Gateway(){
+  return new ResearchRunner(researchGateway(),researchModel(),researchVerifier());
+ }
+ @Bean public ResearchRunner.Gateway researchGateway(){
+  return new ResearchRunner.Gateway(){
    public List<ResearchRunner.Tool> discover(Duration d,BooleanSupplier c){throw denied();}
    public String call(String n,String i,Duration d,BooleanSupplier c){throw denied();}
-  },new ResearchRunner.Model(){
+  };
+ }
+ @Bean public ResearchRunner.Model researchModel(){
+  return new ResearchRunner.Model(){
    public ResearchRunner.Selection select(String q,List<ResearchRunner.Tool> t,Duration d,BooleanSupplier c){throw denied();}
    public String answer(String q,List<JsonNode> e,Duration d,BooleanSupplier c){throw denied();}
-  },(hits,d,c)->{throw denied();});
+  };
  }
+ @Bean public ResearchRunner.Verifier researchVerifier(){return (hits,d,c)->{throw denied();};}
  private static IllegalStateException denied(){return new IllegalStateException("UNSCOPED_RESEARCH_DISABLED");}
 }
