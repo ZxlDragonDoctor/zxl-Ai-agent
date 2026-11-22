@@ -1,0 +1,11 @@
+// Read-only fixture evidence. Never accepts SQL identifiers or credentials from the model.
+function tenantId(value){if(!/^lesson23-[a-z0-9-]+$/.test(value??''))throw Error('Synthetic tenant required');return value;}
+function runId(value){if(!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(value??''))throw Error('Run UUID required');return value;}
+const utcDate="(CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date::text";
+export function freshTenantSql(tenant){tenantId(tenant);return `SELECT json_build_object('databaseUtcDate',${utcDate},'runCount',(SELECT count(*) FROM lesson17.token_budget_account WHERE tenant_id='${tenant}'),'periodCount',(SELECT count(*) FROM lesson17.token_budget_period WHERE tenant_id='${tenant}'))`;}
+export function budgetSnapshotSql(tenant,run){tenantId(tenant);runId(run);return `SELECT json_build_object('limit',a.token_limit,'reserved',a.reserved_tokens,'spent',a.spent_tokens,'calls',a.accepted_calls,'periodId',a.period_id,'databaseUtcDate',${utcDate},'tenantRunCount',(SELECT count(*) FROM lesson17.token_budget_account WHERE tenant_id=a.tenant_id),'period',(SELECT json_build_object('limit',p.token_limit,'reserved',p.reserved_tokens,'spent',p.spent_tokens,'calls',p.accepted_calls) FROM lesson17.token_budget_period p WHERE p.tenant_id=a.tenant_id AND p.period_id=a.period_id),'entries',(SELECT json_agg(json_build_object('state',c.state,'estimate',c.estimate,'actual',c.actual)) FROM lesson17.token_budget_call c WHERE c.tenant_id=a.tenant_id AND c.account_id=a.account_id)) FROM lesson17.token_budget_account a WHERE a.tenant_id='${tenant}' AND a.account_id='${run}'`;}
+export function verifyPeriodSnapshot(account,startedDatabaseUtcDate){
+ const date=value=>/^\d{4}-\d{2}-\d{2}$/.test(value??'');
+ if(!account?.period||!date(startedDatabaseUtcDate)||!date(account.databaseUtcDate)||![startedDatabaseUtcDate,account.databaseUtcDate].includes(account.periodId)||account.tenantRunCount!==1)throw Error('Fresh tenant UTC period binding not verified');
+ for(const field of ['reserved','spent','calls'])if(!Number.isSafeInteger(account[field])||account[field]<0||account.period[field]!==account[field])throw Error('Run and tenant period totals differ');
+}
