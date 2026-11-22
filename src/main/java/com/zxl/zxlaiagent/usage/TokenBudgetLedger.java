@@ -40,11 +40,13 @@ public final class TokenBudgetLedger {
         if(estimate<1)throw new IllegalArgumentException("Positive estimate required");
         db.tx(c-> {
             var a=read(c,account,true);
+            var period=readPeriod(c,account,true);
             var e=entry(c,account,call);
             if(e!=null) {
                 if(e.estimate()!=estimate)throw denied("CALL_BINDING_MISMATCH");
                 return null;
             }
+            if(period!=null && exhausted(period,estimate))throw denied("TENANT_BUDGET_EXHAUSTED");
             if(a.calls()>=a.callLimit()||a.spent()>a.limit()||a.reserved()>a.limit()-a.spent()||estimate>a.limit()-a.spent()-a.reserved())throw denied("BUDGET_EXHAUSTED");
             try(var s=SecurityDatabase.statement(c,"INSERT INTO token_budget_call(tenant_id,account_id,call_id,estimate,state) VALUES (?,?,?,?,'RESERVED')",tenant,account,call,estimate)) {
                 s.executeUpdate();
@@ -52,6 +54,7 @@ public final class TokenBudgetLedger {
             try(var s=SecurityDatabase.statement(c,"UPDATE token_budget_account SET reserved_tokens=reserved_tokens+?,accepted_calls=accepted_calls+1 WHERE tenant_id=? AND account_id=?",estimate,tenant,account)) {
                 s.executeUpdate();
             }
+            updatePeriod(c,account,estimate,0,1);
             return null;
         });
     }
@@ -79,6 +82,7 @@ public final class TokenBudgetLedger {
         id(call);
         return db.tx(c-> {
             read(c,account,true);
+            readPeriod(c,account,true);
             var e=entry(c,account,call);
             if(e==null)throw denied("CALL_NOT_FOUND");
             if(e.state().equals(target)) {
@@ -90,11 +94,26 @@ public final class TokenBudgetLedger {
             if(target.equals("SETTLED")||target.equals("RELEASED"))try(var s=SecurityDatabase.statement(c,"UPDATE token_budget_account SET reserved_tokens=reserved_tokens-?,spent_tokens=spent_tokens+? WHERE tenant_id=? AND account_id=?",e.estimate(),actual==null?0L:actual,tenant,account)) {
                 s.executeUpdate();
             }
+            if(target.equals("SETTLED")||target.equals("RELEASED")) updatePeriod(c,account,-e.estimate(),actual==null?0L:actual,0);
             try(var s=SecurityDatabase.statement(c,"UPDATE token_budget_call SET state=?,actual=? WHERE tenant_id=? AND account_id=? AND call_id=?",target,actual,tenant,account,call)) {
                 s.executeUpdate();
             }
             return true;
         });
+    }
+
+    /** Period bound when the run was first initialized; never derives from today's date. */
+    public Account period(String account) { id(account); return db.tx(c->{read(c,account,false);return readPeriod(c,account,false);}); }
+    private static boolean exhausted(Account a,long estimate) {
+        return a.calls()>=a.callLimit() || a.spent()>a.limit() || a.reserved()>a.limit()-a.spent() || estimate>a.limit()-a.spent()-a.reserved();
+    }
+    private Account readPeriod(Connection c,String account,boolean lock)throws SQLException {
+        try(var s=SecurityDatabase.statement(c,"SELECT p.token_limit,p.reserved_tokens,p.spent_tokens,p.call_limit,p.accepted_calls FROM token_budget_period p JOIN token_budget_account a ON a.tenant_id=p.tenant_id AND a.period_id=p.period_id WHERE a.tenant_id=? AND a.account_id=?"+(lock?" FOR UPDATE OF p":""),tenant,account);var r=s.executeQuery()) {
+            return r.next()?new Account(r.getLong(1),r.getLong(2),r.getLong(3),r.getInt(4),r.getInt(5)):null;
+        }
+    }
+    private void updatePeriod(Connection c,String account,long reserved,long spent,int calls)throws SQLException {
+        try(var s=SecurityDatabase.statement(c,"UPDATE token_budget_period p SET reserved_tokens=p.reserved_tokens+?,spent_tokens=p.spent_tokens+?,accepted_calls=p.accepted_calls+? FROM token_budget_account a WHERE a.tenant_id=? AND a.account_id=? AND p.tenant_id=a.tenant_id AND p.period_id=a.period_id",reserved,spent,calls,tenant,account)){s.executeUpdate();}
     }
 
     private Account read(Connection c,String account,boolean lock)throws SQLException {

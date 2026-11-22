@@ -13,7 +13,9 @@ public class ModelUsageConfiguration {
                 env.getProperty("agent.usage.enabled", Boolean.class, false),
                 env.getProperty("agent.usage.run-token-limit", Long.class, 20000L),
                 env.getProperty("agent.usage.run-call-limit", Integer.class, 8),
-                env.getProperty("agent.usage.call-token-estimate", Long.class, 4096L)),
+                env.getProperty("agent.usage.call-token-estimate", Long.class, 4096L),
+                env.getProperty("agent.usage.tenant-day-token-limit", Long.class, 1000000L),
+                env.getProperty("agent.usage.tenant-day-call-limit", Integer.class, 1000)),
                 new BoundedModelRouter(env.getProperty("spring.ai.dashscope.chat.options.model", "qwen-plus"),
                         env.getProperty("agent.usage.fallback-model")));
     }
