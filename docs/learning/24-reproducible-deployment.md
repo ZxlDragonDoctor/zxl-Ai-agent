@@ -2,6 +2,8 @@
 
 首批已实现三角色环境预检，见 [预检使用说明](../../scripts/lesson24/README.md)。10 项测试通过，本机 main、worker、mcp 显式环境检查均通过；这不代表干净环境部署、TLS、数据库迁移和回滚已经验收。
 
+后续已完成固定提交干净构建、企业专用JAR三角色启动、新数据库V9迁移、真实模型2070 token以及主应用重启报告与账本读回。见[干净源码与企业入口](24-clean-source-and-enterprise-entry.md)及[实际证据边界](../images/lesson24-clean-2026-11-23/README.md)。容器、TLS、回滚和完整业务验收仍未完成。
+
 本课是下一课的完整任务，尚未完成部署验收。目标是在干净检出中启动正式身份、PostgreSQL + pgvector、主应用、知识 Worker、MCP 和前端，独立核对迁移、权限、模型调用、预算及重启恢复。不能依赖开发者 target 中的历史 class 副本。
 
 ## 核心概念

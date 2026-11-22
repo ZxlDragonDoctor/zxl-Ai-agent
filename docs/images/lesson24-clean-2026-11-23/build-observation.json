@@ -1,0 +1,14 @@
+{
+  "commit": "89f48eaaeae3a429b1f9665b550bc95e942203c4",
+  "offlineInstall": "failed: missing npm tarball cache",
+  "jarSha256": "8740b2402cb0c5291522f1919355c1ad2e7b2c56a459903e77b8c68b2e42c1d3",
+  "testsExecutedByPackage": false,
+  "frontendExit": 0,
+  "docker": "engine pipe unavailable; no container run",
+  "backendCommand": "mvn -o -q -DskipTests package",
+  "sourceArchiveSha256": "2669a47142e1cbc5affe6c7babff8c5b3c2ab31dc447347b1212659405a0e68e",
+  "frontendBuild": "npm run build",
+  "scope": "clean tracked-source build; not runtime or container acceptance",
+  "frontendInstall": "npm ci --ignore-scripts",
+  "backendExit": 0
+}
