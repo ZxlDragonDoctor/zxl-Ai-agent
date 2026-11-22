@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import evidence from '../../../docs/images/lesson23-usage-2026-11-20/live-usage.json'
 import workflow from '../../../docs/images/lesson23-usage-2026-11-20/http-usage.json'
+import periodWorkflow from '../../../docs/images/lesson23-period-live-2026-11-23/http-usage.json'
 defineProps<{ zh: boolean }>()
 </script>
 
@@ -28,7 +29,19 @@ defineProps<{ zh: boolean }>()
       </dl>
       <p>{{ zh ? '逐次返回用量' : 'Per-call returned usage' }}: {{ workflow.account.entries.map(row => row.actual ?? (zh ? '未知' : 'Unknown')).join(' + ') }} = {{ workflow.account.spent }} token</p>
     </section>
-    <p class="scope">{{ zh ? '预算开关默认关闭，验收实例显式开启。以上是每 run 配额阶段的历史记录；新增租户周期机制请阅读本课周期预算文档，其真实 HTTP 验收另记。' : 'Budget enforcement is off by default and explicitly enabled in the acceptance instance. These are historical per-run quota observations. See the tenant-period guide for the new mechanism; its live HTTP acceptance is recorded separately.' }}</p>
+    <section class="http-usage period-usage">
+      <h3>{{ zh ? '新验收：运行与租户周期双层结算' : 'New acceptance: run and tenant-period settlement' }}</h3>
+      <p class="scope">{{ zh ? '2026-11-23 本地时间 · 新租户真实认证 HTTP / MCP / 模型；历史快照。' : '2026-11-23 local time · Fresh-tenant live authenticated HTTP / MCP / model; historical snapshot.' }}</p>
+      <dl>
+        <dt>{{ zh ? '归属周期 / 数据库日期（UTC）' : 'Bound period / database date (UTC)' }}</dt><dd>{{ periodWorkflow.account.periodId }} / {{ periodWorkflow.account.databaseUtcDate }}</dd>
+        <dt>{{ zh ? '运行已知用量' : 'Recorded run usage' }}</dt><dd>{{ periodWorkflow.account.spent }} token</dd>
+        <dt>{{ zh ? '租户周期已知用量' : 'Recorded tenant-period usage' }}</dt><dd>{{ periodWorkflow.account.period.spent }} token</dd>
+        <dt>{{ zh ? '运行 / 周期预留' : 'Run / period reservation' }}</dt><dd>{{ periodWorkflow.account.reserved }} / {{ periodWorkflow.account.period.reserved }}</dd>
+        <dt>{{ zh ? '运行 / 周期受理次数' : 'Run / period accepted calls' }}</dt><dd>{{ periodWorkflow.account.calls }} / {{ periodWorkflow.account.period.calls }}</dd>
+      </dl>
+      <p>{{ zh ? '新租户只有本次运行，因此双层余额相同；跨运行竞争和跨日结算另由真实 PG 测试验证。此处不是实时账单。' : 'This fresh tenant has only this run, so both totals match. Cross-run contention and rollover are covered by separate PostgreSQL tests. This is not a live bill.' }}</p>
+    </section>
+    <p class="scope">{{ zh ? '预算开关默认关闭，验收实例显式开启。验收卡均为历史快照；周期按运行首次初始化UTC日归集。其他模型入口、UNKNOWN运维对账和更多业务场景仍待补齐。' : 'Budget enforcement is off by default and explicitly enabled in the acceptance instance. All cards are historical snapshots. Periods follow the UTC date of first run initialization. Other model entry points, UNKNOWN reconciliation and broader workflows remain incomplete.' }}</p>
   </section>
 </template>
 

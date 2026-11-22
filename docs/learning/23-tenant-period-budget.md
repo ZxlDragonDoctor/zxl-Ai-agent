@@ -28,3 +28,7 @@
 阅读 ScopedModelBudgetFactory.initialize → TokenBudgetLedger.reserve → transition。说明为何同一事务内需要固定锁顺序，以及为何跨日已发送调用不能结算到新建的空周期。尝试把周期额度设为仅允许一个估额，在两个run同时请求时证明只有一个取得发送前预留。
 
 [下一课完整任务：可复现部署与交付](24-reproducible-deployment.md)
+
+## 真实HTTP补验
+
+2026-11-23本地时间，新租户完成认证、多Agent、MCP空检索与模型拒答。两次usage合计2114，run与period均结算2114、预留归零，独立PG日期及绑定周期均为2026-11-22（UTC）。这是单run新租户一致性证据，不替代跨run并发测试。[观察与截图](../images/lesson23-period-live-2026-11-23/README.md)。
