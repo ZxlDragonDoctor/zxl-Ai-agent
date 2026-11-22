@@ -1,0 +1,65 @@
+[
+  {
+    "name": "com.zxl.zxlaiagent.agent.stream.RoutedStreamBudgetPgTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.agent.stream.StreamBudgetPgTest",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.agent.stream.StreamBudgetPoolPgTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.research.StreamingResearchBudgetWiringTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.security.web.FormalGatewayActivationTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.usage.BoundedModelRouterTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.usage.ScopedModelBudgetFactoryPgTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.usage.TenantPeriodBudgetPgTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.usage.TokenBudgetLedgerPgTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]

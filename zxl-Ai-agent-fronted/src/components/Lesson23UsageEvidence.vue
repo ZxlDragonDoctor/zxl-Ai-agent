@@ -28,7 +28,7 @@ defineProps<{ zh: boolean }>()
       </dl>
       <p>{{ zh ? '逐次返回用量' : 'Per-call returned usage' }}: {{ workflow.account.entries.map(row => row.actual ?? (zh ? '未知' : 'Unknown')).join(' + ') }} = {{ workflow.account.spent }} token</p>
     </section>
-    <p class="scope">{{ zh ? '预算开关默认关闭，验收实例显式开启。当前仅每 run 配额；其他模型入口、租户周期总额和更多业务场景仍待核对。' : 'Budget enforcement is off by default and explicitly enabled in the acceptance instance. This is a per-run quota; other model entry points, tenant-period limits and broader workflows still need verification.' }}</p>
+    <p class="scope">{{ zh ? '预算开关默认关闭，验收实例显式开启。以上是每 run 配额阶段的历史记录；新增租户周期机制请阅读本课周期预算文档，其真实 HTTP 验收另记。' : 'Budget enforcement is off by default and explicitly enabled in the acceptance instance. These are historical per-run quota observations. See the tenant-period guide for the new mechanism; its live HTTP acceptance is recorded separately.' }}</p>
   </section>
 </template>
 
