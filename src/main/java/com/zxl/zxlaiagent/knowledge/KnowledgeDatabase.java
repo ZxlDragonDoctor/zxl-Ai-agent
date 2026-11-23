@@ -11,11 +11,12 @@ public final class KnowledgeDatabase {
                 var thread = new Thread(task, "retrieval-sql-cancellation"); thread.setDaemon(true); return thread;
             });
     private final String url,user,password;
-    public KnowledgeDatabase(String url,String user,String password){
+    public KnowledgeDatabase(String url,String user,String password){this(url,user,password,com.zxl.zxlaiagent.persistence.DatabaseSchemaLifecycle.Mode.environment());}
+    public KnowledgeDatabase(String url,String user,String password,com.zxl.zxlaiagent.persistence.DatabaseSchemaLifecycle.Mode mode){
         if(url==null||!url.startsWith("jdbc:postgresql:"))throw new IllegalArgumentException("LESSON12_DB_URL must name a real PostgreSQL database");
         this.url=url;this.user=user;this.password=password;
-        Flyway.configure().dataSource(url,user,password).schemas("lesson12").defaultSchema("lesson12")
-                .locations("classpath:db/lesson12").table("lesson12_schema_history").load().migrate();
+        com.zxl.zxlaiagent.persistence.DatabaseSchemaLifecycle.apply(Flyway.configure().dataSource(url,user,password).schemas("lesson12").defaultSchema("lesson12")
+                .locations("classpath:db/lesson12").table("lesson12_schema_history").load(),mode);
     }
     @FunctionalInterface public interface Work<T>{T run(Connection c)throws SQLException;}
     /** Authorization audit and business SQL use this one owned PG transaction. */

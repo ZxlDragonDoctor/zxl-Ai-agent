@@ -6,10 +6,11 @@ import java.sql.*;
 /** Own connections explicitly: enabling this lesson never changes the application's default data source. */
 public final class LessonDatabase {
     private final String url, user, password;
-    public LessonDatabase(String url, String user, String password) {
+    public LessonDatabase(String url, String user, String password) {this(url,user,password,DatabaseSchemaLifecycle.Mode.environment());}
+    public LessonDatabase(String url,String user,String password,DatabaseSchemaLifecycle.Mode mode) {
         this.url = url; this.user = user; this.password = password;
-        Flyway.configure().dataSource(url, user, password).locations("classpath:db/lesson9")
-                .table("lesson9_schema_history").load().migrate();
+        DatabaseSchemaLifecycle.apply(Flyway.configure().dataSource(url, user, password).locations("classpath:db/lesson9")
+                .table("lesson9_schema_history").load(),mode);
     }
     @FunctionalInterface public interface Work<T> { T apply(Connection c) throws SQLException; }
     public <T> T transaction(Work<T> work) {

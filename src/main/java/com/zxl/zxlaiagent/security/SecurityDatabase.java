@@ -23,7 +23,8 @@ public final class SecurityDatabase implements AutoCloseable {
    return r.getString(1)+"\n"+r.getString(2)+"\n"+r.getInt(3);
   }
  }
- public SecurityDatabase(String url,String user,String password){if(url==null||!url.startsWith("jdbc:postgresql:"))throw new IllegalArgumentException("Security requires explicit PostgreSQL configuration");this.url=url;this.user=user;this.password=password;Flyway.configure().dataSource(url,user,password).schemas("lesson17").defaultSchema("lesson17").locations("classpath:db/lesson17").table("lesson17_schema_history").load().migrate();connectionIdentity=initializeIdentity();}
+ public SecurityDatabase(String url,String user,String password){this(url,user,password,com.zxl.zxlaiagent.persistence.DatabaseSchemaLifecycle.Mode.environment());}
+ public SecurityDatabase(String url,String user,String password,com.zxl.zxlaiagent.persistence.DatabaseSchemaLifecycle.Mode mode){if(url==null||!url.startsWith("jdbc:postgresql:"))throw new IllegalArgumentException("Security requires explicit PostgreSQL configuration");this.url=url;this.user=user;this.password=password;com.zxl.zxlaiagent.persistence.DatabaseSchemaLifecycle.apply(Flyway.configure().dataSource(url,user,password).schemas("lesson17").defaultSchema("lesson17").locations("classpath:db/lesson17").table("lesson17_schema_history").load(),mode);connectionIdentity=initializeIdentity();}
  public static SecurityDatabase fromEnvironment(){return new SecurityDatabase(System.getenv("LESSON12_DB_URL"),System.getenv("LESSON12_DB_USER"),System.getenv("LESSON12_DB_PASSWORD"));}
  /** Deployment-owned factory; pool parameters are trusted Java configuration, never model arguments. */
  public static SecurityDatabase pooledFromEnvironment(){return pooled(System.getenv("LESSON12_DB_URL"),System.getenv("LESSON12_DB_USER"),System.getenv("LESSON12_DB_PASSWORD"),4,1000);}
