@@ -1,0 +1,32 @@
+[
+  {
+    "role": "main",
+    "dbUser": "agent_runtime",
+    "schemaMode": "validate",
+    "adminCredentialPresent": false,
+    "migrationCredentialPresent": false,
+    "runtimeCredentialMatched": true,
+    "image": "sha256:ef5539199a0636c661a395766ad554105a2532e3d06e9b0aae2b811a937399d1",
+    "state": "running"
+  },
+  {
+    "role": "worker",
+    "dbUser": "agent_runtime",
+    "schemaMode": "validate",
+    "adminCredentialPresent": false,
+    "migrationCredentialPresent": false,
+    "runtimeCredentialMatched": true,
+    "image": "sha256:ef5539199a0636c661a395766ad554105a2532e3d06e9b0aae2b811a937399d1",
+    "state": "running"
+  },
+  {
+    "role": "mcp",
+    "dbUser": "agent_runtime",
+    "schemaMode": "validate",
+    "adminCredentialPresent": false,
+    "migrationCredentialPresent": false,
+    "runtimeCredentialMatched": true,
+    "image": "sha256:ef5539199a0636c661a395766ad554105a2532e3d06e9b0aae2b811a937399d1",
+    "state": "running"
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "historyDeleteAfterFailure": false,
+  "grantExit": 3,
+  "scope": "actual PostgreSQL authorization transaction rollback; no business data modified",
+  "fault": "division by zero after all-tables DML grant, before history revoke"
+}

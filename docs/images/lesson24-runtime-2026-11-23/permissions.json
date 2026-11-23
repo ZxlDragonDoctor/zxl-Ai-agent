@@ -1,0 +1,40 @@
+{
+  "scope": "actual runtime-role connections to new container PostgreSQL; each mutation probe wrapped in rollback",
+  "role": {
+    "role": "agent_runtime",
+    "superuser": false,
+    "createDb": false,
+    "createRole": false,
+    "bypassRls": false,
+    "temporary": false,
+    "schemaCreate": false,
+    "historyUpdate": false
+  },
+  "checks": [
+    {
+      "name": "createTable",
+      "denied": true,
+      "sqlState": "42501"
+    },
+    {
+      "name": "alterTable",
+      "denied": true,
+      "sqlState": "42501"
+    },
+    {
+      "name": "temporaryTable",
+      "denied": true,
+      "sqlState": "42501"
+    },
+    {
+      "name": "writeHistory",
+      "denied": true,
+      "sqlState": "42501"
+    },
+    {
+      "name": "assumeMigrator",
+      "denied": true,
+      "sqlState": "42501"
+    }
+  ]
+}

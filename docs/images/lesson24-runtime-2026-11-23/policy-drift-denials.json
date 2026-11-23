@@ -1,0 +1,12 @@
+[
+  {
+    "denied": true,
+    "case": "replication flag; bootstrap",
+    "exit": 3
+  },
+  {
+    "denied": true,
+    "case": "controlled table ownership; grant",
+    "exit": 3
+  }
+]

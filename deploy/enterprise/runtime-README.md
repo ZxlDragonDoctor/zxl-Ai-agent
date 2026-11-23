@@ -24,3 +24,5 @@ docker compose --project-name lesson24-runtime --env-file /absolute/private.env 
 镜像需父流程用已固定源码/校验值的JAR和dist预先构建，不在Compose运行阶段构建。需要外部psql验收时使用单独私有覆盖文件发布PG至loopback，主拓扑默认不发布PG。共享网络命名空间的重启仍使用restart-apps.mjs并传本文件，不能并行restart全组。
 
 8项Node测试只是环境隔离、阶段依赖及SQL授权契约，不代替真实PG/容器验证。须实际核实角色标志、DDL/history写拒绝、业务HTTP与结算、首次与重复迁移、重启后读回。未实测前不将本文件标为课程完成。
+
+父任务已在独立容器组实测上述启动、真实模型2629 token、权限拒绝、漂移防护和授权故障回滚，见[分层证据](../../docs/images/lesson24-runtime-2026-11-23/README.md)。TLS、备份恢复、应用回滚和完整业务链仍未覆盖。

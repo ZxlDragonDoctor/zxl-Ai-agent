@@ -1,0 +1,23 @@
+{
+  "database": {
+    "runtimeTemporary": false,
+    "runtimeSchemaCreate": false,
+    "securityVersion": 9,
+    "knowledgeVersion": 3
+  },
+  "scope": "hardened transactional scripts on second fresh PG volume; initialization only, no application or model run",
+  "jobs": [
+    {
+      "exit": 0,
+      "role": "bootstrap"
+    },
+    {
+      "exit": 0,
+      "role": "migrate"
+    },
+    {
+      "exit": 0,
+      "role": "grant"
+    }
+  ]
+}

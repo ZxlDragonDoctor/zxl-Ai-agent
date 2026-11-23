@@ -1,0 +1,27 @@
+{
+  "javaImage": "sha256:ef5539199a0636c661a395766ad554105a2532e3d06e9b0aae2b811a937399d1",
+  "containerJarMatched": true,
+  "frontendInstall": "npm ci --ignore-scripts",
+  "frontendImage": "sha256:e5396a9c4e5d0ef641d821e39e85ee49bb543acfc6f5d3d908f93b9b21fca99b",
+  "sourceCommit": "8965687916e0e888f70cb3c6427446a4a1206ea4",
+  "tests": [
+    {
+      "tests": 4,
+      "failures": 0,
+      "name": "com.zxl.enterprise.EnterpriseBootstrapTest",
+      "skipped": 0,
+      "errors": 0
+    },
+    {
+      "tests": 1,
+      "failures": 0,
+      "name": "com.zxl.zxlaiagent.persistence.RuntimeSchemaPgTest",
+      "skipped": 0,
+      "errors": 0
+    }
+  ],
+  "frontendBuildExit": 0,
+  "scope": "new isolated runtime container group; scripts from current deployment commit, JAR from fixed source commit",
+  "jarSha256": "e58ffda307674163191bec1e0103230985f2b1cddcf04a2d3e1d13d3ad9bea81",
+  "cleanBuildExit": 0
+}

@@ -1,0 +1,13 @@
+{
+  "commit": "8965687916e0e888f70cb3c6427446a4a1206ea4",
+  "sha256": "c1f7002636e174c668fb5581d5fa68ca5213245514e06ee946c28b0ca48367fd",
+  "archive": "target/lesson24-runtime-clean.zip",
+  "trackedEntries": 1944,
+  "omittedSubmodules": [
+    {
+      "path": "zxl-image-search-mcp",
+      "commit": "3375df019d487097b8b2dc4c9deca600377d8187"
+    }
+  ],
+  "scope": "Git commit tree only; explicit omitted submodules listed; no working-tree files; not a build or deployment verification"
+}
