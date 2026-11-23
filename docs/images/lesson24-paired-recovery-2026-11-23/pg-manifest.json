@@ -1,0 +1,10 @@
+{
+  "status": "complete",
+  "source": "lesson24-runtime-pg-1",
+  "user": "bootstrap_admin",
+  "database": "agent",
+  "archive": "target/lesson24-paired-pg.dump",
+  "scope": "custom-format logical PG backup; contains sensitive data; no globals or role passwords",
+  "sourceContainerId": "2e9d7e94f97413137e7ac2526bd0079f520a554ab697add12229342065f3ca20",
+  "sha256": "8b65060a7d197a98cc7172c9da5dee07436fc278447439beb240f7bc4187061f"
+}

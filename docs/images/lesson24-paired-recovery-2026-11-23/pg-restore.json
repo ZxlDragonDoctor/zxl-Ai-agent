@@ -1,0 +1,10 @@
+{
+  "status": "complete",
+  "source": "lesson24-runtime-pg-1",
+  "target": "lesson24-paired-recovery-pg-1",
+  "targetContainerId": "abbc4b60cd5cef1ea8e2b323b6577447c5752b01e2a6b7889fa4dee89229e4e1",
+  "user": "bootstrap_admin",
+  "database": "agent_pair_recovered",
+  "archiveSha256": "8b65060a7d197a98cc7172c9da5dee07436fc278447439beb240f7bc4187061f",
+  "scope": "restore to explicitly new database only; preserve archive owner and ACL; no source mutation"
+}

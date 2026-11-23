@@ -1,0 +1,5 @@
+{
+  "actor": "same tenant other authenticated principal",
+  "detailStatus": 404,
+  "absentFromList": true
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "case": "running source",
+    "exitCode": 1,
+    "code": "VOLUME_IN_USE"
+  },
+  {
+    "case": "source target",
+    "exitCode": 1,
+    "code": "SOURCE_TARGET_SAME"
+  },
+  {
+    "case": "existing detached target",
+    "exitCode": 1,
+    "code": "TARGET_VOLUME_EXISTS"
+  }
+]

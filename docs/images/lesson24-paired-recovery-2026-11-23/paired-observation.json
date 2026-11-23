@@ -1,0 +1,31 @@
+{
+  "source": "lesson24-runtime",
+  "restored": "lesson24-paired-recovery",
+  "origin": "http://127.0.0.1:5218",
+  "conversationId": "0e614ea9-e661-43b5-a3d0-931f3b3e470a",
+  "selectedPgTablesEqual": true,
+  "apiDetailEqual": true,
+  "apiDetailSha256": "44b0ac3761a447a270da5350d4f6987ac73aa7f3beebe85ecaea8878156c066c",
+  "messages": 2,
+  "runs": 1,
+  "modelBoundary": "demo-literal-containment-v1 abstention; no new real answer-model call",
+  "volumeStatAndSha256": "10001:10001 3486\na1657ddfd6c155b871cd5d971300a1af8d5798460d096c400bff7a5eb3e3514b  /volume/0e614ea9-e661-43b5-a3d0-931f3b3e470a.json",
+  "sessionPolicy": "10 restored active sessions revoked before application startup; fresh authentication required",
+  "scope": "all source app writers stopped for both backups; local manual quiescence, no cross-resource transaction or live snapshot guarantee",
+  "pairedArchives": {
+    "pgSha256": "8b65060a7d197a98cc7172c9da5dee07436fc278447439beb240f7bc4187061f",
+    "volumeSha256": "df3e02a995c3b413dc130e8013c4e7d81da1d2322c1d1c3c6a338292a09d063a"
+  },
+  "newWriteAfterRestore": {
+    "messages": 2,
+    "runs": 1,
+    "status": "completed",
+    "temporaryConversationDeleted": true
+  },
+  "orderedRestartReadback": {
+    "messages": 2,
+    "runs": 1,
+    "apiDetailSha256": "44b0ac3761a447a270da5350d4f6987ac73aa7f3beebe85ecaea8878156c066c"
+  },
+  "sourceFixtureDeletedByApi": true
+}

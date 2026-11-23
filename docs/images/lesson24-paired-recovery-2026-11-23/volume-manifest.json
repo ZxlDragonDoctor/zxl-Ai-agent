@@ -1,0 +1,16 @@
+{
+  "status": "complete",
+  "source": "lesson24-runtime_conversations",
+  "image": "eclipse-temurin@sha256:541b08fc7f494edf14e436ff6bfb55767e4a115c87bfc547b8c5de957b58737f",
+  "scope": "quiesced conversation files only; pair with PG ownership snapshot; not live application-consistent backup",
+  "files": [
+    {
+      "name": "0e614ea9-e661-43b5-a3d0-931f3b3e470a.json",
+      "size": 3486,
+      "uid": 10001,
+      "gid": 10001,
+      "sha256": "a1657ddfd6c155b871cd5d971300a1af8d5798460d096c400bff7a5eb3e3514b"
+    }
+  ],
+  "sha256": "df3e02a995c3b413dc130e8013c4e7d81da1d2322c1d1c3c6a338292a09d063a"
+}
