@@ -1,0 +1,51 @@
+[
+  {
+    "name": "com.zxl.enterprise.EnterpriseBootstrapTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.knowledge.KnowledgePgTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.persistence.PersistentWorkerTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.persistence.PersistentWorkflowRepositoryTest",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.persistence.RuntimeSchemaPgTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.security.SecurityDatabasePoolPgTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "name": "com.zxl.zxlaiagent.usage.TokenBudgetLedgerPgTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]

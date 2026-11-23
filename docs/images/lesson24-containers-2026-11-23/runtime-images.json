@@ -1,0 +1,36 @@
+{
+  "jarMode": "0444",
+  "javaImage": "sha256:9cef4ad2aa399b9bd9c319a2a03b69d2a9b7b877ae41cf17a59af6f1e1af6af0",
+  "jarSourceCommit": "4afd70f13dd74dd0c27189c1b56dec880a87a723",
+  "uid": 10001,
+  "scope": "container runtime baseline; does not include new schema-validation code",
+  "frontendImage": "sha256:4087ef0577195bd8b6a3108ad68950610a9de58272564c09d9019d6e5ce3b69b",
+  "roles": [
+    {
+      "role": "main",
+      "networkMode": "lesson24-enterprise_default",
+      "status": "running"
+    },
+    {
+      "role": "worker",
+      "networkMode": "container:6c6fc9eddadf8bb0fd16546ecfb37a88251b9f954dde6fbbbd63e73b423f7d99",
+      "status": "running"
+    },
+    {
+      "role": "mcp",
+      "networkMode": "container:6c6fc9eddadf8bb0fd16546ecfb37a88251b9f954dde6fbbbd63e73b423f7d99",
+      "status": "running"
+    },
+    {
+      "role": "frontend",
+      "networkMode": "container:6c6fc9eddadf8bb0fd16546ecfb37a88251b9f954dde6fbbbd63e73b423f7d99",
+      "status": "running"
+    },
+    {
+      "role": "pg",
+      "networkMode": "lesson24-enterprise_default",
+      "status": "running"
+    }
+  ],
+  "jarSha256": "f3d82870943966a9773501a729259e8eb74f1a522b537d6fd43bb9014b3198c8"
+}

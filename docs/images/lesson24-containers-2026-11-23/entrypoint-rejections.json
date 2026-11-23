@@ -1,0 +1,7 @@
+{
+  "unknownRoleExit": 1,
+  "missingConfigCode": "DB_URL_REQUIRED",
+  "unknownRoleCode": "ROLE_INVALID",
+  "missingConfigExit": 1,
+  "scope": "real image rejection before Java; synthetic environment only"
+}

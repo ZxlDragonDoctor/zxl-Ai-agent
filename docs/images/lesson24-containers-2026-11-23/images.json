@@ -1,0 +1,29 @@
+[
+  {
+    "tagUsedForDiscovery": "eclipse-temurin:17-jre",
+    "id": "sha256:541b08fc7f494edf14e436ff6bfb55767e4a115c87bfc547b8c5de957b58737f",
+    "repoDigests": [
+      "eclipse-temurin@sha256:541b08fc7f494edf14e436ff6bfb55767e4a115c87bfc547b8c5de957b58737f"
+    ],
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  {
+    "tagUsedForDiscovery": "nginx:stable-alpine",
+    "id": "sha256:caf4e1e032a20f9c3c5e28fc7f25ffd768ad8677b4975c54193075997b3a97e3",
+    "repoDigests": [
+      "nginx@sha256:caf4e1e032a20f9c3c5e28fc7f25ffd768ad8677b4975c54193075997b3a97e3"
+    ],
+    "os": "linux",
+    "architecture": "amd64"
+  },
+  {
+    "tagUsedForDiscovery": "pgvector/pgvector:pg16",
+    "id": "sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f",
+    "repoDigests": [
+      "pgvector/pgvector@sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f"
+    ],
+    "os": "linux",
+    "architecture": "amd64"
+  }
+]
