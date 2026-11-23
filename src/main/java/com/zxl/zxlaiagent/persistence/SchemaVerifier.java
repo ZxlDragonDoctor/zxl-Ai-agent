@@ -13,7 +13,8 @@ public final class SchemaVerifier {
  }
  static Result run(String[] modules,Map<String,String> environment,Check check) {
   if(modules==null||modules.length==0)return new Result(2,"SCHEMA_MODULE_INVALID");
-  for(String module:modules)if(module==null||!Set.of("security","knowledge","lesson9").contains(module))return new Result(2,"SCHEMA_MODULE_INVALID");
+  var seen=new java.util.HashSet<String>();
+  for(String module:modules)if(module==null||!Set.of("security","knowledge","lesson9").contains(module)||!seen.add(module))return new Result(2,"SCHEMA_MODULE_INVALID");
   if(environment==null)return new Result(2,"SCHEMA_ENV_REQUIRED");
   for(String name:new String[]{"LESSON12_DB_URL","LESSON12_DB_USER","LESSON12_DB_PASSWORD"})if(environment.get(name)==null||environment.get(name).isBlank())return new Result(2,"SCHEMA_ENV_REQUIRED");
   String url=environment.get("LESSON12_DB_URL");

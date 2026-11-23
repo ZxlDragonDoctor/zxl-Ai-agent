@@ -1,6 +1,6 @@
 # Candidate schema compatibility check
 
-`com.zxl.zxlaiagent.persistence.SchemaVerifier` is a one-shot read-only candidate check. Explicit modules are `security knowledge lesson9`; no module selection is inferred. It reads the candidate process's `LESSON12_DB_URL`, `LESSON12_DB_USER`, `LESSON12_DB_PASSWORD`. Use the restricted runtime identity and candidate image, not the migration identity or an unrelated current JAR.
+`com.zxl.zxlaiagent.persistence.SchemaVerifier` is a one-shot read-only candidate check. Explicit modules are `security knowledge lesson9`; no module selection is inferred. Duplicate modules are rejected as `SCHEMA_MODULE_INVALID` before environment access or any database check. It reads the candidate process's `LESSON12_DB_URL`, `LESSON12_DB_USER`, `LESSON12_DB_PASSWORD`. Use the restricted runtime identity and candidate image, not the migration identity or an unrelated current JAR.
 
 ```sh
 docker compose --project-name <explicit-project> --env-file /absolute/private.env -f <actual-compose.json> run --rm --no-deps -T --entrypoint java main -Dloader.main=com.zxl.zxlaiagent.persistence.SchemaVerifier -cp /opt/agent/app.jar org.springframework.boot.loader.launch.PropertiesLauncher security knowledge
