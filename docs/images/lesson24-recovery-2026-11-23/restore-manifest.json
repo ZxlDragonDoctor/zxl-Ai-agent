@@ -1,0 +1,10 @@
+{
+  "status": "complete",
+  "source": "lesson24-runtime-pg-1",
+  "target": "lesson24-recovery-pg-1",
+  "targetContainerId": "c0de8be1d044edbbf09fa0c74ace0a67c6ed628887b903dffb7d38efe28d3651",
+  "user": "bootstrap_admin",
+  "database": "agent_recovered",
+  "archiveSha256": "b7a8e9f4883b2d3279749878a076b88ae778b6d30bf23eb06acdcb4d9bb9485a",
+  "scope": "restore to explicitly new database only; preserve archive owner and ACL; no source mutation"
+}

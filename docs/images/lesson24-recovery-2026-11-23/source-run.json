@@ -1,0 +1,105 @@
+{
+  "scope": "live authenticated HTTP multi-agent workflow, real qwen-plus, MCP and PG ledger",
+  "model": "qwen-plus",
+  "tenant": "lesson23-runtime-container-v1",
+  "runId": "c48592be-6a8f-4459-8eb3-849f21bd88e9",
+  "discovery": "READY",
+  "status": "completed",
+  "errorCode": null,
+  "result": "当前有效知识中没有找到匹配资料；未生成缺乏证据的结论。 / No matching current evidence.",
+  "cleanupPending": false,
+  "initialBudget": {
+    "databaseUtcDate": "2026-11-23",
+    "runCount": 0,
+    "periodCount": 0
+  },
+  "account": {
+    "limit": 20000,
+    "reserved": 0,
+    "spent": 2629,
+    "calls": 2,
+    "periodId": "2026-11-23",
+    "databaseUtcDate": "2026-11-23",
+    "tenantRunCount": 1,
+    "period": {
+      "limit": 1000000,
+      "reserved": 0,
+      "spent": 2629,
+      "calls": 2
+    },
+    "entries": [
+      {
+        "state": "SETTLED",
+        "estimate": 4096,
+        "actual": 1297
+      },
+      {
+        "state": "SETTLED",
+        "estimate": 4096,
+        "actual": 1332
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "capability": "research",
+      "status": "COMPLETED",
+      "modelCalls": 1
+    }
+  ],
+  "businessWrites": 0,
+  "toolEvents": [
+    {
+      "type": "TOOL_STARTED",
+      "toolName": "knowledge__knowledge_lookup_v2"
+    },
+    {
+      "type": "TOOL_COMPLETED",
+      "toolName": "knowledge__knowledge_lookup_v2",
+      "retrieval": {
+        "success": true,
+        "code": "OK",
+        "hits": 0,
+        "degradations": [],
+        "stages": [
+          {
+            "name": "index-profile",
+            "status": "OK",
+            "elapsedMs": 28,
+            "candidateCount": 0
+          },
+          {
+            "name": "rewrite",
+            "status": "DISABLED",
+            "elapsedMs": 0,
+            "candidateCount": 0
+          },
+          {
+            "name": "vector",
+            "status": "SKIPPED_EMPTY_INDEX",
+            "elapsedMs": 0,
+            "candidateCount": 0
+          },
+          {
+            "name": "keyword",
+            "status": "OK",
+            "elapsedMs": 39,
+            "candidateCount": 0
+          },
+          {
+            "name": "authorization-before-rerank",
+            "status": "OK",
+            "elapsedMs": 6,
+            "candidateCount": 0
+          },
+          {
+            "name": "final-visibility",
+            "status": "OK",
+            "elapsedMs": 6,
+            "candidateCount": 0
+          }
+        ]
+      }
+    }
+  ]
+}

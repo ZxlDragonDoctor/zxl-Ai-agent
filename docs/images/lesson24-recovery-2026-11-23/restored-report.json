@@ -1,0 +1,6 @@
+{
+  "scope": "restored database readback with new authentication; authenticated report read only; no new model request",
+  "runId": "c48592be-6a8f-4459-8eb3-849f21bd88e9",
+  "status": "completed",
+  "cleanupPending": false
+}

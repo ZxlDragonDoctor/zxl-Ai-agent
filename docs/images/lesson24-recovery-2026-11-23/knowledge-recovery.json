@@ -1,0 +1,10 @@
+{
+  "scope": "restored worker authenticated HTTP; real query embedding",
+  "documentId": "recovery-probe-20261123",
+  "rawTextMatched": true,
+  "chunks": 1,
+  "embeddingMode": "http:text-embedding-v3:acceptance-20261024:1024:9dca9469a42d",
+  "hitDocumentIds": [
+    "recovery-probe-20261123"
+  ]
+}

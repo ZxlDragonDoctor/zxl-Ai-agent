@@ -1,0 +1,6 @@
+{
+  "logicalRowsMatched": true,
+  "scope": "stable business rows before post-restore session invalidation; no active business writes during exercise",
+  "selectedTables": 12,
+  "countsMatched": true
+}

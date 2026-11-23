@@ -1,0 +1,26 @@
+[
+  {
+    "state": "running",
+    "database": "agent_recovered",
+    "role": "main",
+    "dbUser": "agent_runtime",
+    "image": "sha256:ef5539199a0636c661a395766ad554105a2532e3d06e9b0aae2b811a937399d1",
+    "schemaMode": "validate"
+  },
+  {
+    "state": "running",
+    "database": "agent_recovered",
+    "role": "worker",
+    "dbUser": "agent_runtime",
+    "image": "sha256:ef5539199a0636c661a395766ad554105a2532e3d06e9b0aae2b811a937399d1",
+    "schemaMode": "validate"
+  },
+  {
+    "state": "running",
+    "database": "agent_recovered",
+    "role": "mcp",
+    "dbUser": "agent_runtime",
+    "image": "sha256:ef5539199a0636c661a395766ad554105a2532e3d06e9b0aae2b811a937399d1",
+    "schemaMode": "validate"
+  }
+]

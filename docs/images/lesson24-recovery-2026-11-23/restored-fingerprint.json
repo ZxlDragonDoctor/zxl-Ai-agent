@@ -1,0 +1,65 @@
+{
+  "scope": "selected stable business tables; excludes sessions and mutable auth audits; MD5 only detects logical row differences, not archive authenticity",
+  "tables": [
+    {
+      "table": "lesson17.tenant",
+      "count": 1,
+      "logicalMd5": "d3709572da1e0b7c06364c011cc7f67a"
+    },
+    {
+      "table": "lesson17.resource_owner",
+      "count": 1,
+      "logicalMd5": "6bba09e93316c8463d1e8e3da1ae625c"
+    },
+    {
+      "table": "lesson17.durable_agent_run",
+      "count": 1,
+      "logicalMd5": "5a9ae4b163c8ee4bcd872299876360b6"
+    },
+    {
+      "table": "lesson17.durable_agent_run_event",
+      "count": 7,
+      "logicalMd5": "c78f46726626f97a1e1736876d3830a3"
+    },
+    {
+      "table": "lesson17.token_budget_account",
+      "count": 1,
+      "logicalMd5": "7eb9c0f4a71fb7e95c8658e54fce7cc8"
+    },
+    {
+      "table": "lesson17.token_budget_period",
+      "count": 1,
+      "logicalMd5": "e6f37c1bc4e61616125179408d89c9ab"
+    },
+    {
+      "table": "lesson17.token_budget_call",
+      "count": 2,
+      "logicalMd5": "697f48ca1935a6611a2dd61e7e70b753"
+    },
+    {
+      "table": "lesson17.ticket_approval",
+      "count": 0,
+      "logicalMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "table": "lesson17.approved_ticket",
+      "count": 0,
+      "logicalMd5": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "table": "lesson12.knowledge_document",
+      "count": 1,
+      "logicalMd5": "f45239f49b5815628ff5e4be380f4a90"
+    },
+    {
+      "table": "lesson12.knowledge_revision",
+      "count": 1,
+      "logicalMd5": "22298fbb35181b275c513fb3de0835ed"
+    },
+    {
+      "table": "lesson12.knowledge_chunk",
+      "count": 1,
+      "logicalMd5": "331fd2b756274ef18d506660405d18da"
+    }
+  ]
+}

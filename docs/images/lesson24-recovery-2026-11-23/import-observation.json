@@ -1,0 +1,13 @@
+{
+  "scope": "source synthetic document; actual HTTP embedding",
+  "outcome": "IMPORTED",
+  "document": {
+    "documentId": "recovery-probe-20261123",
+    "sourceName": "recovery-exercise.md",
+    "status": "ACTIVE",
+    "activeRevision": "70ada5fbbb4e1e1f62f360ade025c6b96b4b2b456f82f656418f2de1b2df987c",
+    "version": 1,
+    "chunkCount": 1,
+    "errorCode": null
+  }
+}

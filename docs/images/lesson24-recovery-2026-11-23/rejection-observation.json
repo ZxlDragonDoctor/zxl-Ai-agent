@@ -1,0 +1,7 @@
+{
+  "scope": "source check before normal source fixture cleanup; target overwrite rejected via canonical container ID alias",
+  "restoreExit": 1,
+  "sourceBusinessSnapshotUnchanged": true,
+  "existingDatabaseRestoreRejected": true,
+  "rejection": "TARGET_DATABASE_EXISTS"
+}

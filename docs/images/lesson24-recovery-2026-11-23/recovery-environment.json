@@ -1,0 +1,9 @@
+{
+  "database": "agent_recovered",
+  "postgresImage": "sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f",
+  "sourceAndTargetImageMatched": true,
+  "frontEndPort": 5217,
+  "restoredApplicationImage": "sha256:ef5539199a0636c661a395766ad554105a2532e3d06e9b0aae2b811a937399d1",
+  "sourceApplicationCommit": "8965687916e0e888f70cb3c6427446a4a1206ea4",
+  "scope": "same-version logical recovery; role passwords prepared separately"
+}

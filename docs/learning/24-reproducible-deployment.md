@@ -8,6 +8,8 @@
 
 最新独立低权限容器组已实测：agent_migrator迁移、agent_runtime validate、真实模型2629 token、权限漂移收敛/拒绝及授权事务故障回滚。[运行身份容器导读](24-runtime-identity-containers.md)与[分层证据](../images/lesson24-runtime-2026-11-23/README.md)区分新旧基线。TLS、备份恢复、回滚和完整业务仍待验收。
 
+PostgreSQL逻辑备份恢复已补验：另一容器新库恢复后12表摘要匹配，原报告、预算和1024维向量可读，真实检索命中；旧会话撤销，新登录与低权限检查通过。[备份恢复导读](24-postgresql-backup-and-recovery.md)明确文件卷、浏览器进度、WAL/PITR等未覆盖项，TLS、应用回滚和完整业务继续推进。
+
 本课是下一课的完整任务，尚未完成部署验收。目标是在干净检出中启动正式身份、PostgreSQL + pgvector、主应用、知识 Worker、MCP 和前端，独立核对迁移、权限、模型调用、预算及重启恢复。不能依赖开发者 target 中的历史 class 副本。
 
 ## 核心概念
