@@ -1,0 +1,129 @@
+{
+  "services": {
+    "pg": {
+      "image": "${POSTGRES_IMAGE:?digest required}",
+      "environment": {
+        "POSTGRES_DB": "agent",
+        "POSTGRES_USER": "${POSTGRES_USER:?required}",
+        "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD:?required}"
+      },
+      "volumes": [
+        "postgres:/var/lib/postgresql/data"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "pg_isready -U \"$${POSTGRES_USER}\" -d agent"
+        ],
+        "interval": "5s",
+        "timeout": "3s",
+        "retries": 20
+      }
+    },
+    "main": {
+      "image": "${ENTERPRISE_RUNTIME_IMAGE:?new schema-validation JAR image required}",
+      "command": [
+        "main"
+      ],
+      "environment": {
+        "LESSON12_DB_URL": "jdbc:postgresql://pg:5432/${RECOVERY_DB_NAME:?explicit restored database required}",
+        "LESSON12_DB_USER": "agent_runtime",
+        "LESSON12_DB_PASSWORD": "${RUNTIME_DB_PASSWORD:?required}",
+        "LESSON17_INTERNAL_SERVICE_TOKEN": "${LESSON17_INTERNAL_SERVICE_TOKEN:?required}",
+        "JAVA_TOOL_OPTIONS": "-Xms16m -Xmx256m -XX:+UseSerialGC -XX:TieredStopAtLevel=1",
+        "AGENT_CONVERSATION_STORAGE_DIR": "/data/conversations",
+        "LESSON17_CONVERSATION_DIR": "/data/conversations",
+        "AGENT_SECURITY_MODE": "required",
+        "AGENT_USAGE_ENABLED": "true",
+        "SPRING_AI_DASHSCOPE_API_KEY": "${SPRING_AI_DASHSCOPE_API_KEY:?required}",
+        "SERVER_PORT": "18301",
+        "SERVER_ADDRESS": "127.0.0.1",
+        "AGENT_SECURITY_KNOWLEDGE_WORKER_ORIGIN": "http://127.0.0.1:18132",
+        "AGENT_SECURITY_MCP_ORIGIN": "http://127.0.0.1:18135",
+        "AGENT_SECURITY_ALLOWED_ORIGINS": "http://127.0.0.1:${FRONTEND_PORT:-5217}",
+        "AGENT_DB_SCHEMA_MODE": "validate"
+      },
+      "ports": [
+        "127.0.0.1:${FRONTEND_PORT:-5217}:80"
+      ],
+      "volumes": [
+        "conversations:/data/conversations"
+      ],
+      "depends_on": {
+        "pg": {
+          "condition": "service_healthy"
+        }
+      }
+    },
+    "worker": {
+      "image": "${ENTERPRISE_RUNTIME_IMAGE:?new schema-validation JAR image required}",
+      "network_mode": "service:main",
+      "command": [
+        "worker"
+      ],
+      "depends_on": {
+        "main": {
+          "condition": "service_started"
+        }
+      },
+      "environment": {
+        "LESSON12_DB_URL": "jdbc:postgresql://pg:5432/${RECOVERY_DB_NAME:?explicit restored database required}",
+        "LESSON12_DB_USER": "agent_runtime",
+        "LESSON12_DB_PASSWORD": "${RUNTIME_DB_PASSWORD:?required}",
+        "LESSON17_INTERNAL_SERVICE_TOKEN": "${LESSON17_INTERNAL_SERVICE_TOKEN:?required}",
+        "JAVA_TOOL_OPTIONS": "-Xms16m -Xmx256m -XX:+UseSerialGC -XX:TieredStopAtLevel=1",
+        "AGENT_CONVERSATION_STORAGE_DIR": "/data/conversations",
+        "LESSON17_CONVERSATION_DIR": "/data/conversations",
+        "LESSON17_WORKER_PORT": "18132",
+        "LESSON12_EMBEDDING_MODE": "http",
+        "LESSON12_EMBEDDING_ENDPOINT": "${LESSON12_EMBEDDING_ENDPOINT:?required}",
+        "LESSON12_EMBEDDING_API_KEY": "${LESSON12_EMBEDDING_API_KEY:?required}",
+        "LESSON12_EMBEDDING_MODEL": "${LESSON12_EMBEDDING_MODEL:?required}",
+        "LESSON12_EMBEDDING_REVISION": "${LESSON12_EMBEDDING_REVISION:?required}",
+        "LESSON12_EMBEDDING_DIMENSIONS": "${LESSON12_EMBEDDING_DIMENSIONS:?required}",
+        "LESSON13_RERANK_MODE": "rule",
+        "AGENT_DB_SCHEMA_MODE": "validate"
+      },
+      "volumes": [
+        "conversations:/data/conversations"
+      ]
+    },
+    "mcp": {
+      "image": "${ENTERPRISE_RUNTIME_IMAGE:?new schema-validation JAR image required}",
+      "network_mode": "service:main",
+      "command": [
+        "mcp"
+      ],
+      "depends_on": {
+        "main": {
+          "condition": "service_started"
+        }
+      },
+      "environment": {
+        "LESSON12_DB_URL": "jdbc:postgresql://pg:5432/${RECOVERY_DB_NAME:?explicit restored database required}",
+        "LESSON12_DB_USER": "agent_runtime",
+        "LESSON12_DB_PASSWORD": "${RUNTIME_DB_PASSWORD:?required}",
+        "LESSON17_INTERNAL_SERVICE_TOKEN": "${LESSON17_INTERNAL_SERVICE_TOKEN:?required}",
+        "JAVA_TOOL_OPTIONS": "-Xms16m -Xmx256m -XX:+UseSerialGC -XX:TieredStopAtLevel=1",
+        "AGENT_CONVERSATION_STORAGE_DIR": "/data/conversations",
+        "LESSON17_CONVERSATION_DIR": "/data/conversations",
+        "LESSON17_MCP_PORT": "18135",
+        "LESSON17_KNOWLEDGE_WORKER_ORIGIN": "http://127.0.0.1:18132",
+        "AGENT_DB_SCHEMA_MODE": "validate"
+      }
+    },
+    "frontend": {
+      "image": "${ENTERPRISE_RUNTIME_FRONTEND_IMAGE:?required}",
+      "network_mode": "service:main",
+      "depends_on": {
+        "main": {
+          "condition": "service_started"
+        }
+      }
+    }
+  },
+  "volumes": {
+    "postgres": {},
+    "conversations": {}
+  }
+}
