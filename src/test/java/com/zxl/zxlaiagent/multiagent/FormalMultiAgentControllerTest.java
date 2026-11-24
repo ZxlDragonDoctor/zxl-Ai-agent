@@ -4,6 +4,8 @@ import com.zxl.zxlaiagent.controller.MultiAgentController;
 import com.zxl.zxlaiagent.multiagent.security.*;
 import com.zxl.zxlaiagent.security.*;
 import com.zxl.zxlaiagent.security.web.*;
+import com.zxl.zxlaiagent.usage.ModelUsageConfiguration;
+import com.zxl.zxlaiagent.usage.ScopedModelBudgetFactory;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -80,9 +82,14 @@ class FormalMultiAgentControllerTest {
         var mvc=mvc();for(String suffix:List.of("agents","events","harness/research-1","harness/benchmark"))mvc.perform(get("/api/ai/multiagent/"+suffix).contextPath("/api").cookie(cookie())).andExpect(status().isNotFound());verifyNoInteractions(service);
     }
     @Test void formalModeNeverRegistersLegacyController(){
-        new ApplicationContextRunner().withPropertyValues("agent.security.mode=required").withBean(ScopedMultiAgentService.class,()->service)
-                .withUserConfiguration(FormalMultiAgentController.class,MultiAgentController.class).run(context->{
+        new ApplicationContextRunner().withPropertyValues("agent.security.mode=required", "agent.usage.enabled=true")
+                .withBean(SecurityDatabase.class,()->mock(SecurityDatabase.class))
+                .withBean(ScopedMultiAgentService.class,()->service)
+                .withUserConfiguration(ModelUsageConfiguration.class,FormalMultiAgentController.class,MultiAgentController.class).run(context->{
+                    assertNull(context.getStartupFailure());
+                    assertTrue(context.getBean(ScopedModelBudgetFactory.class).enabled());
                     assertEquals(1,context.getBeansOfType(FormalMultiAgentController.class).size());assertTrue(context.getBeansOfType(MultiAgentController.class).isEmpty());
+                    verify(service).modelBudgets(context.getBean(ScopedModelBudgetFactory.class));
                 });
     }
 }
