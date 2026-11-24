@@ -11,6 +11,24 @@ import java.util.function.BooleanSupplier;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ResearchFailureClassificationTest {
+    @Test void expiredTotalBudgetWinsOverRemoteTimeoutAfterFailurePublication() {
+        var callEnd=new java.util.concurrent.atomic.AtomicLong();
+        var published=new java.util.concurrent.atomic.AtomicBoolean();
+        var original=gateway("MCP_DEADLINE_EXCEEDED",true);
+        var gateway=new ResearchRunner.Gateway(){
+            public List<ResearchRunner.Tool> discover(Duration d,BooleanSupplier c){return original.discover(d,c);}
+            public String call(String n,String a,Duration d,BooleanSupplier c){callEnd.set(System.nanoTime()+d.toNanos());return original.call(n,a,d,c);}
+        };
+        var failure=assertThrows(IllegalStateException.class,()->new ResearchRunner(gateway,model,(h,d,c)->h)
+            .run("VPN 401",Duration.ofMillis(200),()->false,event->{
+                if(event.type().equals("TOOL_FAILED")){
+                    published.set(true);
+                    while(System.nanoTime()<=callEnd.get())java.util.concurrent.locks.LockSupport.parkNanos(100_000);
+                }
+            }));
+        assertTrue(published.get(),"The failure must reach publication before the total deadline is crossed");
+        assertEquals("RESEARCH_DEADLINE",failure.getMessage());
+    }
     final ResearchRunner.Model model=new ResearchRunner.Model(){
         public ResearchRunner.Selection select(String q,List<ResearchRunner.Tool> t,Duration d,BooleanSupplier c){return new ResearchRunner.Selection("c1",KnowledgeMcpClient.EXPOSED_NAME,"{\"query\":\"VPN 401\"}");}
         public String answer(String q,List<com.fasterxml.jackson.databind.JsonNode> h,Duration d,BooleanSupplier c){throw new AssertionError("Failure must not generate an answer");}

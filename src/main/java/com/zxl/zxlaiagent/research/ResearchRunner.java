@@ -108,6 +108,9 @@ public final class ResearchRunner {
         if(!envelope.path("success").asBoolean()){
             publish(events, AgentExecutionEvent.tool("TOOL_FAILED", 1, choice.callId(), choice.name(), choice.arguments(),
                     ResearchToolResult.remoteFailure(envelope), "error", toolElapsedMs));
+            // Failure delivery is still inside this run's total budget. Preserve an early
+            // child timeout, but never let it mask total expiry during publication.
+            check(end,cancelled);
             // Only the adapter's bounded diagnostic enum may classify a remote isError result.
             // Arbitrary remote text, retry hints and error messages never grant a retry or alter identity.
             String remote=envelope.path("data").path("remoteCode").asText();
