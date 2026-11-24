@@ -1,0 +1,23 @@
+{
+  "browserTrust": "isolated Chrome exact leaf SPKI exception; ignoreHTTPSErrors=false; no OS/browser trust-store changes; independent Node client validates CA/hostname without exceptions",
+  "secureCookieFlags": [
+    {
+      "name": "ZXL_SESSION",
+      "secure": true,
+      "httpOnly": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ZXL_CSRF",
+      "secure": true,
+      "httpOnly": true,
+      "sameSite": "Lax"
+    }
+  ],
+  "newConversationCreated": true,
+  "streamCompleted": true,
+  "refreshPreservedMessage": true,
+  "deleteCancelledThenConfirmed": true,
+  "temporaryBrowserFixtureDeleted": true,
+  "pageErrors": []
+}

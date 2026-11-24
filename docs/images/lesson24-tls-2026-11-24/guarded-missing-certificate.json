@@ -1,0 +1,7 @@
+{
+  "exitCode": 1,
+  "code": "TLS_FILE_REQUIRED",
+  "noPathsCreated": true,
+  "allFiveContainerIdsAndRunningUnchanged": true,
+  "scope": "new guard refuses missing files before Compose; raw Docker counterexample retained separately"
+}

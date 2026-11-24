@@ -1,0 +1,55 @@
+{
+  "origin": "https://127.0.0.1:5443",
+  "certificateVerification": {
+    "authorized": true,
+    "protocol": "TLSv1.3",
+    "unknownCaError": "UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+    "hostnameMismatchError": "ERR_TLS_CERT_ALTNAME_INVALID",
+    "rejectUnauthorized": true
+  },
+  "initialCookieFlags": [
+    {
+      "name": "ZXL_CSRF",
+      "secure": true,
+      "httpOnly": true,
+      "sameSite": true
+    }
+  ],
+  "loginCookieFlags": [
+    {
+      "name": "ZXL_SESSION",
+      "secure": true,
+      "httpOnly": true,
+      "sameSite": true
+    },
+    {
+      "name": "ZXL_CSRF",
+      "secure": true,
+      "httpOnly": true,
+      "sameSite": true
+    }
+  ],
+  "history": {
+    "id": "0e614ea9-e661-43b5-a3d0-931f3b3e470a",
+    "messages": 2,
+    "sha256": "44b0ac3761a447a270da5350d4f6987ac73aa7f3beebe85ecaea8878156c066c"
+  },
+  "negative": {
+    "origin": 403,
+    "csrf": 403,
+    "host": 421,
+    "forwardedSpoofCookieSecure": true
+  },
+  "stream": {
+    "conversationId": "5f159c79-12a3-4e21-97ac-37d7c5f5ccde",
+    "status": 200,
+    "contentType": "text/event-stream",
+    "chunks": 20,
+    "firstChunkMs": 138,
+    "lastChunkMs": 1062,
+    "hasStartedAndCompleted": true,
+    "savedMessages": 2,
+    "busy": false,
+    "modelBoundary": "demo-literal-containment-v1 abstention; not a new real answer-model call"
+  }
+}

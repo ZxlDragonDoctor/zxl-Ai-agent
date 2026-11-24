@@ -1,0 +1,7 @@
+{
+  "exactCheckedInPowerShellRecipeExecuted": true,
+  "newDirectory": "target/local-tls-new",
+  "validitySanKeyAndDirectIssuerVerified": true,
+  "systemTrustNotModified": true,
+  "privateMaterialNotCommitted": true
+}

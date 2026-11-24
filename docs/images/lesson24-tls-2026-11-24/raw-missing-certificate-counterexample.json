@@ -1,0 +1,16 @@
+{
+  "scope": "counterexample: raw Docker Desktop compose run is not a safe certificate preflight even with create_host_path:false",
+  "exitCode": 1,
+  "pathsCreated": [
+    {
+      "name": "cert.pem",
+      "isDirectory": true
+    },
+    {
+      "name": "key.pem",
+      "isDirectory": true
+    }
+  ],
+  "allFiveApplicationContainerIdsAndRunningUnchanged": true,
+  "createdProbeRemoved": false
+}

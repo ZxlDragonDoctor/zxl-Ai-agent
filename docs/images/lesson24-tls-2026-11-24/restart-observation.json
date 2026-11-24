@@ -1,0 +1,11 @@
+{
+  "origin": "https://127.0.0.1:5443",
+  "caVerification": "explicit CA + rejectUnauthorized true",
+  "originalDetailSha256": "44b0ac3761a447a270da5350d4f6987ac73aa7f3beebe85ecaea8878156c066c",
+  "streamMessages": 2,
+  "streamBusy": false,
+  "historicalReportStatus": "completed",
+  "historicalReportSha256": "5bc7361325b6e667a77544ce84fff89bdc8ea870339b2fd4ca04e269a1a1daa4",
+  "mcpRefresh": "READY",
+  "scope": "new authenticated reads after ordered TLS-aware restart; no new model call"
+}

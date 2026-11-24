@@ -1,0 +1,55 @@
+{
+  "peer": {
+    "authorized": true,
+    "protocol": "TLSv1.3",
+    "fingerprint256": "F2:A5:4D:1D:DD:D6:F5:B3:F6:2F:7A:5B:39:9C:70:2D:71:53:27:57:6D:CA:3A:C3:13:A9:06:3D:F9:81:C7:69"
+  },
+  "roles": {
+    "main": {
+      "mode": "validate",
+      "user": "agent_runtime",
+      "database": "agent_tls_recovered",
+      "image": "sha256:18b45107335e262158f51c33069b39ee09d5b80d00f0aa5ae7249210203fa9e8"
+    },
+    "worker": {
+      "mode": "validate",
+      "user": "agent_runtime",
+      "database": "agent_tls_recovered",
+      "image": "sha256:18b45107335e262158f51c33069b39ee09d5b80d00f0aa5ae7249210203fa9e8"
+    },
+    "mcp": {
+      "mode": "validate",
+      "user": "agent_runtime",
+      "database": "agent_tls_recovered",
+      "image": "sha256:18b45107335e262158f51c33069b39ee09d5b80d00f0aa5ae7249210203fa9e8"
+    }
+  },
+  "mainPublishedPorts": {
+    "443/tcp": [
+      {
+        "HostIp": "127.0.0.1",
+        "HostPort": "5443"
+      }
+    ]
+  },
+  "frontendBindings": [
+    {
+      "type": "bind",
+      "destination": "/etc/nginx/tls/key.pem",
+      "readOnly": true
+    },
+    {
+      "type": "bind",
+      "destination": "/etc/nginx/conf.d/default.conf",
+      "readOnly": true
+    },
+    {
+      "type": "bind",
+      "destination": "/etc/nginx/tls/cert.pem",
+      "readOnly": true
+    }
+  ],
+  "nginxVersion": "1.30.7",
+  "pgContainerId": "1c6f64d81e98f53f4f3c0914cc0cd451beeef4619be546edca669ba249bbcf46",
+  "certificateSystemTrustInstalled": false
+}

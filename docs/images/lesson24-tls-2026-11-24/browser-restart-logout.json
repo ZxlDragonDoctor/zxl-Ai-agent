@@ -1,0 +1,7 @@
+{
+  "freshLoginAfterRestart": true,
+  "originalHistoryReadable": true,
+  "logoutRemovedSessionCookie": true,
+  "unauthenticatedConversationStatus": 401,
+  "trust": "isolated exact SPKI exception; independent Node strict CA verification recorded separately"
+}

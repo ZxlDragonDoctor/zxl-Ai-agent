@@ -1,0 +1,23 @@
+[
+  {
+    "origin": "https://127.0.0.1",
+    "forwardedPort": "443",
+    "forwardedProto": "https",
+    "status": 403,
+    "code": "ORIGIN_DENIED"
+  },
+  {
+    "origin": "https://127.0.0.1:80",
+    "forwardedPort": "80",
+    "forwardedProto": "https",
+    "status": 403,
+    "code": "ORIGIN_DENIED"
+  },
+  {
+    "origin": "http://127.0.0.1:5443",
+    "forwardedPort": "5443",
+    "forwardedProto": "http",
+    "status": 403,
+    "code": "ORIGIN_DENIED"
+  }
+]

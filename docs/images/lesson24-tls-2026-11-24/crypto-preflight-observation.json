@@ -1,0 +1,19 @@
+{
+  "validCurrentCertificateSanKeyAndIssuer": true,
+  "strictHttpsReadiness": true,
+  "rejectUnauthorized": true,
+  "negatives": [
+    {
+      "name": "mismatched-private-key",
+      "code": "TLS_KEY_MISMATCH"
+    },
+    {
+      "name": "leaf-is-not-ca",
+      "code": "TLS_ISSUER_NOT_VERIFIED"
+    },
+    {
+      "name": "invalid-pem",
+      "code": "TLS_CERTIFICATE_INVALID"
+    }
+  ]
+}
