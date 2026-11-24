@@ -31,3 +31,5 @@ node deploy/enterprise/switch-release.mjs --project lesson24-paired-recovery --e
 回退使用相同命令，current指向B、candidate指向A，换一个新output。schema检查不等于业务兼容：还须用真实身份读历史消息/报告和预算，验证可继续写入，并实际截图。数据库若已升级导致旧JAR有pending/future/checksum冲突，必须阻止直接回退；本工具不提供降级迁移或自动数据库还原。
 
 `node --test deploy/enterprise/switch-release.test.mjs`覆盖schema/当前版本/validate配置/端口错误的停机前拒绝、顺序重建、有限等待、失败证据与禁止覆盖。Docker和页面演练另列证据，不能用注入runner测试代替。
+
+外层子进程超时只保证本工具停止等待，不证明Docker服务端的one-shot容器或数据库查询已经取消。失败后检查维护组是否有残留run容器/连接，再由操作者处理；本工具不把未知状态误写为ready。

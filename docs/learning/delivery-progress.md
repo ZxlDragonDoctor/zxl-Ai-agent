@@ -35,7 +35,7 @@
 | 21 | 日志、指标与追踪 | **已验收**。已验证真实模型用量、JMX 指标快照与 MCP 到 Worker 的 W3C 父子追踪。已验证 Worker 不可用后的工具失败和本地清理。本地 Collector 已接收三段知识链路 span | [学习任务](21-agent-observability.md) |
 | 22 | Agent 评估与持续改进 | **进行中**。30 个固定案例和离线评分器已实现，真实冒烟、证据汇总和报告面板已接通。已实测空召回拒答和模型等待超时。已跑一组真实提示词配对。已实测两道拒答保留题，页面区分实测与缺证据。5 道知识引用题已实测，4 道通过。权限组 5 题、2 道草稿待审批题已有真实证据。空库冗余向量请求已修正，25 项检索测试通过，新 Worker 已有真实 HTTP 无降级拒答证据；保留旧模型与降级失败。全量案例与重复对照待完成 | [课程](22-agent-evaluation.md) |
 | 23 | 预算、路由与降级 | **进行中**。可选开关接入正式多 Agent/Research，真实 HTTP 拒答闭环结算 1869 token；有限主备通过夹具验收。已补运行创建日归集的租户共享周期预算，29项定向回归通过；新周期机制真实HTTP双层结算2114已验证；其他入口与持久审计待补齐 | [课程与边界](23-budget-routing-and-fallback.md) · [调用边界](23-usage-integration.md) |
-| 24 | 可复现部署与交付 | 进行中：低权限容器、真实模型、有序恢复和PG逻辑备份恢复已验证，12表/1024维向量/报告预算匹配；文件卷与PG成对恢复及新写入已验证；TLS、应用回滚、完整业务及持续交付待补齐 | [任务](24-reproducible-deployment.md) · [备份恢复证据](../images/lesson24-recovery-2026-11-23/README.md) · [文件卷恢复](../images/lesson24-paired-recovery-2026-11-23/README.md) |
+| 24 | 可复现部署与交付 | 进行中：低权限容器、真实模型、有序恢复和PG逻辑备份恢复已验证，12表/1024维向量/报告预算匹配；文件卷与PG成对恢复及新写入已验证；兼容小版本A/B回退及数据读写已验证；TLS、完整业务及持续交付待补齐 | [任务](24-reproducible-deployment.md) · [备份恢复证据](../images/lesson24-recovery-2026-11-23/README.md) · [文件卷恢复](../images/lesson24-paired-recovery-2026-11-23/README.md) · [应用回退](../images/lesson24-release-2026-11-24/README.md) |
 | 25 | 容量、性能与背压 | 路线已规划；已有有界队列可复用，容量基线未验收 | [路线第 7 阶段](enterprise-agent-roadmap.md) |
 | 26 | 故障演练与恢复 | 路线已规划；复用前课故障用例，综合演练待完成 | [路线第 7 阶段](enterprise-agent-roadmap.md) |
 | 27 | 完整业务链验收 | 路线已规划；两租户闭环与架构材料待完成 | [路线第 7 阶段](enterprise-agent-roadmap.md) |
