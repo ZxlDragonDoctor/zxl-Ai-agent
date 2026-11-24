@@ -1,0 +1,8 @@
+{
+  "scope": "release transition authenticated historical report readback; no new model request",
+  "stage": "final-b",
+  "reportSha256": "5bc7361325b6e667a77544ce84fff89bdc8ea870339b2fd4ca04e269a1a1daa4",
+  "runId": "c48592be-6a8f-4459-8eb3-849f21bd88e9",
+  "status": "completed",
+  "cleanupPending": false
+}

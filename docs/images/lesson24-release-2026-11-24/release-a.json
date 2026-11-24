@@ -1,0 +1,10 @@
+{
+  "conversationFormat": "uuid-json-v1",
+  "schemaModules": [
+    "security",
+    "knowledge"
+  ],
+  "releaseId": "release-a-f0074f3",
+  "javaImage": "sha256:a554c990e20ae4e7dbfe8430ec5284b6e4c8dc8a6f11c6dbc5efe7e795eb9d54",
+  "frontendImage": "sha256:e5396a9c4e5d0ef641d821e39e85ee49bb543acfc6f5d3d908f93b9b21fca99b"
+}

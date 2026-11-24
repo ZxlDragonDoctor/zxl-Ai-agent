@@ -1,0 +1,28 @@
+{
+  "status": "ready",
+  "phase": "verified-runtime",
+  "project": "lesson24-paired-recovery",
+  "current": {
+    "conversationFormat": "uuid-json-v1",
+    "schemaModules": [
+      "security",
+      "knowledge"
+    ],
+    "releaseId": "release-b-a97806d",
+    "javaImage": "sha256:18b45107335e262158f51c33069b39ee09d5b80d00f0aa5ae7249210203fa9e8",
+    "frontendImage": "sha256:d5fe9b72320e9df1b1006d2ceffa3e986b6b79f0d2102a6e282b4f8419145456"
+  },
+  "candidate": {
+    "conversationFormat": "uuid-json-v1",
+    "schemaModules": [
+      "security",
+      "knowledge"
+    ],
+    "releaseId": "release-a-f0074f3",
+    "javaImage": "sha256:a554c990e20ae4e7dbfe8430ec5284b6e4c8dc8a6f11c6dbc5efe7e795eb9d54",
+    "frontendImage": "sha256:e5396a9c4e5d0ef641d821e39e85ee49bb543acfc6f5d3d908f93b9b21fca99b"
+  },
+  "override": "target/lesson24-b-to-a.json.compose.json",
+  "scope": "local immutable image transition; no migration/data rollback; readiness only, authenticated business acceptance remains required",
+  "schemaCheck": "passed"
+}

@@ -1,0 +1,37 @@
+{
+  "scope": "single-host application A/B release rollback, same schema/UUID conversation format; no database downgrade or new real answer-model invocation",
+  "sequence": [
+    "initial",
+    "a",
+    "b",
+    "rollback-a",
+    "final-b"
+  ],
+  "selectedTablesEqualBeforeTemporaryWrite": 12,
+  "afterTemporaryWritePreservedByFinalSwitch": true,
+  "temporaryWrite": {
+    "messages": 2,
+    "runs": 1,
+    "busy": false,
+    "deletedByNormalApi": true,
+    "ownershipRowsBefore": 5,
+    "ownershipRowsAfter": 7,
+    "onlyChangedSelectedTable": "lesson17.resource_owner"
+  },
+  "conversation": {
+    "id": "0e614ea9-e661-43b5-a3d0-931f3b3e470a",
+    "messages": 2,
+    "runs": 1,
+    "detailSha256": "44b0ac3761a447a270da5350d4f6987ac73aa7f3beebe85ecaea8878156c066c"
+  },
+  "reportSha256": "5bc7361325b6e667a77544ce84fff89bdc8ea870339b2fd4ca04e269a1a1daa4",
+  "finalMcpDiscovery": "READY",
+  "modelBoundary": "temporary new conversation used demo-literal-containment-v1 evidence abstention; historical live-model budget rows retained",
+  "finalOverride": "target/lesson24-final-b.json.compose.json",
+  "leftUnchanged": [
+    "source5216",
+    "PG-only recovery5217",
+    "original5215",
+    "personal learning progress"
+  ]
+}

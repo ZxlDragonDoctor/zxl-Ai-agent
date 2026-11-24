@@ -1,0 +1,38 @@
+{
+  "services": {
+    "main": {
+      "image": "sha256:18b45107335e262158f51c33069b39ee09d5b80d00f0aa5ae7249210203fa9e8",
+      "running": true
+    },
+    "worker": {
+      "image": "sha256:18b45107335e262158f51c33069b39ee09d5b80d00f0aa5ae7249210203fa9e8",
+      "running": true
+    },
+    "mcp": {
+      "image": "sha256:18b45107335e262158f51c33069b39ee09d5b80d00f0aa5ae7249210203fa9e8",
+      "running": true
+    },
+    "frontend": {
+      "image": "sha256:d5fe9b72320e9df1b1006d2ceffa3e986b6b79f0d2102a6e282b4f8419145456",
+      "running": true
+    }
+  },
+  "jarSha256": "7fc457dfaa7f3a3a62691ba583046be5a7392f423322f16c6ccb737ab7b1da11",
+  "mounts": [
+    {
+      "type": "volume",
+      "name": "lesson24-paired-recovery_conversations",
+      "destination": "/data/conversations",
+      "writable": true
+    }
+  ],
+  "publishedPorts": {
+    "80/tcp": [
+      {
+        "HostIp": "127.0.0.1",
+        "HostPort": "5218"
+      }
+    ]
+  },
+  "pgContainerId": "abbc4b60cd5cef1ea8e2b323b6577447c5752b01e2a6b7889fa4dee89229e4e1"
+}

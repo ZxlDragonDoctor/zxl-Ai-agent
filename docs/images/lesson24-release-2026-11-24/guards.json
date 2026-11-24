@@ -1,0 +1,28 @@
+[
+  {
+    "name": "future-schema",
+    "exitCode": 1,
+    "code": "SCHEMA_CHECK_FAILED",
+    "containerIdsImagesAndRunningUnchanged": true,
+    "services": [
+      "main",
+      "worker",
+      "mcp",
+      "frontend",
+      "pg"
+    ]
+  },
+  {
+    "name": "other-group-origin",
+    "exitCode": 1,
+    "code": "PUBLISHED_ORIGIN_MISMATCH",
+    "containerIdsImagesAndRunningUnchanged": true,
+    "services": [
+      "main",
+      "worker",
+      "mcp",
+      "frontend",
+      "pg"
+    ]
+  }
+]

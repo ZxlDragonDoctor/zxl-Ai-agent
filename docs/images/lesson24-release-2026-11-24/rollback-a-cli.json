@@ -1,0 +1,10 @@
+{
+  "stage": "rollback-a",
+  "javaImage": "sha256:a554c990e20ae4e7dbfe8430ec5284b6e4c8dc8a6f11c6dbc5efe7e795eb9d54",
+  "arguments": [
+    "security",
+    "security"
+  ],
+  "exitCode": 0,
+  "code": "SCHEMA_VERIFIED"
+}

@@ -1,0 +1,10 @@
+{
+  "stage": "b",
+  "javaImage": "sha256:18b45107335e262158f51c33069b39ee09d5b80d00f0aa5ae7249210203fa9e8",
+  "arguments": [
+    "security",
+    "security"
+  ],
+  "exitCode": 2,
+  "code": "SCHEMA_MODULE_INVALID"
+}

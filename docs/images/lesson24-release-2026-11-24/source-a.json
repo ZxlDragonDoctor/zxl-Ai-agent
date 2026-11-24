@@ -1,0 +1,13 @@
+{
+  "commit": "f0074f3cbc3be81e921deeadebdfdeda12a1cfbd",
+  "sha256": "1d36e532379e9c5dc7b6bda3214e9a2701cf42d5c75a90519866a6dbab6aae03",
+  "archive": "target/lesson24-release-source.zip",
+  "trackedEntries": 2040,
+  "omittedSubmodules": [
+    {
+      "path": "zxl-image-search-mcp",
+      "commit": "3375df019d487097b8b2dc4c9deca600377d8187"
+    }
+  ],
+  "scope": "Git commit tree only; explicit omitted submodules listed; no working-tree files; not a build or deployment verification"
+}
