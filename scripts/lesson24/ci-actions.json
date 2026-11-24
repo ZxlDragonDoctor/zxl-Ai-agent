@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "checkedOn": "2026-11-24",
+  "actions": [
+    {
+      "repository": "actions/checkout",
+      "tag": "v7.0.1",
+      "sha": "3d3c42e5aac5ba805825da76410c181273ba90b1",
+      "published": "2026-07-20T15:10:05Z",
+      "source": "https://github.com/actions/checkout/releases/tag/v7.0.1"
+    },
+    {
+      "repository": "actions/setup-java",
+      "tag": "v6.3.0",
+      "sha": "d1374f8ac74474200d16ef8ecee22c7ae7a51880",
+      "published": "2026-11-14T04:53:09Z",
+      "source": "https://github.com/actions/setup-java/releases/tag/v6.3.0"
+    },
+    {
+      "repository": "actions/setup-node",
+      "tag": "v7.1.0",
+      "sha": "949feb2413d6458794dcd2491c4babbbce0c15c1",
+      "published": "2026-10-08T02:52:34Z",
+      "source": "https://github.com/actions/setup-node/releases/tag/v7.1.0"
+    },
+    {
+      "repository": "actions/upload-artifact",
+      "tag": "v7.0.2",
+      "sha": "cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+      "published": "2026-10-07T10:08:14Z",
+      "source": "https://github.com/actions/upload-artifact/releases/tag/v7.0.2"
+    }
+  ],
+  "toolchains": {
+    "node": "22.22.2",
+    "java": {
+      "distribution": "temurin",
+      "version": "17.0.21.1+2",
+      "source": "https://github.com/adoptium/temurin17-binaries/releases/tag/jdk-17.0.21.1%2B2"
+    },
+    "postgresImage": "pgvector/pgvector@sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f"
+  },
+  "scope": "Verified official release/tag commit metadata; execution evidence is recorded separately."
+}

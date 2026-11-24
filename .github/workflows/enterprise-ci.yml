@@ -1,0 +1,120 @@
+name: Enterprise agent CI
+
+on:
+  push:
+    branches: [master]
+    paths: ['pom.xml', 'src/**', 'scripts/**', 'deploy/**', 'zxl-Ai-agent-fronted/**', '.github/workflows/enterprise-ci.yml']
+  pull_request:
+    branches: [master]
+    paths: ['pom.xml', 'src/**', 'scripts/**', 'deploy/**', 'zxl-Ai-agent-fronted/**', '.github/workflows/enterprise-ci.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: enterprise-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  enterprise-java:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      pg:
+        image: pgvector/pgvector@sha256:484e838076e04939d27d3e176e91c86eea96236126023be8d3059761122e579f
+        env:
+          POSTGRES_DB: enterprise_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: enterprise_ci_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d enterprise_ci"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      LESSON12_DB_URL: jdbc:postgresql://127.0.0.1:5432/enterprise_ci
+      LESSON12_DB_USER: postgres
+      LESSON12_DB_PASSWORD: enterprise_ci_only
+      LESSON17_INTERNAL_SERVICE_TOKEN: CI-only-not-production-aB9_xY7-kL5_mN3-pQ1-rS8_tU6-vW4-zC2
+      AGENT_DB_SCHEMA_MODE: migrate
+    steps:
+      - name: Check out the tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: false
+      - name: Set up the inventory runtime
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22.22.2'
+          package-manager-cache: false
+      - name: Set up the exact Java toolchain
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: '17.0.21.1+2'
+          cache: maven
+      - name: Check test inventory and explicit manual boundaries
+        run: node scripts/lesson24/java-test-inventory.mjs --check
+      - name: Test and package enterprise Java with real PostgreSQL
+        run: mvn -B -ntp -Penterprise-ci verify
+      - name: Record tested Java artifact and Surefire counts
+        run: node scripts/lesson24/ci-manifest.mjs --kind java --commit "$GITHUB_SHA" --output target/ci-java-manifest.json
+      - name: Upload successful Java artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: enterprise-java-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            target/zxl-Ai-agent-0.0.1-SNAPSHOT.jar
+            target/ci-java-manifest.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Preserve test reports even when tests fail
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: enterprise-java-reports-${{ github.sha }}-${{ github.run_attempt }}
+          path: target/surefire-reports/TEST-*.xml
+          if-no-files-found: warn
+          retention-days: 7
+
+  frontend-and-delivery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: false
+      - name: Set up the exact Node runtime
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22.22.2'
+          cache: npm
+          cache-dependency-path: zxl-Ai-agent-fronted/package-lock.json
+          package-manager-cache: false
+      - name: Test delivery and evidence tools
+        run: node --test scripts/lesson22/*.test.mjs scripts/lesson23/*.test.mjs scripts/lesson24/*.test.mjs deploy/enterprise/*.test.mjs
+      - name: Install locked frontend dependencies
+        working-directory: zxl-Ai-agent-fronted
+        run: npm ci --no-audit --no-fund
+      - name: Run all frontend Node tests
+        working-directory: zxl-Ai-agent-fronted
+        run: node --experimental-strip-types --test
+      - name: Build the production frontend
+        working-directory: zxl-Ai-agent-fronted
+        run: npm run build
+      - name: Record immutable frontend artifact
+        run: |
+          mkdir -p target
+          node scripts/lesson24/ci-manifest.mjs --kind frontend --commit "$GITHUB_SHA" --output target/ci-frontend-manifest.json
+      - name: Upload successful frontend artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: enterprise-frontend-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            zxl-Ai-agent-fronted/dist
+            target/ci-frontend-manifest.json
+          if-no-files-found: error
+          retention-days: 7
