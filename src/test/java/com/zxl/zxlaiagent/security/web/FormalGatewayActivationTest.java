@@ -18,12 +18,20 @@ class FormalGatewayActivationTest {
             .withBean(com.zxl.zxlaiagent.agent.stream.DashScopeAgentStreamer.class, () -> mock(com.zxl.zxlaiagent.agent.stream.DashScopeAgentStreamer.class))
             .withBean(ServiceCallAuthorizer.class, () -> mock(ServiceCallAuthorizer.class))
             .withBean(AuthorizationService.class, () -> mock(AuthorizationService.class));
-    private static final String TOKEN = "agent.security.internal-service-token=abcdefghijklmnopqrstuvwxyz_0123456789-ABCDEFGHIJKLMNO";
+    private static final String SERVICE_CREDENTIAL = "abcdefghijklmnopqrstuvwxyz_0123456789-ABCDEFGHIJKLMNO";
+    private static final String TOKEN = "agent.security.internal-service-token=" + SERVICE_CREDENTIAL;
 
     @Test void formalGatewayRequiresExplicitServiceCredentialAndFixedLoopbackOrigin() {
         gateway.withPropertyValues("agent.security.mode=required", TOKEN).run(ctx ->
                 assertThat(ctx).hasNotFailed().hasSingleBean(ScopedKnowledgeClient.class));
-        gateway.withPropertyValues("agent.security.mode=required").run(ctx -> assertThat(ctx).hasFailed());
+        // An explicit empty property isolates this negative case from a valid deployment fallback.
+        gateway.withPropertyValues("agent.security.mode=required",
+                "LESSON17_INTERNAL_SERVICE_TOKEN=" + SERVICE_CREDENTIAL,
+                "agent.security.internal-service-token=").run(ctx -> {
+                    assertThat(ctx).hasFailed();
+                    assertThat(ctx.getStartupFailure()).hasRootCauseInstanceOf(IllegalArgumentException.class)
+                            .hasRootCauseMessage("Explicit high-entropy internal service credential required");
+                });
         gateway.withPropertyValues("agent.security.mode=required", TOKEN,
                 "agent.security.knowledge-worker-origin=https://example.com").run(ctx -> assertThat(ctx).hasFailed());
     }
