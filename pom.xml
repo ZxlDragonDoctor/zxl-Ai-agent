@@ -131,6 +131,35 @@
         </plugins>
     </build>
 
+    <profiles>
+        <profile>
+            <id>enterprise-ci</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <!-- Exact legacy manual demonstrations only; inventory gate verifies this list. -->
+                            <excludes>
+                                <exclude>com/zxl/zxlaiagent/ZxlAiAgentApplicationTests.java</exclude>
+                                <exclude>com/zxl/zxlaiagent/agent/ZxlManusTest.java</exclude>
+                                <exclude>com/zxl/zxlaiagent/app/LoveAppTest.java</exclude>
+                                <exclude>com/zxl/zxlaiagent/rag/LoveAppDocumentLoaderTest.java</exclude>
+                                <exclude>com/zxl/zxlaiagent/tools/FileOperationToolTest.java</exclude>
+                                <exclude>com/zxl/zxlaiagent/tools/PDFGenerationToolTest.java</exclude>
+                                <exclude>com/zxl/zxlaiagent/tools/ResourceDownloadToolTest.java</exclude>
+                                <exclude>com/zxl/zxlaiagent/tools/TerminalOperationToolTest.java</exclude>
+                                <exclude>com/zxl/zxlaiagent/tools/WebScrapingToolTest.java</exclude>
+                                <exclude>com/zxl/zxlaiagent/tools/WebSearchToolTest.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <repositories>
         <repository>
             <id>spring-milestones</id>

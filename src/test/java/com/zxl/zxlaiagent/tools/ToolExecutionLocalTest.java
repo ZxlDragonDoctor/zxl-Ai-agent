@@ -86,8 +86,13 @@ class ToolExecutionLocalTest {
         assertEquals(colors[3], output.getRGB(2, 1));
     }
     @Test void commandResultReportsExitCodeAndOutput() {
-        Assumptions.assumeTrue(System.getProperty("os.name").startsWith("Windows"));
         var tool = new TerminalOperationTool();
+        if (!System.getProperty("os.name").startsWith("Windows")) {
+            var unsupported = tool.executeTerminalCommand("echo lesson3");
+            assertFalse(unsupported.success());
+            assertEquals("COMMAND_START_FAILED", unsupported.code());
+            return;
+        }
         var success = tool.executeTerminalCommand("echo lesson3");
         assertTrue(success.success(), success.message());
         assertTrue(success.data().output().contains("lesson3"));

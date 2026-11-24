@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "manual": [
+    {"path":"com/zxl/zxlaiagent/ZxlAiAgentApplicationTests.java","reason":"Legacy @SpringBootTest loads the classroom root application, local configuration, RAG and external provider startup; not an isolated enterprise context test."},
+    {"path":"com/zxl/zxlaiagent/agent/ZxlManusTest.java","reason":"Legacy full-context Manus demonstration invokes a real model and network/tools; requires explicit operator credentials and separate live evidence."},
+    {"path":"com/zxl/zxlaiagent/app/LoveAppTest.java","reason":"Legacy full-context LoveApp demonstration invokes real model/RAG/tools and requires local provider configuration."},
+    {"path":"com/zxl/zxlaiagent/rag/LoveAppDocumentLoaderTest.java","reason":"Legacy full application/document-loading demonstration depends on classroom/local RAG startup and source files."},
+    {"path":"com/zxl/zxlaiagent/tools/FileOperationToolTest.java","reason":"Legacy @SpringBootTest loads external classroom application dependencies and performs filesystem demonstration operations; modern isolated contract tests remain included."},
+    {"path":"com/zxl/zxlaiagent/tools/PDFGenerationToolTest.java","reason":"Legacy full-context PDF filesystem demonstration requires classroom application startup; not a provider-free isolated enterprise test."},
+    {"path":"com/zxl/zxlaiagent/tools/ResourceDownloadToolTest.java","reason":"Legacy full-context resource download demonstration performs real external network/filesystem operations."},
+    {"path":"com/zxl/zxlaiagent/tools/TerminalOperationToolTest.java","reason":"Legacy full-context terminal demonstration runs the platform-specific dir command and initializes classroom application dependencies."},
+    {"path":"com/zxl/zxlaiagent/tools/WebScrapingToolTest.java","reason":"Legacy full-context scraping demonstration accesses public websites and initializes classroom application dependencies."},
+    {"path":"com/zxl/zxlaiagent/tools/WebSearchToolTest.java","reason":"Legacy full-context search demonstration requires an actual search-api key and external search service."}
+  ],
+  "ciBootTests": []
+}

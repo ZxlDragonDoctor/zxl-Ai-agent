@@ -1,0 +1,21 @@
+import {readdirSync,readFileSync,mkdirSync,writeFileSync,lstatSync} from 'node:fs';import {join,relative,resolve} from 'node:path';import {pathToFileURL} from 'node:url';
+const discovered=name=>/^Test.*\.java$|.*Tests?\.java$|.*TestCase\.java$/.test(name);
+function paths(list,label,known){if(!Array.isArray(list))throw Error('TEST_POLICY_INVALID');const result=new Map();for(const item of list){if(!item||typeof item.path!=='string'||!known.has(item.path)||typeof item.reason!=='string'||!item.reason.trim()||result.has(item.path))throw Error('TEST_POLICY_INVALID_'+label);result.set(item.path,item.reason);}return result;}
+export function inventoryJavaTests(root,policy,pom){
+ const base=join(root,'src/test/java'),files=[];function walk(dir){for(const e of readdirSync(dir,{withFileTypes:true})){if(e.isSymbolicLink())throw Error('TEST_SOURCE_LINK_UNSUPPORTED');const p=join(dir,e.name);if(e.isDirectory())walk(p);else if(e.isFile()&&e.name.endsWith('.java'))files.push({path:relative(base,p).replaceAll('\\','/'),name:e.name,source:readFileSync(p,'utf8')});}}walk(base);
+ if(policy?.schemaVersion!==1)throw Error('TEST_POLICY_INVALID');const known=new Set(files.filter(f=>discovered(f.name)).map(f=>f.path)),manual=paths(policy.manual,'MANUAL',known),boot=paths(policy.ciBootTests,'CI_BOOT',known);
+ for(const p of manual.keys())if(boot.has(p))throw Error('TEST_POLICY_OVERLAP');
+ const tests=[];for(const f of files){if(!discovered(f.name)){if(/@\s*(Test|ParameterizedTest|RepeatedTest|TestFactory|TestTemplate)\b/.test(f.source))throw Error('UNDISCOVERED_JUNIT_SOURCE_'+f.path);continue;}
+  if(/@(?:[A-Za-z_$][\w$]*\.)*SpringBootTest\b/.test(f.source)&&!manual.has(f.path)&&!boot.has(f.path))throw Error('UNCLASSIFIED_BOOT_TEST_'+f.path);
+  if(!manual.has(f.path)&&/@\s*(?:[A-Za-z_$][\w$]*\.)*(Disabled[A-Za-z]*|Enabled(?:If|On|For)[A-Za-z]*)\b/.test(f.source))throw Error('CONDITIONAL_CI_TEST_REQUIRES_REVIEW_'+f.path);
+  if(!manual.has(f.path)&&/\b(?:Assumptions\.)?assume(?:True|False|That)\s*\(/.test(f.source))throw Error('CI_ASSUMPTION_REQUIRES_REVIEW_'+f.path);
+  let category=manual.has(f.path)?'manual':/PgTest\.java$/.test(f.name)||/LESSON12_DB_URL|SecurityDatabase\.fromEnvironment\(/.test(f.source)?'postgres':/jdbc:h2:|extends PersistenceFixture\b/.test(f.source)?'h2-lesson9':'isolated';
+  tests.push({path:f.path,category,ci:!manual.has(f.path),...(manual.has(f.path)?{reason:manual.get(f.path)}:boot.has(f.path)?{reason:boot.get(f.path)}:{})});
+ }
+ const profiles=[...pom.matchAll(/<profile>([\s\S]*?)<\/profile>/g)].map(m=>m[1]).filter(p=>/<id>\s*enterprise-ci\s*<\/id>/.test(p));if(profiles.length!==1)throw Error('ENTERPRISE_CI_PROFILE_REQUIRED');const profile=profiles[0];
+ if(/<includes>|<skip(?:Tests)?\b|<testFailureIgnore>\s*true|<excludedGroups>/.test(profile))throw Error('CI_TEST_NARROWING_FORBIDDEN');
+ const excludes=[...profile.matchAll(/<exclude>\s*([^<]+?)\s*<\/exclude>/g)].map(m=>m[1]);if(excludes.length!==manual.size||new Set(excludes).size!==excludes.length||excludes.some(p=>!manual.has(p)))throw Error('CI_EXCLUSIONS_DO_NOT_MATCH_POLICY');
+ tests.sort((a,b)=>a.path.localeCompare(b.path));return {scope:'source-file inventory, not executed JUnit results; new discovered tests default to CI',tests,ciCount:tests.filter(t=>t.ci).length,manualCount:manual.size,total:tests.length};
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){try{if(process.argv.length!==3||process.argv[2]!=='--check')throw Error('USAGE_CHECK_REQUIRED');const root=process.cwd(),r=inventoryJavaTests(root,JSON.parse(readFileSync(join(root,'scripts/lesson24/java-test-policy.json'),'utf8')),readFileSync(join(root,'pom.xml'),'utf8'));const target=join(root,'target');try{if(lstatSync(target).isSymbolicLink())throw Error('OUTPUT_LINK_UNSUPPORTED');}catch(e){if(e.code!=='ENOENT')throw e;}mkdirSync(target,{recursive:true});writeFileSync(join(target,'enterprise-ci-java-inventory.json'),JSON.stringify(r,null,2)+'\n');console.log(JSON.stringify({total:r.total,ci:r.ciCount,manual:r.manualCount,inventory:'target/enterprise-ci-java-inventory.json',scope:r.scope}));}catch(e){console.error(/^[A-Z_][A-Za-z0-9_./-]*$/.test(e.message)?e.message:'JAVA_TEST_INVENTORY_FAILED');process.exitCode=1;}}
+
