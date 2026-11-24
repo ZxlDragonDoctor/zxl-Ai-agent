@@ -10,6 +10,8 @@ PG服务使用固定pgvector镜像digest和独立临时数据库。job内数据�
 
 成功产物只上传显式JAR/dist和manifest，Surefire XML作为单独报告保留。manifest核对HEAD、受跟踪源码洁净和commit，记录已有文件字节数、SHA256及真实报告计数；不打包工作区、不扫描JAR秘密、不证明报告新鲜度或业务/模型正确性。禁止上传整个target或私密环境、CA/私钥、运行数据。每次run和attempt的产物名分开，保留7天。
 
-工作流只读contents权限，不使用pull_request_target或部署凭据，checkout不保留Git凭据。它不会发布线上应用、覆盖数据库、自动迁移或自动回退。下载产物后仍需按已有部署门禁核对来源、schema、TLS、身份和业务证据，再推进到目标环境。
+工作流只读contents权限，不使用pull_request_target或部署凭据，源码通过公开HTTPS fetch固定GITHUB_SHA并核对HEAD，不写入Git凭据，也不遍历未初始化的旧图片gitlink。它不会发布线上应用、覆盖数据库、自动迁移或自动回退。下载产物后仍需按已有部署门禁核对来源、schema、TLS、身份和业务证据，再推进到目标环境。
 
 实际GitHub run状态、计数、产物及截图须另外记录；工作流文件和注入runner测试存在，不能代替云端实际执行通过。
+
+首次云端运行在checkout action的凭据清理阶段遇到旧图片MCP链接缺少.gitmodules，尚未执行测试。源码获取已改为公开仓库固定SHA fetch/checkout，保留该gitlink并通过针对性夹具验证边界；本CI不验证旧图片MCP模块。
