@@ -129,7 +129,16 @@ public final class AuthorizationService {
  /** Server-only compensation after failed pre-dispatch registration, including a revoked submitting session. */
  public void discardUnstartedRun(ActorRef ref,String runId){
   Objects.requireNonNull(ref);if(!AuthenticationService.validId(runId)||!AuthenticationService.validId(ref.subjectId())||!AuthenticationService.validId(ref.tenantId()))throw new IllegalArgumentException("Exact run owner required");
-  db.tx(c->{try(var s=SecurityDatabase.statement(c,"DELETE FROM resource_owner WHERE resource_type='run' AND resource_id=? AND tenant_id=? AND subject_id=?",runId,ref.tenantId(),ref.subjectId())){s.executeUpdate();}return null;});
+  db.tx(c->{
+   // Authority gates may already hold this owner before reaching a budget account.
+   // Keep that order here; a direct ledger reservation locks account -> period only.
+   try(var s=SecurityDatabase.statement(c,"SELECT 1 FROM resource_owner WHERE resource_type='run' AND resource_id=? AND tenant_id=? AND subject_id=? FOR UPDATE",runId,ref.tenantId(),ref.subjectId());var r=s.executeQuery()){if(!r.next())return null;}
+   try(var s=SecurityDatabase.statement(c,"SELECT reserved_tokens=0 AND spent_tokens=0 AND accepted_calls=0 FROM token_budget_account WHERE tenant_id=? AND account_id=? FOR UPDATE",ref.tenantId(),runId);var r=s.executeQuery()){if(r.next()&&!r.getBoolean(1))return null;}
+   try(var s=SecurityDatabase.statement(c,"SELECT EXISTS(SELECT 1 FROM durable_agent_run WHERE tenant_id=? AND run_id::text=?) OR EXISTS(SELECT 1 FROM token_budget_call WHERE tenant_id=? AND account_id=?)",ref.tenantId(),runId,ref.tenantId(),runId);var r=s.executeQuery()){r.next();if(r.getBoolean(1))return null;}
+   try(var s=SecurityDatabase.statement(c,"DELETE FROM token_budget_account WHERE tenant_id=? AND account_id=?",ref.tenantId(),runId)){s.executeUpdate();}
+   try(var s=SecurityDatabase.statement(c,"DELETE FROM resource_owner WHERE resource_type='run' AND resource_id=? AND tenant_id=? AND subject_id=?",runId,ref.tenantId(),ref.subjectId())){s.executeUpdate();}
+   return null;
+  });
  }
  public void requireOwned(ActorRef ref,ResourceRef resource,Phase phase){decide(ref,resource.type().equals("conversation")?"conversation.readOwn":"run.readOwn",resource,phase,null).requireAllowed();}
  public List<String> ownedResourceIds(ActorRef ref,String type){return db.tx(c->{AuthenticationService.resolve(c,ref);var ids=new ArrayList<String>();try(var s=SecurityDatabase.statement(c,"SELECT resource_id FROM resource_owner WHERE resource_type=? AND tenant_id=? AND subject_id=? AND state='ACTIVE' ORDER BY resource_id",type,ref.tenantId(),ref.subjectId());var r=s.executeQuery()){while(r.next())ids.add(r.getString(1));}return List.copyOf(ids);});}
