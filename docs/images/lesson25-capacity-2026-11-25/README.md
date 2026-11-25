@@ -55,3 +55,11 @@ Docker已恢复，专用lesson25_capacity数据库使用真实PG/pgvector，正�
 `17-live-tenant-admission.json`来自两个真实登录会话及最多两个真实模型代码运行：A第一项202；A第二项立即429且固定码AGENT_TENANT_CAPACITY_EXCEEDED；B第一项仍202。随后A/B均完成，无业务错误，最终快照cleanupPending=false。结果证明该单实例、该配置下租户准入隔离生效，不证明严格轮转、所有租户SLA、多实例配额或供应商线程清零。最新云端Java尚在运行时不写成通过。
 
 同版干净前端已构建并启动5221，真实新后端的页面逐状态验收和PG独立核对待继续；前述15/16仍保留为夹具截图，不能挪作本次实测页面证据。
+
+### 双租户页面与PG复核补记
+
+两个独立浏览器上下文登录真实A/B，在5221同版干净前端各确认列表恰好1条自己的run UUID，不含另一租户UUID；点击完成详情、刷新运行、切英文后回答保持可读。[A中文](19-tenant-a-own-completed.png)、[A英文刷新](20-tenant-a-english-refresh.png)、[B中文](19-tenant-b-own-completed.png)、[B英文刷新](20-tenant-b-english-refresh.png)。未发新模型请求。
+
+`18-tenant-pg-observation.json`独立核对持久运行总数2，两项成功；同时发现预算account总数3，拒绝路径曾初始化一个零调用账户。不能宣称拒绝没有任何持久副作用。正在核实账户清理与增长边界，未删库或手工抹掉该记录。账本的零预留仍不证明线程/外部连接归零。
+
+最新工作区图谱重新37项回归和生产构建通过，阅读卡/语言/2D/下一课连续操作通过：[中文](21-verified-course-zh.png)、[英文](22-verified-course-en.png)、[2D](23-verified-course-2d.png)、[下一课](24-verified-next-lesson.png)。它是工作区预览，和5221固定版本的业务截图区分；静态预览的认证未连通限制仍保留，不能当成业务就绪。单参数容量对照与账户副作用修复尚未验收。

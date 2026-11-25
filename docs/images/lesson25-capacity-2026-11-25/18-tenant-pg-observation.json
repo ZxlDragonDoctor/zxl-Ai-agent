@@ -1,0 +1,73 @@
+{
+  "totalDurableRuns": 2,
+  "totalBudgetAccounts": 3,
+  "distinctRunTenants": 2,
+  "accountsWithoutDurableRun": {
+    "count": 1,
+    "reservedTokens": 0,
+    "spentTokens": 0,
+    "acceptedCalls": 0,
+    "callRows": 0
+  },
+  "runs": [
+    {
+      "run_id": "4c2e1e1b-fde7-4942-b873-bc6034d24f55",
+      "status": "completed",
+      "error_code": null,
+      "reserved_tokens": 0,
+      "spent_tokens": 2499,
+      "accepted_calls": 2,
+      "call_rows": 2,
+      "settled_calls": 2,
+      "unknown_calls": 0,
+      "outstanding_calls": 0,
+      "actual_tokens": 2499
+    },
+    {
+      "run_id": "a7bdca68-9a22-402d-bfaa-2a6efc98af90",
+      "status": "completed",
+      "error_code": null,
+      "reserved_tokens": 0,
+      "spent_tokens": 2372,
+      "accepted_calls": 2,
+      "call_rows": 2,
+      "settled_calls": 2,
+      "unknown_calls": 0,
+      "outstanding_calls": 0,
+      "actual_tokens": 2372
+    }
+  ],
+  "periods": [
+    {
+      "reserved_tokens": 0,
+      "spent_tokens": 2372,
+      "accepted_calls": 2
+    },
+    {
+      "reserved_tokens": 0,
+      "spent_tokens": 2499,
+      "accepted_calls": 2
+    }
+  ],
+  "sourceCommit": "2318eb2317af286077e75fa575fe913c8cefdecd",
+  "observedAtUtc": "2026-11-25T15:51:02.780312+00:00",
+  "database": "lesson25_tenant",
+  "isolation": "REPEATABLE READ READ ONLY",
+  "tables": [
+    "lesson17.durable_agent_run",
+    "lesson17.durable_agent_run_event",
+    "lesson17.token_budget_account",
+    "lesson17.token_budget_call",
+    "lesson17.token_budget_period"
+  ],
+  "summary": {
+    "completedRuns": 2,
+    "settledCalls": 4,
+    "actualTokens": 4871,
+    "unknownCalls": 0,
+    "outstandingCalls": 0,
+    "reservedTokens": 0,
+    "extraDurableRuns": 0
+  },
+  "scope": "Only selected run IDs, latest status/errorCode, accounting numbers and aggregate tenant count read. No bodies, credentials or new model requests. Database originally had zero runs and accounts; total 2 equals accepted 2, so rejected submission left no extra durable run at this observation. SETTLED records dispatch and provider-reported usage, not independent provider billing. Zero reserved/outstanding proves ledger settlement, not zero threads/sockets/provider work; cleanupPending is not used as resource proof. There are three budget accounts: one account without durable run remains, with zero calls, reserved and spent. The rejected submission was not side-effect-free; this evidence preserves the orphan account."
+}
