@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "loadModel": "closed-loop",
+  "limits": {
+    "requests": 1,
+    "concurrency": 1,
+    "httpTimeoutMs": 5000,
+    "observeTimeoutMs": 60000,
+    "runBudgetMs": 45000,
+    "pollIntervalMs": 250
+  },
+  "elapsedMs": 29416.02,
+  "counts": {
+    "completed": 1,
+    "capacityFailed": 0,
+    "queueTimedOut": 0,
+    "cancelled": 0,
+    "interrupted": 0,
+    "failed": 0,
+    "httpRejected": 0,
+    "httpFailed": 0,
+    "transportFailed": 0,
+    "protocolFailed": 0,
+    "observationTimedOut": 0
+  },
+  "latency": {
+    "submission": {
+      "samples": 1,
+      "p50": 272.29,
+      "p95": 272.29,
+      "p99": 272.29
+    },
+    "terminal": {
+      "completed": {
+        "samples": 1,
+        "p50": 29415.6,
+        "p95": 29415.6,
+        "p99": 29415.6
+      },
+      "capacityFailed": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "queueTimedOut": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "cancelled": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "interrupted": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "failed": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      }
+    }
+  },
+  "samples": [
+    {
+      "index": 0,
+      "outcome": "completed",
+      "submissionMs": 272.29,
+      "observedMs": 29415.6,
+      "cleanupPending": true,
+      "cancelAcknowledged": false,
+      "httpStatus": 202,
+      "executionId": "3aed1dfe-ad60-4223-bc3a-1a17dd6c396c",
+      "totalObservationMs": 29415.61
+    }
+  ],
+  "scope": "Bounded local closed-loop observation; not production capacity, open-arrival throughput, supplier SLA, provider cancellation or proof of zero resource ownership.",
+  "sourceCommit": "8630d0e",
+  "probeCommit": "a94c8a8"
+}

@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "loadModel": "closed-loop",
+  "limits": {
+    "requests": 6,
+    "concurrency": 4,
+    "httpTimeoutMs": 5000,
+    "observeTimeoutMs": 60000,
+    "runBudgetMs": 45000,
+    "pollIntervalMs": 250
+  },
+  "elapsedMs": 22151.77,
+  "counts": {
+    "completed": 1,
+    "capacityFailed": 3,
+    "queueTimedOut": 2,
+    "cancelled": 0,
+    "interrupted": 0,
+    "failed": 0,
+    "httpRejected": 0,
+    "httpFailed": 0,
+    "transportFailed": 0,
+    "protocolFailed": 0,
+    "observationTimedOut": 0
+  },
+  "latency": {
+    "submission": {
+      "samples": 6,
+      "p50": 568.58,
+      "p95": 1373.47,
+      "p99": 1373.47
+    },
+    "terminal": {
+      "completed": {
+        "samples": 1,
+        "p50": 22151.43,
+        "p95": 22151.43,
+        "p99": 22151.43
+      },
+      "capacityFailed": {
+        "samples": 3,
+        "p50": 2075.43,
+        "p95": 2143.16,
+        "p99": 2143.16
+      },
+      "queueTimedOut": {
+        "samples": 2,
+        "p50": 2449.03,
+        "p95": 2487.56,
+        "p99": 2487.56
+      },
+      "cancelled": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "interrupted": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "failed": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      }
+    }
+  },
+  "samples": [
+    {
+      "index": 0,
+      "outcome": "completed",
+      "submissionMs": 438.85,
+      "observedMs": 22151.43,
+      "cleanupPending": false,
+      "cancelAcknowledged": false,
+      "httpStatus": 202,
+      "executionId": "7cf36776-153d-428f-b9ed-2c3409145480",
+      "totalObservationMs": 22151.44
+    },
+    {
+      "index": 1,
+      "outcome": "queueTimedOut",
+      "submissionMs": 475.08,
+      "observedMs": 2449.03,
+      "cleanupPending": false,
+      "cancelAcknowledged": false,
+      "httpStatus": 202,
+      "executionId": "21e389ba-a469-4c35-9471-76108ee23f88",
+      "totalObservationMs": 2449.04
+    },
+    {
+      "index": 2,
+      "outcome": "capacityFailed",
+      "submissionMs": 1294.16,
+      "observedMs": 2075.43,
+      "cleanupPending": false,
+      "cancelAcknowledged": false,
+      "httpStatus": 202,
+      "executionId": "73d47d2c-3f6e-4a93-b282-871133620213",
+      "totalObservationMs": 2075.44
+    },
+    {
+      "index": 3,
+      "outcome": "capacityFailed",
+      "submissionMs": 1373.47,
+      "observedMs": 2143.16,
+      "cleanupPending": false,
+      "cancelAcknowledged": false,
+      "httpStatus": 202,
+      "executionId": "fb6dc32e-93a3-4681-bc31-79d917a02f5d",
+      "totalObservationMs": 2143.16
+    },
+    {
+      "index": 4,
+      "outcome": "queueTimedOut",
+      "submissionMs": 568.58,
+      "observedMs": 2487.56,
+      "cleanupPending": false,
+      "cancelAcknowledged": false,
+      "httpStatus": 202,
+      "executionId": "b044edde-587f-4b36-b113-3bc68ec88432",
+      "totalObservationMs": 2487.56
+    },
+    {
+      "index": 5,
+      "outcome": "capacityFailed",
+      "submissionMs": 723.62,
+      "observedMs": 1351.58,
+      "cleanupPending": false,
+      "cancelAcknowledged": false,
+      "httpStatus": 202,
+      "executionId": "cf90d650-2aa0-4d93-b441-923c187bf492",
+      "totalObservationMs": 1351.58
+    }
+  ],
+  "scope": "Bounded local closed-loop observation; not production capacity, open-arrival throughput, supplier SLA, provider cancellation or proof of zero resource ownership.",
+  "sourceCommit": "8630d0e",
+  "probeCommit": "a94c8a8"
+}
