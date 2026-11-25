@@ -1,0 +1,9 @@
+{
+  "runId": 45426542636,
+  "artifactId": 14934344789,
+  "commit": "cc18ba81c587bc33f87916e7c6addfdb740da90e",
+  "zipSha256": "c29c1dfed28debb28afe74a086c1c2a0620514e2d070516f785aa8f43b48d302",
+  "allManifestFileDigestsVerified": true,
+  "files": 21,
+  "scope": "downloaded successful frontend artifact; no Java or business/model success claim"
+}

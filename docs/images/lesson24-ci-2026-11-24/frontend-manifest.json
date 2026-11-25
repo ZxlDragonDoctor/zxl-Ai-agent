@@ -1,0 +1,112 @@
+{
+  "kind": "frontend",
+  "commit": "cc18ba81c587bc33f87916e7c6addfdb740da90e",
+  "scope": "Checksums of existing artifacts and reported test counts only; not packaging, secret scanning, coverage, business, browser or model acceptance",
+  "artifacts": [
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/3d-force-graph-Dx4k6WDk.js",
+      "bytes": 809182,
+      "sha256": "c4f7994e8c9a0658257756ec1b26eb26af4377e2699ffc61ea201c03b8065c14"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/AgentChat-iKApUuCl.js",
+      "bytes": 76015,
+      "sha256": "eee80b045a9b7cd8995c4b06ebc37ce8653da71280997b35fafe014861164c18"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/AgentChat-xglL8t42.css",
+      "bytes": 28605,
+      "sha256": "9f5ac30f41aca17d50f4187e5862f89cf20bb340b8d6587f7bd1cd2040c09f22"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/FormalMultiAgent-CT0CF_bY.js",
+      "bytes": 13552,
+      "sha256": "e5c276a5e03dbf2269a946f7389888d1ed305efc963dfc92efda20b1ef2d4302"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/FormalMultiAgent-DsnsYtG3.css",
+      "bytes": 4605,
+      "sha256": "ceb89cede333487a50e299268e727e077b69adf7f9fe19948ed15a3361aa2221"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/KnowledgeGraph3D-De1SLMkK.css",
+      "bytes": 4258,
+      "sha256": "e0283107904a5f377fa0ed8439de2f19ee0bef7c0b63ff9d3d8711aaf2694244"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/KnowledgeGraph3D-wScYcrvL.js",
+      "bytes": 599259,
+      "sha256": "cabe2db12a6c130bb005dd28a944342f4fe675b6f223635d16d2a1560b57834a"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/KnowledgeLibrary-BEudoc-H.css",
+      "bytes": 19476,
+      "sha256": "f25bd7367a95effb07a7e7f82c13fdc9b5aaf8a33b1a624b632a945b544cf10d"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/KnowledgeLibrary-GA_pyAym.js",
+      "bytes": 36888,
+      "sha256": "c9df88aae543bbc4e6d6335606e9c9cc1b1771cd22f8041c5c7efaf075a5dd5d"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/LearningGraph-0jT46jR5.css",
+      "bytes": 27660,
+      "sha256": "ad4c4391b8da1c06810a3deba18aa95ac8b333f733c3bb8641237a3f5803b9d6"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/LearningGraph-aXNjX9Ef.js",
+      "bytes": 315579,
+      "sha256": "edbf00d330413add01362543f2558a80a015d8a95f4c94abe1e509aed7477449"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/MultiAgent-CEcYE5Tb.css",
+      "bytes": 13000,
+      "sha256": "d597edca7bda2247af8d97f29b22d1cb77e8aca819c0763f71758aa07891c69d"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/MultiAgent-DiPyqLj1.js",
+      "bytes": 16918,
+      "sha256": "6032808c8c25429f1e575a43f6d37e3dc504286695b208e07408f6d0fe23f1e2"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/MultiAgentEntry-QdweoeFg.js",
+      "bytes": 885,
+      "sha256": "a6a0e513380e964b5a85fb20de5cbd592c950afcfbb5e8db379904617b6d05f7"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/base-tz_OfR1L.js",
+      "bytes": 26,
+      "sha256": "86d792e944a3131cd021198f49045280e2e4f30ce5c3d347bbf5625b81424dfb"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/index-BYnJREEX.css",
+      "bytes": 12295,
+      "sha256": "1918ac027ae9f01908e787c4553a6e43fa6a5faad16fa3bb521188176100279a"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/index-KmgQYB7b.js",
+      "bytes": 145659,
+      "sha256": "d319f818653ba99d1367900993069ecd84df1d7f3aa63cf5c46adda17106f58f"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/assets/knowledge-DLpMsQGW.js",
+      "bytes": 1394,
+      "sha256": "82ee4841bebd85375b148fe90638a9b91d8e438ddf1e8eaaf4f07a6afd0d0e38"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/favicon.svg",
+      "bytes": 225,
+      "sha256": "0df544e66f18897d4c8fbc23ed502b055f1a4d8f059ff0f6a507c4231f53d616"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/index.html",
+      "bytes": 845,
+      "sha256": "0299001635cb33cd89d267195cb722786fb339f7726f26b711e85601c5d0fc7b"
+    },
+    {
+      "path": "zxl-Ai-agent-fronted/dist/vite.svg",
+      "bytes": 1497,
+      "sha256": "4a748afd443918bb16591c834c401dae33e87861ab5dbad0811c3a3b4a9214fb"
+    }
+  ]
+}

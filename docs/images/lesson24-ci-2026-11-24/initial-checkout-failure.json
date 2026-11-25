@@ -1,0 +1,10 @@
+{
+  "runId": 45425883113,
+  "commit": "5adffe8a87689d49ae22b753860b9d5baa7bdadb",
+  "url": "https://github.com/ZxlDragonDoctor/zxl-Ai-agent/actions/runs/45425883113",
+  "conclusion": "failure",
+  "stage": "Check out the tested revision",
+  "error": "No url found for submodule path 'zxl-image-search-mcp' in .gitmodules",
+  "testsExecuted": false,
+  "scope": "Initial remote checkout failure retained; not counted as a passing test run."
+}

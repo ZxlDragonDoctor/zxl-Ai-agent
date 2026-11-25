@@ -1,0 +1,24 @@
+{
+  "runId": 45432538665,
+  "url": "https://github.com/ZxlDragonDoctor/zxl-Ai-agent/actions/runs/45432538665",
+  "commit": "9f1c5ed5ac94f202106a65845710433d354be741",
+  "status": "completed",
+  "conclusion": "success",
+  "java": {
+    "tests": 814,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontend": {
+    "tests": 115,
+    "failures": 0,
+    "skipped": 0
+  },
+  "deliveryTools": {
+    "tests": 136,
+    "failures": 0,
+    "skipped": 0
+  },
+  "scope": "Latest course/graph revision passed CI. Byte-by-byte artifact verification is recorded separately for 78c0e53; not claimed for this revision."
+}

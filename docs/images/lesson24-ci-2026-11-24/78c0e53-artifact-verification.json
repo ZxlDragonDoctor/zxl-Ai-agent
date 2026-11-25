@@ -1,0 +1,31 @@
+{
+  "runId": 45429812972,
+  "commit": "78c0e534345c01e50e79854a805410376e92edbc",
+  "conclusion": "success",
+  "zipSha256": {
+    "java": "a93d3bd9faae628a6871a91a7a00eac6451e7943fc2cb413c9efbc915f7fb7f9",
+    "frontend": "9d580a6138a3497c8775da816740918609af5d12a251f2a7bab87ad1317cbb78",
+    "reports": "085114c7afc69207beaeb11579245bf579c28484b91b7ae4472131893ad05e76"
+  },
+  "verifiedFiles": {
+    "java": 1,
+    "frontend": 21
+  },
+  "javaTests": {
+    "tests": 814,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "verifiedReports": 164,
+  "frontendTests": {
+    "tests": 115,
+    "failures": 0,
+    "skipped": 0
+  },
+  "deliveryToolTests": {
+    "tests": 136,
+    "failures": 0,
+    "skipped": 0
+  }
+}

@@ -1,0 +1,1497 @@
+{
+  "kind": "java",
+  "commit": "78c0e534345c01e50e79854a805410376e92edbc",
+  "scope": "Checksums of existing artifacts and reported test counts only; not packaging, secret scanning, coverage, business, browser or model acceptance",
+  "artifacts": [
+    {
+      "path": "target/zxl-Ai-agent-0.0.1-SNAPSHOT.jar",
+      "bytes": 91409311,
+      "sha256": "8659ab8ff06ac3d03dbcecef4fd27d61fcf2b7de607bca81bb4e411d8a241c6e"
+    }
+  ],
+  "reports": [
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.enterprise.EnterpriseBootstrapTest.xml",
+      "bytes": 43239,
+      "sha256": "906960531fcd9601ef87b516d2d2a23edabd0f8b22975ccd55a8ffe0e1bc66ff",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.agent.AgentOutcomeTest.xml",
+      "bytes": 74137,
+      "sha256": "591c0ed58b9b6fc00aa6ccfa91a7902a28a1568268184d7594916f0b36158117",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.agent.AgentPublicationBoundaryTest.xml",
+      "bytes": 45566,
+      "sha256": "fabdaf09770024db2858061cf1b0612c1db5790639a3baac7c786f3e7d65081b",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.agent.BaseAgentBudgetTest.xml",
+      "bytes": 56023,
+      "sha256": "05c2780c90d64570a9edfb8bb2fdb9e3fb21aee1b06c336b0c6b742b88fcd455",
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.agent.PreparedAgentStreamTest.xml",
+      "bytes": 46561,
+      "sha256": "f5c954165fe85385c364688baa1effa367dc9db5934adfad209748356cacde26",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.agent.stream.DashScopeAuthorizationTest.xml",
+      "bytes": 47191,
+      "sha256": "bab54ede57ee8c9232658d6de702a67781b467424c3a8f3fabdaf30e7f255bea",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.agent.stream.RoutedStreamBudgetPgTest.xml",
+      "bytes": 44384,
+      "sha256": "a76ab59c05cfe55f37479d0e94b1190a59d086be227d42119b830d41cf2df005",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.agent.stream.StreamBudgetPgTest.xml",
+      "bytes": 52472,
+      "sha256": "a64fb801e81eba10d161d09626190f55488f2a6d6a4964a007249312f7d8b457",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.agent.stream.StreamBudgetPoolPgTest.xml",
+      "bytes": 45984,
+      "sha256": "02d1c2819afcaa7ec8faae07c235b262af4b20498144da978be9afb8ad2ed254",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.KnowledgeAssistantProviderTest.xml",
+      "bytes": 52113,
+      "sha256": "9b08d280d0ca4344be0e62fe77161ed6cd80e489f9503a90eb91392736839f8c",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.LegacyConversationFilesTest.xml",
+      "bytes": 43499,
+      "sha256": "7d9db80324d45e0c4c08eb5ecb005f329972cb281e11af212360e21e9acc48d4",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.ScopedAgentRegistryTest.xml",
+      "bytes": 43232,
+      "sha256": "eb38455fe71206ce02b4d78a8cf7c3807488314941e95abcac3074969595e90d",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.ScopedKnowledgeProviderTest.xml",
+      "bytes": 43838,
+      "sha256": "bad221f6371ba4fc90586c58342ff7624e18c4ebb1bf9d7d72fd6aa48e62b6de",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.ScopedLoveProviderTest.xml",
+      "bytes": 43379,
+      "sha256": "24de56356944b8a23c68ab31178fc77afa001fad2b23fab130081a8e5ba1cf0a",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.ScopedMcpResearchProviderTest.xml",
+      "bytes": 43678,
+      "sha256": "f1ac6a60f5fd0f87da0e8377a49dbb9f59512f32f597993f2206f9780d6e81d5",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.context.ContextAssemblerTest.xml",
+      "bytes": 45122,
+      "sha256": "61fa2e83f197b3c06f8cae6bf99ef482ba185ffe62c14067ed1ec346cae65a31",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.context.ContextPreviewApiTest.xml",
+      "bytes": 44021,
+      "sha256": "cc7358d83ef32db472285e3637fbb65cf4afb37a9eda8dbcd0bdc133db46e98f",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.context.ConversationContextIntegrationTest.xml",
+      "bytes": 43835,
+      "sha256": "94acce4f62c4ecf94615ead50b6bd96c137cd9b4e78f32eb5b4cb102753dc763",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.controller.FormalAgentChatControllerTest.xml",
+      "bytes": 50560,
+      "sha256": "2ae43964acaf7b98087e57750abb549e6d389093191ba53c189ef9f0d286bda0",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.controller.FormalAgentTypeControllerTest.xml",
+      "bytes": 45854,
+      "sha256": "f10e6dd04c92b9c0b3c2b545dc72402e35ed298500238a75aecda4b2a142ffdf",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.controller.FormalConversationControllerTest.xml",
+      "bytes": 53449,
+      "sha256": "11f591ce7f314bf868f5ea27131605b198a01ae7cf6bcdd2a6c32f95d1c99da0",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.service.ArchivedConversationServiceTest.xml",
+      "bytes": 44106,
+      "sha256": "8b8542531e3b09fd68b75f3f0d6fdd288e59bcfd6b58f6d06dcd72e05185ce09",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.service.ProviderExecutionPermissionsTest.xml",
+      "bytes": 43668,
+      "sha256": "30ac9c5918c9e4e82f30d8c6fa7d7f9c8da419620aaf16b777b75753fd6f9590",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.service.ScopedConversationPgTest.xml",
+      "bytes": 46030,
+      "sha256": "7980d7169adfe7be4a6a270b7437bd736787ea2862a901bb7b20444051f3e36a",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.conversation.service.ScopedConversationServiceTest.xml",
+      "bytes": 44974,
+      "sha256": "9127ab9b9a67d8c97555bdba8fd22f2bd9aa3d2ff314f49c10a1a9fb37a62a94",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.BudgetedConnectionTest.xml",
+      "bytes": 43213,
+      "sha256": "f12392c95aca7588d3d4b15ee490be981fbd260d7c24f149c6068236d73e9fe0",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.HttpKnowledgeEmbeddingTest.xml",
+      "bytes": 43236,
+      "sha256": "fbbf239670f1ff535a2c07dace3080906b770e1955d866d57bc946ac7d618eba",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.KnowledgeApiPgTest.xml",
+      "bytes": 45354,
+      "sha256": "d785095992e063e90e4cb286b0baab12ac5d85b3e82fb1f92c4b996c80e6bd2c",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.KnowledgeFailureApiTest.xml",
+      "bytes": 44415,
+      "sha256": "e83aeba49290cafdc8c076710d6dd5734bf489177736600edd8a9f65829ddd8e",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.KnowledgePgTest.xml",
+      "bytes": 48784,
+      "sha256": "2b02941335d5be3cb9208e69d422ccf8b076c6abea7900ccfb6892be2cc946e5",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.KnowledgeProfileTest.xml",
+      "bytes": 42924,
+      "sha256": "1a25ac10dd281dff61623ad7958f38e7aa4d345b0580060d440e34dd8ac08474",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.KnowledgeTextTest.xml",
+      "bytes": 43682,
+      "sha256": "45147a280284edd2f92100b7d20cae5462c6fa6b30e6e4d8fe86bd52d3d3b318",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.answer.AnswerApiTest.xml",
+      "bytes": 44501,
+      "sha256": "2355d972486c9c6a4bf7b7ab8e5ac859055fbd83831ad7c6d67b1575bbb95961",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.answer.AnswerFailureDiagnosticsTest.xml",
+      "bytes": 43039,
+      "sha256": "072daa98c7d36e590d158e28e099ba06354752bdc17fbbfc98b9c56639bcdc08",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.answer.AnswerPgTest.xml",
+      "bytes": 58734,
+      "sha256": "4d595d638585a62e4fdc5989a9c9ff3e4088bb5b92ac555e0ba424da81e0b0fb",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.answer.AnswerPolicyTest.xml",
+      "bytes": 42982,
+      "sha256": "ea4835bd3ec0251cc169c459fab24b3e3db5812787d466b9877606a759f18206",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.answer.HttpAnswerModelTest.xml",
+      "bytes": 43598,
+      "sha256": "109b62731660287701719c5c7b94e31d28d3382a04463b926cfe9ea43f31ad89",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.evaluation.EvaluationMetricsTest.xml",
+      "bytes": 43034,
+      "sha256": "cd3dc03db78d6bb01f2aaf91a891e13b7a6d5343b87a143eef031a3bb7e55f52",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.evaluation.EvaluationPgTest.xml",
+      "bytes": 43284,
+      "sha256": "a0eab19fa7f295faad8e4c0d77eb8a05997f2d6076631572dd3818a756d22ba3",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.evaluation.EvaluationServiceTest.xml",
+      "bytes": 43207,
+      "sha256": "0fe14e09e0d2e27d82fe76939f079855474f9ddc8d5d88bac28a6cc6577e1296",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.gateway.FormalKnowledgeGatewayControllerTest.xml",
+      "bytes": 46521,
+      "sha256": "b60305956fe5c1965e8aa1277207b5d94dfe013b685ee7236e571e92da4db152",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.gateway.KnowledgeSpanExportTest.xml",
+      "bytes": 42715,
+      "sha256": "8b120536769250c452c557521170cfc445536f9c14c168989e1fc8e210066a2a",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.gateway.KnowledgeTraceTest.xml",
+      "bytes": 42842,
+      "sha256": "1578f94134aa7e43ffb80e18b3ce1fffba3f7288a0c42a4cba08121b2024f2f5",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.gateway.ScopedKnowledgeClientContractTest.xml",
+      "bytes": 42860,
+      "sha256": "abca6ab32afed32cdc26d83baadc582f49f5e6c96e4672c66880f6fdd4fa4572",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.gateway.ScopedKnowledgeClientPgTest.xml",
+      "bytes": 51343,
+      "sha256": "e6a2c93224110a2988755aeb6f1a1cd317b2fca46ca6c70ca48b9bfa5917fe09",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.mcp.FormalKnowledgeMcpContractTest.xml",
+      "bytes": 43427,
+      "sha256": "4b76272d254036eb5c3142c9e5f5cc2a00cf881c90820c1fd3f353bf05807d6f",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.mcp.FormalKnowledgeMcpPgTest.xml",
+      "bytes": 55539,
+      "sha256": "d2a4543d3f848a6570158260e137ecaf5a074f58ddc210cf2554327ac088293f",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.mcp.FormalKnowledgeMcpTransportTest.xml",
+      "bytes": 51383,
+      "sha256": "95ab3986768d7a28d9f1ad3fc7cf675e5103b6ec00cbb52c5faa3bf745c8e626",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.mcp.FormalMcpWorkerLookupTest.xml",
+      "bytes": 43153,
+      "sha256": "35f5e57ff67c91a923efb0a35a693bf2a66be429f4cbc416caee29203ad21f81",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.mcp.KnowledgeMcpContractTest.xml",
+      "bytes": 43673,
+      "sha256": "ef83e60a7f72f71f74eb5a96e21399d4a6444bdd71190c9549a2b287576c1534",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.mcp.KnowledgeMcpDiscoverySnapshotTest.xml",
+      "bytes": 48129,
+      "sha256": "748f9da41f0fc9e3703a0b62a245532f94d4fdb9fed078cfe25822283cf23dc4",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.mcp.KnowledgeMcpFailureClassificationTest.xml",
+      "bytes": 48334,
+      "sha256": "27d2a344df95285af1c71118b3a4391498acbf63f3215d6ac8d8cb3e81ed3340",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.mcp.KnowledgeMcpPgTest.xml",
+      "bytes": 45956,
+      "sha256": "aa0dd8a410112e555c6fae285df8c37a47065e5a0cce96c1fb5a9a8d7bc31b6c",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.mcp.KnowledgeMcpSessionTest.xml",
+      "bytes": 62764,
+      "sha256": "cff35cb9e02bed0fb431eaf7e64b54fac0dbfddeaf920ccb20bc19ca093214e3",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.mcp.KnowledgeMcpTransportTest.xml",
+      "bytes": 62984,
+      "sha256": "416f8f93251112b3423d6fcdf0984b2c4d39032affb37b847de19216bc78612b",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.mcp.Lesson22RemainingPgTest.xml",
+      "bytes": 51500,
+      "sha256": "b1dcd121e7924bcf790f2486d9130473519044e8d528c145ae007a0d8a634dad",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.mcp.Lesson22ToolFaultPgTest.xml",
+      "bytes": 57267,
+      "sha256": "33185fe4f8b2c3f8dd01fcb58a7618ba6d73dc4a9e1a5055ff84ab0e3123069e",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.memory.MemoryApiPgTest.xml",
+      "bytes": 48836,
+      "sha256": "64b43021640cb6be4e5bf5fd320f6b2859d1b72e9b1af6940d72c55c406e8731",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.memory.MemoryPgTest.xml",
+      "bytes": 51721,
+      "sha256": "8095d9322ff01e882f8135a1ea4ce8236f06974ef699fc914147c755316de4a6",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.retrieval.HttpRerankerTest.xml",
+      "bytes": 43206,
+      "sha256": "32a1a037944319742bf49799fae2b502663ced9fa68aead9420d94a882a4e5af",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.retrieval.RetrievalAlgorithmsTest.xml",
+      "bytes": 43564,
+      "sha256": "b1a35885ac64e228ab90b56e37ebd3fcf8fa1d151e4c08f201acaea1e6e0dda6",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.retrieval.RetrievalApiTest.xml",
+      "bytes": 44608,
+      "sha256": "c992fe43d4bc8482c5978db3f45c144abc76a0c1d3666e25076cb7943a8b257e",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.retrieval.RetrievalEmptyIndexPgTest.xml",
+      "bytes": 44256,
+      "sha256": "7e4c8403d47134c722884994691b5238ac3bd77fd6542317ecc17f1b40271a98",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.retrieval.RetrievalPgTest.xml",
+      "bytes": 49332,
+      "sha256": "44d49896ad94f15db8ec29c439b8d28bf6e94e7b0d2006eeb85235a582d0107a",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.retrieval.RetrievalRerankBoundaryPgTest.xml",
+      "bytes": 43531,
+      "sha256": "f9d254168f4fc76dba1f95de74cfabdeedad834931fdea936c34b0fd19451b5a",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.retrieval.RetrievalVectorBudgetPgTest.xml",
+      "bytes": 47243,
+      "sha256": "825fbec755098ccf4b95d8997a79785115ed27de650e8a257667a973fc68fc8e",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.scoped.AuthorizedKnowledgeTransactionPgTest.xml",
+      "bytes": 51678,
+      "sha256": "9bcc2d139b86e296e729b6c4135622c72056cf3b5620c012fbfbb2aca238762d",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.scoped.FormalWorkerProcessPgTest.xml",
+      "bytes": 44042,
+      "sha256": "0e478d4985cd185e1b6b96a3516aca98cbccaff1c6e18ece99c1ac35c49a576f",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.scoped.ScopedKnowledgePgTest.xml",
+      "bytes": 53762,
+      "sha256": "2802ed0218547c4300050785f9eb38d338fea90b8fe226e114db46b1657b2925",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.scoped.ScopedKnowledgeStatusTest.xml",
+      "bytes": 44603,
+      "sha256": "cbc304cc22dfb9616c582e031494d840786131fb7c5249582a37683b61879141",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.scoped.WorkerAuthenticationPgTest.xml",
+      "bytes": 63538,
+      "sha256": "d136501468cc1e7eb1d6f4f3c1e9e5e517fe6d656b88779a9e8634ce40d6c5d9",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.scoped.WorkerPublicationPgTest.xml",
+      "bytes": 47740,
+      "sha256": "3376877b7068112c6db5cb8cd656ea51f19fb3df0b00a4078553e72f07503fee",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.knowledge.scoped.WorkerRequestContractTest.xml",
+      "bytes": 43054,
+      "sha256": "84eed2a5e7064524b71c4d0fead165ca67d7401b859a2099383fd5c548860559",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.AgentCompletionBoundaryTest.xml",
+      "bytes": 45012,
+      "sha256": "141a6a92aabb40406d22fd12c836f95aed45f9f2a5a06bbad245c3d8d4a24433",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.DurableReportPublicationTest.xml",
+      "bytes": 43257,
+      "sha256": "024baaf998dc0cd87024dca7e291cb6f0d914fe7bff27aaa6fdfff1cbf35535a",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.ExecutionControlTest.xml",
+      "bytes": 43609,
+      "sha256": "b0fc6fb47dd0a148fa9ea36d7c35cf20af63256896d2d191c31e27603454f39d",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.ExecutionRuntimeIntegrationTest.xml",
+      "bytes": 47503,
+      "sha256": "3bffa927bc6ab53b7c4225e01f8155e09024392cbf5b87361efdec85f1722c01",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.FormalMultiAgentControllerTest.xml",
+      "bytes": 50485,
+      "sha256": "987a59a401601c5bce9393c702de7c2dab0e35a827f2cea37cdd7b09524f706d",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.Lesson22BudgetPhasesTest.xml",
+      "bytes": 46599,
+      "sha256": "30bcedbcc3fbbea42db15d329cd850e4c4149ea58cd3c473cd9dcbb72aec20ba",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.MultiAgentClientTimeoutTest.xml",
+      "bytes": 43247,
+      "sha256": "ee055347c54ca3b58566dcae9d0ab8d2103ed478b99a3e6bb3d1915caf49c5b1",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.MultiAgentOrchestrationTest.xml",
+      "bytes": 49855,
+      "sha256": "097e7962c1e3e2f263e3ce23fdbb02290d27bd25665888fad943c7580c1a2a1d",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.ObserverSnapshotTest.xml",
+      "bytes": 43386,
+      "sha256": "65707d7f594ccd0b0c788a0d01b364078070376897d196d16a12ce4fde40e613",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.PrivateRunEventsTest.xml",
+      "bytes": 43926,
+      "sha256": "6d2d084f27a0cafc68770ea3001e9bf6d763b8c0735b5a06a16beda15ab923f6",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.RunApiTest.xml",
+      "bytes": 43171,
+      "sha256": "f88e4f119e684fa9e07d9548187d9f5e57b29cc469195d977daed12c533c3d5c",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.RuntimeCapacityTest.xml",
+      "bytes": 43355,
+      "sha256": "2bf21fdd2c0e52f88f92950bd14250836d44630bfa6344523e71b1d343fb3764",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.ScopedAgentModelTransportTest.xml",
+      "bytes": 46618,
+      "sha256": "a02c6ba8f59bc29e5fe2e9e46044ae0f3732057dec082b1dc9ed4466a0b47629",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.ScopedMultiAgentServicePgTest.xml",
+      "bytes": 52698,
+      "sha256": "45755236b801c9b493cd5bc12bb7dc99407fe9573ded98ac02833f0ad4111f20",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.ScopedMultiAgentServiceTest.xml",
+      "bytes": 44294,
+      "sha256": "08b0542fedc8e9180e79dd7fb3d23b4ba17415e0c1250eadee1040084a43fe37",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.ScopedOrchestrationTest.xml",
+      "bytes": 48469,
+      "sha256": "883211c015001685074cf9f1d7d2093dcb84e320eeafce0f3d73522d05308a9e",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.ScopedTaskStartTest.xml",
+      "bytes": 43348,
+      "sha256": "1de580046ee5d04f98fc3001ae0b0ce8b33d07f115ab4147dae84be748c46215",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.TaskLifecycleTest.xml",
+      "bytes": 43635,
+      "sha256": "ee73d8d0753061f622703e5cc5fa292e795f8a29daa4cdb1f974e5168d416961",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.TrustedRunContextTest.xml",
+      "bytes": 43602,
+      "sha256": "5043430ebaeeca5d7d87a68f6a3e6568bbd9382d63d85bfa82078e45ec4c36e2",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.WorkflowOutcomeTest.xml",
+      "bytes": 47199,
+      "sha256": "89e9751c3dc8e534c0ad9dd18b27c482f07fbf6a8da73d7646051cf7bbf58326",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.bus.AgentMessageBusCapacityTest.xml",
+      "bytes": 45096,
+      "sha256": "6c3bcf85877d3d75c9b4a13aea577d4edd08dda2110639f3a09c87bb5d0acef3",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.observer.AgentMetricExportTest.xml",
+      "bytes": 43380,
+      "sha256": "266789bb6fde07fe2a4303320a91ae84b62577cdc80b5a320a15114b6314247b",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.runtime.ScopedMultiAgentRuntimeTest.xml",
+      "bytes": 46356,
+      "sha256": "546d5e69d3ebd4547e470d917ae4e91ed339bafc5a2c74063f099b3a4d444baa",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.multiagent.security.DurableRunStorePgTest.xml",
+      "bytes": 45076,
+      "sha256": "51f44822be11fae5056ce303f370ff9614792f55c591f085ac5aa75584f24024",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.persistence.LearningPersistenceApiTest.xml",
+      "bytes": 49653,
+      "sha256": "815d2a6c39927583355a6f9a0106ff4eb67ee40cf2f8b802b19e3e099ef901b1",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.persistence.PersistentWorkerTest.xml",
+      "bytes": 46766,
+      "sha256": "612ffbcbdc2b2714e171dea2e435c4055efbed9647120395ab9c32deb1e1b31e",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.persistence.PersistentWorkflowRepositoryTest.xml",
+      "bytes": 64504,
+      "sha256": "37740cfce6da842233236f8a0ceee9241069228df7497217825643bb00e4b038",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.persistence.RuntimeSchemaPgTest.xml",
+      "bytes": 47747,
+      "sha256": "ccb1f12c6d0cc2ce3e6a4e862fa71c9ec1fdcd9a05b4fd4cc60f3f6df10e0cdc",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.persistence.SchemaVerifierTest.xml",
+      "bytes": 43803,
+      "sha256": "d3e5c0ca26a06ae3d5a4615ea0ff02b9e4e517a94046c3810ca32c6c70da9a34",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.FormalMcpControllerTest.xml",
+      "bytes": 47995,
+      "sha256": "db4f8942279d767b41d0556e241ac701a1a4f21af77b6c19d7fbcf7259dc2f12",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.McpEvidenceVerifierTest.xml",
+      "bytes": 44911,
+      "sha256": "09e93f1d1c93ee14e1c850a8b410360ad2f879bcd74667e6aa8cabca004c836e",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.ResearchAgentIntegrationTest.xml",
+      "bytes": 43606,
+      "sha256": "e24fce7ef2a7cfb45c759aa4c1dbc2284bc49b00389375af68fdbcb14215a112",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.ResearchControllerTest.xml",
+      "bytes": 44390,
+      "sha256": "8222e069d0ec7cdf255fdb3bad9f40b709c89af0aa1b1b8c689a01873667ba4a",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.ResearchDiagnosticsTest.xml",
+      "bytes": 44264,
+      "sha256": "7ab88c3876dc545dcd0d047e6c6042ece2cb560b94ce43c5ed9335f20c9efd86",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.ResearchDiscoverySnapshotTest.xml",
+      "bytes": 42846,
+      "sha256": "bea98762295084e485c6d415ab776da191e75aa6a0c0b088f6857cb33c1043b0",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.ResearchDispatchBoundaryTest.xml",
+      "bytes": 44009,
+      "sha256": "cba45dd8ad197f707a9502a7805f5689878dd9040390e0f4a8918ed10d91cf42",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.ResearchFailureClassificationTest.xml",
+      "bytes": 47926,
+      "sha256": "a2ded11ee11b26dcef80150c33c315c0483a17d5e37b0cdf85898346284c3523",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.ResearchRunnerTest.xml",
+      "bytes": 46191,
+      "sha256": "02d3f4f6b8fd968ca95104670af1d65e475aa1fc51a93cfef4a4892baca96a82",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.ResearchToolResultTest.xml",
+      "bytes": 42754,
+      "sha256": "44bfb4aa6e0aa5799abdc755ce6b85703093a826a97627d7a81fc48deca8b580",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.ScopedResearchAgentPgTest.xml",
+      "bytes": 48625,
+      "sha256": "1c18fc03a0528712ceba599fb7ee52d819f1720f970df8de37d485a9bc3b6c57",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.ScopedResearchAgentTest.xml",
+      "bytes": 46381,
+      "sha256": "1902da9f1d49f5b6acbc6325562001cd286f545f1d2030dc45d3114cdfd69854",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.ScopedResearchTest.xml",
+      "bytes": 45862,
+      "sha256": "12e88f9cf0137efe0a843776d6b5b9e3c1cb8e56068d0175f7ca7a77ac38186f",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.StreamingResearchBudgetWiringTest.xml",
+      "bytes": 42723,
+      "sha256": "18985d509c201ab3dc4f6ebbf935bdbc2513d517826c4910b4ff5281cda421f0",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.research.StreamingResearchModelTest.xml",
+      "bytes": 53609,
+      "sha256": "ff94da1ce0e2c03ccdae858b79b71b69ba8bdc7835ffc7baf1997f97ac31ce64",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.AuthenticationPgTest.xml",
+      "bytes": 47834,
+      "sha256": "ba3408236f8e7955644fd492cea2e7225c1917300f1d5a0a59f45f9c05dc9f9f",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.AuthorizationDecisionTest.xml",
+      "bytes": 52877,
+      "sha256": "effa580f1b114489e9e8cf0eeb5c554431a9c50b32018bddcc3d002c9d26d8f9",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.AuthorizedRunRegistrationPgTest.xml",
+      "bytes": 48153,
+      "sha256": "ac308d90207a8ec53b2b56be1de656edf52cb404b9a5f632cebfe9d7d6321317",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.GateAllPgTest.xml",
+      "bytes": 46647,
+      "sha256": "e2a4ea9471fe62dcda93af21d6fc21ddfb37be816961cbc1af3983380a874f10",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.LegacyHistoryImporterPgTest.xml",
+      "bytes": 45064,
+      "sha256": "2031f24cd728f9e5241bd044eac5b84dff164790140d3aca7028205be2133380",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.ProvisionAccountCommandPgTest.xml",
+      "bytes": 45937,
+      "sha256": "73e0713b4f6705a06da1c26f000bbc5809b9ad1e777d2c67fe268128280824fd",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.ProvisionAccountCommandTest.xml",
+      "bytes": 43680,
+      "sha256": "df52c4b591c243c11e135473674a1856f5fbd5f5717491527d05cb99e701c495",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.SecurityConcurrencyPgTest.xml",
+      "bytes": 52182,
+      "sha256": "2771ffda340045d4f36d32284be65cacf5d3b7f100038bff90d8b16189060cbd",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.SecurityDatabaseIdentityPgTest.xml",
+      "bytes": 44532,
+      "sha256": "0fceaa9065daa5456ea954774bdb4587b063788868a1ccb49a7609dd4c890f00",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.SecurityDatabasePoolPgTest.xml",
+      "bytes": 48871,
+      "sha256": "8c9d7a09555d9334bf3016cc1cf67098d84b5c01a7be2c67373bfb46ad9c196c",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.TicketApprovalAuthorizationPgTest.xml",
+      "bytes": 43820,
+      "sha256": "8f5566e4a973a7463b9831e499d918a052d3ff07637e3ab57bd695e89686bbea",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.web.AuthControllerTest.xml",
+      "bytes": 44570,
+      "sha256": "0602f3c76c3659564cf1f8dcb334e391c41885d659fa95ad227ab9bac89962b7",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.web.AuthHttpPgTest.xml",
+      "bytes": 48745,
+      "sha256": "c38922f6a0bacb92436aea844e4af6e2a51a8cebf8c404c72291c086803168e5",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.web.EndpointPolicyTest.xml",
+      "bytes": 43699,
+      "sha256": "24fd91ad102c72438d0ebdf6c3b7eb024a1d1edd743cebe9437cb2a0894c102c",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.web.FormalGatewayActivationTest.xml",
+      "bytes": 45717,
+      "sha256": "96f72fd0797896aa2af18157ddcef8711f9a9033164a0ec1f9317c17c6a39d6c",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.web.FormalPooledAuthorityTest.xml",
+      "bytes": 43225,
+      "sha256": "b49074f6583a5e450150ee1786ff9286305c76ec95f46be7edcc6618860b42f8",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.web.FormalSecurityConfigurationTest.xml",
+      "bytes": 50893,
+      "sha256": "ab7d55479e0524bfccc69f9d4e0361694bab63c62da63b5056afd5e5b8adb24d",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.web.TrustedHandlerInterceptorTest.xml",
+      "bytes": 44442,
+      "sha256": "5116e6b464b801d088d01f4ba9de670f6f8871d929cb712eda4342bf45cd2205",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.security.web.WebSecurityFilterTest.xml",
+      "bytes": 44259,
+      "sha256": "f977caacc052b8399aa9c97aa5a11674339439e53c9c8070758aff2721aba638",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.skills.FormalSkillConfigurationTest.xml",
+      "bytes": 43251,
+      "sha256": "61ddca23cc314953b2d03a0c6bc13803962f5d8760d7e243a0ac29fa1205770a",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.skills.FormalSkillControllerTest.xml",
+      "bytes": 44578,
+      "sha256": "40b702b8d3292907856ed0b137ea0620dc01ad6f5b6ded7831853cba1b05206f",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.skills.FormalSkillProviderTest.xml",
+      "bytes": 43344,
+      "sha256": "f91b5d946eeda0b1fa7c4b832c2800ce97bca7a3f295ff4c183b9e9819269483",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.skills.FormalSkillRevocationPgTest.xml",
+      "bytes": 45304,
+      "sha256": "c4795452285e6a038763da965ac316a8cb72aae7724960341a952f3c54f11ce5",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.skills.FormalSkillTest.xml",
+      "bytes": 44639,
+      "sha256": "1ee58afeaca4940b0fc254f52c44ad80aca3c3dfe3596e764d809e7dd3e6f51e",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.skills.SkillApiTest.xml",
+      "bytes": 44014,
+      "sha256": "b79fb4e68e97c8e2217a0f0c0866339e82b6a5cb37a59a13edb4058a8b08954b",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.skills.SkillChatRequestTest.xml",
+      "bytes": 44591,
+      "sha256": "17aa04c4bcf1eec22b8d568539b860314289c549f0a425a17538b1d8b710c2ac",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.skills.SkillDefinitionTest.xml",
+      "bytes": 43783,
+      "sha256": "e527f185ad8754cfb292d9c9b00ae71ba6b70ab00fd3e7fc34caec2935763faa",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.skills.SkillInputTest.xml",
+      "bytes": 43010,
+      "sha256": "5d511fb424777e608b23b9f0afe86666b961fa2c6b9a952a9e4dcff6b1f2c1f2",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.skills.SkillPolicyTest.xml",
+      "bytes": 42889,
+      "sha256": "77aec0affbd10ca9493c6db8f9e5dd164d3e59d63962a941f0222b7a619533aa",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.skills.SkillProviderIntegrationTest.xml",
+      "bytes": 43235,
+      "sha256": "36c80e3fd3ed8a71d20b73af32c88bfb8a152663623536853b7a763dd6fc4fe7",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.skills.SkillRunnerTest.xml",
+      "bytes": 47672,
+      "sha256": "30a06eb5fb78e2b2c226c5ad764f23babb19dc28e3916e8f5f5774f3d51d000f",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.ticket.FormalTicketApprovalControllerTest.xml",
+      "bytes": 46443,
+      "sha256": "f329e381a9d43c6170d037744382a419d90ab0f0ee92f8dc7f98172cfb01b2b1",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.ticket.StoredSkillDraftTest.xml",
+      "bytes": 43050,
+      "sha256": "a9200eacdbc50c268d3c916bea934413b3cf9b10333b262f50e70c773a407f44",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.ticket.TicketApiTest.xml",
+      "bytes": 44521,
+      "sha256": "5539b7888737f2978071800ee88dd12ac59f9962691eda98287c1985a61ace1e",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.ticket.TicketApprovalStorePgTest.xml",
+      "bytes": 44026,
+      "sha256": "957f8a5a2e04e642e149a6755a55960e8d9f34b924820c1de5e7d35b7af71719",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.ticket.TicketApprovalTest.xml",
+      "bytes": 43179,
+      "sha256": "2d20cf546a887df797570b7449a12de6fb7bdd2ca7701f912d940b2bbfa404d5",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.ticket.TicketApprovalWorkflowPgTest.xml",
+      "bytes": 44212,
+      "sha256": "518c05bf74f115c9baac47c7b2c330f4d0334e682848e94d7451965278179906",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.ticket.TicketReliabilityTest.xml",
+      "bytes": 44257,
+      "sha256": "178dd5b27c9202627be29ccadcc0d092acc0340eaf0b0631eea1cce82f658a7b",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.tools.ImageSplitterToolTest.xml",
+      "bytes": 43330,
+      "sha256": "58a19befb9bd42ccc907006312c94eb5272276db8a14d249ced991ed73d9eb96",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.tools.McpAdapterBoundaryTest.xml",
+      "bytes": 44716,
+      "sha256": "b07f4a3c15415b600b7b13bf9f798b8e6e2311ab0ea7d861646d8680a907bb33",
+      "tests": 11,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.tools.McpResultContractTest.xml",
+      "bytes": 43597,
+      "sha256": "475cc9aca4b17ff076fd30d60e60cf1a7ceea8262726b7ab533c801c1f6f709e",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.tools.ToolExecutionLocalTest.xml",
+      "bytes": 43977,
+      "sha256": "cee6615b6e06cd1d4b7a22837f5530db7df5a03c6b084b91dc20ed003ceab3dc",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.tools.UnifiedToolContractTest.xml",
+      "bytes": 44156,
+      "sha256": "8ae10be9c23c80a4328743d7c3e84888aedbc3188a2279164193179059d13fd8",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.usage.BoundedModelRouterTest.xml",
+      "bytes": 43520,
+      "sha256": "a6d5caea7dbc6b79d98f27262ddfa84cda9963e4a6b0b5ed910bb31c4a8ba5b3",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.usage.ScopedModelBudgetFactoryPgTest.xml",
+      "bytes": 43795,
+      "sha256": "184a7d37d6fe28beca0f9951cbb010a10bb5ae3846cf07ae4a2f69b569ae8d8e",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.usage.TenantPeriodBudgetPgTest.xml",
+      "bytes": 45728,
+      "sha256": "bfbae9fb83465f91c64bc4aa3105fa5b11b1cf45c6005cbeb0034e720017fc3c",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "path": "target/surefire-reports/TEST-com.zxl.zxlaiagent.usage.TokenBudgetLedgerPgTest.xml",
+      "bytes": 46434,
+      "sha256": "2cf08d8d2c057b9338f50672eb0e79749921face3cc2edce7e852e692848cb8b",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "tests": {
+    "tests": 814,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "executed": 814
+  }
+}
