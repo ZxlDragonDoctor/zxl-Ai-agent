@@ -77,7 +77,7 @@ public final class FormalMultiAgentController {
     private static SecurityFailure invalid(){return new SecurityFailure("INVALID_RUN_REQUEST",400);}
     private static <T>T safe(Supplier<T> action){
         try{return action.get();}catch(SecurityFailure known){throw known;}
-        catch(WorkflowException failure){throw new SecurityFailure(failure.getCode(),failure.getCode().startsWith("CAPACITY")||failure.getCode().equals("AGENT_CAPACITY_EXCEEDED")?429:400);}
+        catch(WorkflowException failure){throw new SecurityFailure(failure.getCode(),failure.getCode().startsWith("CAPACITY")||Set.of("AGENT_CAPACITY_EXCEEDED","AGENT_TENANT_CAPACITY_EXCEEDED").contains(failure.getCode())?429:400);}
         catch(RuntimeException unavailable){throw new SecurityFailure("RUN_SERVICE_UNAVAILABLE",503);}
     }
 }

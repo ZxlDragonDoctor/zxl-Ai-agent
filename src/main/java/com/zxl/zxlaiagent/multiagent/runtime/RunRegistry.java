@@ -32,6 +32,11 @@ public final class RunRegistry {
     private Entry registerInternal(WorkflowRun run, ExecutionControl control, long queueStartedNanos, OperationBoundary boundary, boolean scoped, TrustedRunContext context) {
         Objects.requireNonNull(boundary, "Explicit run boundary required");
         prune();
+        if (context != null && entries.values().stream()
+                .filter(e -> e.trustedContext != null && !e.reclaimable())
+                .filter(e -> Objects.equals(e.trustedContext.actor().tenantId(), context.actor().tenantId()))
+                .count() >= settings.getTenantRunCapacity())
+            throw new WorkflowException("AGENT_TENANT_CAPACITY_EXCEEDED", "runs.tenant", "租户执行容量已满，请等待实际调用清理");
         if (entries.size() >= settings.getRegistryCapacity()) {
             String evict = entries.values().stream().filter(Entry::reclaimable).map(e -> e.run.id).findFirst().orElse(null);
             if (evict != null) entries.remove(evict);
