@@ -56,6 +56,16 @@ test('redirects do not forward credentials and untrusted error codes are suppres
  });
  await fixture((req,res)=>json(res,500,{code:'PRIVATE_SECRET'}),async origin=>{const r=await runProbe({...options(origin),requests:1,concurrency:1});assert.ok(!JSON.stringify(r).includes('PRIVATE_SECRET'));});
 });
+test('a poll aborted by the observation deadline is an observation timeout, not a transport outage',async()=>{
+ let cancels=0;await fixture((req,res)=>{
+  if(req.url.endsWith('/cancel')){cancels++;return json(res,200,{status:'cancelled'});}
+  if(req.method==='POST')return json(res,202,{executionId:id(1)});
+  // Keep the actual HTTP response pending until the caller's observation deadline.
+ },async origin=>{
+  const r=await runProbe({...options(origin),requests:1,concurrency:1,observeTimeoutMs:150});
+  assert.equal(r.counts.observationTimedOut,1);assert.equal(r.counts.transportFailed,0);assert.equal(cancels,1);
+ });
+});
 test('HTTP transport timeout is bounded and malformed successful responses cannot be accepted',async()=>{
  await fixture(()=>{},async origin=>{const r=await runProbe({...options(origin),requests:1,concurrency:1,httpTimeoutMs:100});assert.equal(r.counts.transportFailed,1);assert.equal(r.counts.completed,0);});
  await fixture((req,res)=>json(res,202,{executionId:'../../private'}),async origin=>{const r=await runProbe({...options(origin),requests:1,concurrency:1});assert.equal(r.counts.protocolFailed,1);});

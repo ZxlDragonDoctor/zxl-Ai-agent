@@ -22,7 +22,7 @@ function validate(o){
 /** Bounded local HTTP experiment; reports only timings, opaque run IDs and fixed classifications. */
 export async function runProbe(options){
  validate(options);const o={...options};const began=performance.now();
- async function request(path,method='GET',body,timeout=o.httpTimeoutMs){
+ async function request(path,method='GET',body,timeout=o.httpTimeoutMs,observationLimited=false){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),Math.max(1,timeout));
   try{
    const r=await fetch(o.origin+path,{method,redirect:'manual',signal:controller.signal,headers:{Cookie:o.cookie,'X-CSRF-Token':o.csrf,...(body===undefined?{}:{'Content-Type':'application/json'})},...(body===undefined?{}:{body:JSON.stringify(body)})});
@@ -30,20 +30,21 @@ export async function runProbe(options){
    if(reader)while(true){const {value,done}=await reader.read();if(done)break;length+=value.length;if(length>131072){await reader.cancel();throw Error('PROBE_PROTOCOL');}parts.push(Buffer.from(value));}
    let value;try{value=JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{value=null;}
    return {status:r.status,value};
-  }catch(e){throw Error(e.message==='PROBE_PROTOCOL'?'PROBE_PROTOCOL':'PROBE_TRANSPORT');}
+  }catch(e){throw Error(e.message==='PROBE_PROTOCOL'?'PROBE_PROTOCOL':controller.signal.aborted&&observationLimited?'PROBE_OBSERVATION':'PROBE_TRANSPORT');}
   finally{clearTimeout(timer);}
  }
  const samples=[];let next=0;
  async function sample(index){
-  const start=performance.now(),s={index,outcome:'transportFailed',submissionMs:null,observedMs:null,cleanupPending:null,cancelAcknowledged:false};let id=null,finished=false;
+  const start=performance.now(),s={index,outcome:'transportFailed',submissionMs:null,observedMs:null,cleanupPending:null,cancelAcknowledged:false};let id=null,finished=false,deadline=null;
   try{
    const submitted=await request('/api/ai/multiagent/runs','POST',{goal:o.goal,timeoutMs:o.runBudgetMs});s.submissionMs=elapsed(start);s.httpStatus=submitted.status;
    if(submitted.status!==202){s.outcome=submitted.status===429?'httpRejected':'httpFailed';return;}
    if(typeof submitted.value?.executionId!=='string'||!uuid.test(submitted.value.executionId)){s.outcome='protocolFailed';return;}
    id=submitted.value.executionId;s.executionId=id;
-   const deadline=performance.now()+o.observeTimeoutMs;
+   deadline=performance.now()+o.observeTimeoutMs;
    while(performance.now()<deadline){
-    const r=await request('/api/ai/multiagent/runs/'+id,'GET',undefined,Math.min(o.httpTimeoutMs,deadline-performance.now()));
+    const remaining=deadline-performance.now();
+    const r=await request('/api/ai/multiagent/runs/'+id,'GET',undefined,Math.min(o.httpTimeoutMs,remaining),remaining<=o.httpTimeoutMs);
     if(r.status!==200){s.outcome=r.status===429?'httpRejected':'httpFailed';return;}
     const view=r.value?.run,report=view?.report;
     if(!view||!report||typeof report.status!=='string'){s.outcome='protocolFailed';return;}
@@ -57,7 +58,7 @@ export async function runProbe(options){
     await sleep(Math.min(o.pollIntervalMs,Math.max(0,deadline-performance.now())));
    }
    s.outcome='observationTimedOut';
-  }catch(e){s.outcome=e.message==='PROBE_PROTOCOL'?'protocolFailed':'transportFailed';}
+  }catch(e){s.outcome=e.message==='PROBE_PROTOCOL'?'protocolFailed':e.message==='PROBE_OBSERVATION'?'observationTimedOut':'transportFailed';}
   finally{
    if(s.submissionMs===null)s.submissionMs=elapsed(start);
    if(id&&!finished){try{const r=await request('/api/ai/multiagent/runs/'+id+'/cancel','POST');s.cancelAcknowledged=r.status===200&&['cancelled','already_finished'].includes(r.value?.status);}catch{}}
