@@ -1,0 +1,140 @@
+{
+  "runs": [
+    {
+      "run_id": "21e389ba-a469-4c35-9471-76108ee23f88",
+      "latest_sequence": 2,
+      "status": "failed",
+      "error_code": "CAPACITY_QUEUE_TIMEOUT",
+      "reserved_tokens": 0,
+      "spent_tokens": 0,
+      "accepted_calls": 0,
+      "ledger_call_rows": 0,
+      "settled_calls": 0,
+      "unknown_calls": 0,
+      "outstanding_calls": 0,
+      "actual_tokens": 0,
+      "probeOutcome": "queueTimedOut"
+    },
+    {
+      "run_id": "3aed1dfe-ad60-4223-bc3a-1a17dd6c396c",
+      "latest_sequence": 7,
+      "status": "completed",
+      "error_code": null,
+      "reserved_tokens": 0,
+      "spent_tokens": 2431,
+      "accepted_calls": 2,
+      "ledger_call_rows": 2,
+      "settled_calls": 2,
+      "unknown_calls": 0,
+      "outstanding_calls": 0,
+      "actual_tokens": 2431,
+      "probeOutcome": "completed"
+    },
+    {
+      "run_id": "73d47d2c-3f6e-4a93-b282-871133620213",
+      "latest_sequence": 2,
+      "status": "failed",
+      "error_code": "AGENT_CAPACITY_EXCEEDED",
+      "reserved_tokens": 0,
+      "spent_tokens": 0,
+      "accepted_calls": 0,
+      "ledger_call_rows": 0,
+      "settled_calls": 0,
+      "unknown_calls": 0,
+      "outstanding_calls": 0,
+      "actual_tokens": 0,
+      "probeOutcome": "capacityFailed"
+    },
+    {
+      "run_id": "7cf36776-153d-428f-b9ed-2c3409145480",
+      "latest_sequence": 7,
+      "status": "completed",
+      "error_code": null,
+      "reserved_tokens": 0,
+      "spent_tokens": 1800,
+      "accepted_calls": 2,
+      "ledger_call_rows": 2,
+      "settled_calls": 2,
+      "unknown_calls": 0,
+      "outstanding_calls": 0,
+      "actual_tokens": 1800,
+      "probeOutcome": "completed"
+    },
+    {
+      "run_id": "b044edde-587f-4b36-b113-3bc68ec88432",
+      "latest_sequence": 2,
+      "status": "failed",
+      "error_code": "CAPACITY_QUEUE_TIMEOUT",
+      "reserved_tokens": 0,
+      "spent_tokens": 0,
+      "accepted_calls": 0,
+      "ledger_call_rows": 0,
+      "settled_calls": 0,
+      "unknown_calls": 0,
+      "outstanding_calls": 0,
+      "actual_tokens": 0,
+      "probeOutcome": "queueTimedOut"
+    },
+    {
+      "run_id": "cf90d650-2aa0-4d93-b441-923c187bf492",
+      "latest_sequence": 2,
+      "status": "failed",
+      "error_code": "AGENT_CAPACITY_EXCEEDED",
+      "reserved_tokens": 0,
+      "spent_tokens": 0,
+      "accepted_calls": 0,
+      "ledger_call_rows": 0,
+      "settled_calls": 0,
+      "unknown_calls": 0,
+      "outstanding_calls": 0,
+      "actual_tokens": 0,
+      "probeOutcome": "capacityFailed"
+    },
+    {
+      "run_id": "fb6dc32e-93a3-4681-bc31-79d917a02f5d",
+      "latest_sequence": 2,
+      "status": "failed",
+      "error_code": "AGENT_CAPACITY_EXCEEDED",
+      "reserved_tokens": 0,
+      "spent_tokens": 0,
+      "accepted_calls": 0,
+      "ledger_call_rows": 0,
+      "settled_calls": 0,
+      "unknown_calls": 0,
+      "outstanding_calls": 0,
+      "actual_tokens": 0,
+      "probeOutcome": "capacityFailed"
+    }
+  ],
+  "periods": [
+    {
+      "reserved_tokens": 0,
+      "spent_tokens": 4231,
+      "accepted_calls": 4,
+      "accounts": 7
+    }
+  ],
+  "observedAtUtc": "2026-11-25T15:35:49.913924+00:00",
+  "sourceCommit": "8630d0e",
+  "database": "lesson25_capacity",
+  "isolation": "REPEATABLE READ READ ONLY",
+  "tables": [
+    "lesson17.durable_agent_run",
+    "lesson17.durable_agent_run_event",
+    "lesson17.token_budget_account",
+    "lesson17.token_budget_call",
+    "lesson17.token_budget_period"
+  ],
+  "scope": "Read only selected IDs, status/errorCode and numeric accounting fields; no result bodies, prompts, credentials, tenant identifiers or new model requests. Four SETTLED ledger entries record dispatched calls with provider-reported usage; not an independent supplier billing audit. Zero reserved/outstanding here proves ledger settlement only, not zero threads/sockets/provider work; cleanupPending is not used as proof.",
+  "summary": {
+    "runs": 7,
+    "completed": 2,
+    "capacityFailed": 3,
+    "queueTimedOut": 2,
+    "settledCalls": 4,
+    "actualTokens": 4231,
+    "unknownCalls": 0,
+    "outstandingCalls": 0,
+    "reservedTokens": 0
+  }
+}
