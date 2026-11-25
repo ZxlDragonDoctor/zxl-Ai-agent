@@ -26,6 +26,7 @@ public final class ExecutionRuntime implements AutoCloseable {
     private final Set<String> leasedAgents = new HashSet<>();
     private final Map<String, Deque<Object>> roleWaiters = new HashMap<>();
     private final AtomicInteger models = new AtomicInteger(), peakModels = new AtomicInteger(), rejected = new AtomicInteger(), peakQueue = new AtomicInteger();
+    private final AtomicInteger workerRejections = new AtomicInteger(), workerQueuePeak = new AtomicInteger();
     public ExecutionRuntime(RuntimeSettings settings) {
         this(settings, System::nanoTime);
     }
@@ -50,8 +51,8 @@ public final class ExecutionRuntime implements AutoCloseable {
     public <T> CompletableFuture<T> async(Task task, Supplier<T> action) {
         QueuedWork<T> work = new QueuedWork<>(task, action);
         queuedWork.put(key(task), work);
-        try { workers.execute(work); return work.result; }
-        catch (RejectedExecutionException e) { queuedWork.remove(key(task), work); throw capacity("workers.queue"); }
+        try { workers.execute(work); workerQueuePeak.accumulateAndGet(workers.getQueue().size(), Math::max); return work.result; }
+        catch (RejectedExecutionException e) { workerRejections.incrementAndGet(); queuedWork.remove(key(task), work); throw capacity("workers.queue"); }
     }
     private final class QueuedWork<T> implements Runnable {
         final Task task; final Supplier<T> action; final long queuedAt = clock.getAsLong();
@@ -236,7 +237,9 @@ public final class ExecutionRuntime implements AutoCloseable {
     private static WorkflowException capacity(String path) { return new WorkflowException("AGENT_CAPACITY_EXCEEDED", path, "执行容量已满，请稍后重试"); }
     public synchronized Map<String, Object> metrics() {
         return Map.ofEntries(Map.entry("coordinating", coordinators.getActiveCount()), Map.entry("queuedRuns", coordinators.getQueue().size()),
-                Map.entry("queuePeak", peakQueue.get()), Map.entry("rejected", rejected.get()), Map.entry("actualModelCalls", models.get()), Map.entry("modelPeak", peakModels.get()),
+                Map.entry("queuePeak", peakQueue.get()), Map.entry("rejected", rejected.get()), Map.entry("runRejections", rejected.get()),
+                Map.entry("workerRejections", workerRejections.get()), Map.entry("workerQueuePeak", workerQueuePeak.get()),
+                Map.entry("actualModelCalls", models.get()), Map.entry("modelPeak", peakModels.get()),
                 Map.entry("runThreads", coordinators.getLargestPoolSize()), Map.entry("workerThreads", workers.getLargestPoolSize()), Map.entry("maxModels", settings.getModelConcurrency()),
                 Map.entry("queuedWorkers", workers.getQueue().size()), Map.entry("leasedAgents", leasedAgents.size()));
     }
