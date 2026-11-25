@@ -1,0 +1,83 @@
+{
+  "totalDurableRuns": 2,
+  "totalBudgetAccounts": 2,
+  "totalRunOwners": 2,
+  "totalCallRows": 4,
+  "distinctRunTenants": 2,
+  "accountsWithoutDurableRun": {
+    "count": 0,
+    "reservedTokens": 0,
+    "spentTokens": 0,
+    "acceptedCalls": 0,
+    "callRows": 0
+  },
+  "runs": [
+    {
+      "run_id": "60a48508-b0d2-43f5-9c67-be9a52eb2d1d",
+      "status": "completed",
+      "error_code": null,
+      "reserved_tokens": 0,
+      "spent_tokens": 2433,
+      "accepted_calls": 2,
+      "call_rows": 2,
+      "settled_calls": 2,
+      "unknown_calls": 0,
+      "outstanding_calls": 0,
+      "actual_tokens": 2433
+    },
+    {
+      "run_id": "928b41b4-9c50-4404-b3d8-51aabdfe2463",
+      "status": "completed",
+      "error_code": null,
+      "reserved_tokens": 0,
+      "spent_tokens": 2031,
+      "accepted_calls": 2,
+      "call_rows": 2,
+      "settled_calls": 2,
+      "unknown_calls": 0,
+      "outstanding_calls": 0,
+      "actual_tokens": 2031
+    }
+  ],
+  "periods": [
+    {
+      "reserved_tokens": 0,
+      "spent_tokens": 2031,
+      "accepted_calls": 2
+    },
+    {
+      "reserved_tokens": 0,
+      "spent_tokens": 2433,
+      "accepted_calls": 2
+    }
+  ],
+  "sourceCommit": "0f25ac2c2ac1f5ca880e27a0599df9a3bc3304cd",
+  "observedAtUtc": "2026-11-25T16:01:27.721470+00:00",
+  "database": "lesson25_compensation",
+  "isolation": "REPEATABLE READ READ ONLY",
+  "tables": [
+    "lesson17.durable_agent_run",
+    "lesson17.durable_agent_run_event",
+    "lesson17.token_budget_account",
+    "lesson17.token_budget_call",
+    "lesson17.token_budget_period",
+    "lesson17.resource_owner"
+  ],
+  "summary": {
+    "completedRuns": 2,
+    "settledCalls": 4,
+    "actualTokens": 4464,
+    "unknownCalls": 0,
+    "outstandingCalls": 0,
+    "reservedTokens": 0,
+    "extraDurableRuns": 0
+  },
+  "scope": "Only selected run IDs, latest status/errorCode, accounting numbers and aggregate tenant count read. No bodies, credentials or new model requests. Database originally had zero runs and accounts; total 2 equals accepted 2, so rejected submission left no extra durable run/account/owner at this observation. SETTLED records dispatch and provider-reported usage, not independent provider billing. Zero reserved/outstanding proves ledger settlement, not zero threads/sockets/provider work; cleanupPending is not used as resource proof. Five explicit HTTP429 outcomes are linked from the live experiment; database began with zero runs/accounts/owners and now contains exactly the two accepted runs/accounts/owners, with zero orphan accounts. This checks absence of persisted residue, not absence of intermediate committed initialization before compensation.",
+  "oldDatabasePreservation": {
+    "database": "lesson25_tenant",
+    "orphanAccounts": 1,
+    "scope": "Separate read-only observation of original evidence database; no deletion or repair of that old row."
+  },
+  "jarSha256": "62164fe47885910422bf56ae265037cd17d2e87473c66d57f7fa75f0fa8d45ec",
+  "rejectedSubmissions": 5
+}

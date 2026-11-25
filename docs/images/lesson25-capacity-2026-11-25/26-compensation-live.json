@@ -1,0 +1,42 @@
+{
+  "sourceCommit": "0f25ac2",
+  "scope": "Two real authenticated tenant sessions; bounded two model runs; not strict scheduling fairness or distributed quota.",
+  "rejections": [
+    {
+      "status": 429,
+      "code": "AGENT_TENANT_CAPACITY_EXCEEDED"
+    },
+    {
+      "status": 429,
+      "code": "AGENT_TENANT_CAPACITY_EXCEEDED"
+    },
+    {
+      "status": 429,
+      "code": "AGENT_TENANT_CAPACITY_EXCEEDED"
+    },
+    {
+      "status": 429,
+      "code": "AGENT_TENANT_CAPACITY_EXCEEDED"
+    },
+    {
+      "status": 429,
+      "code": "AGENT_TENANT_CAPACITY_EXCEEDED"
+    }
+  ],
+  "a": {
+    "accepted": 202,
+    "id": "928b41b4-9c50-4404-b3d8-51aabdfe2463",
+    "rejected": 429,
+    "code": "AGENT_TENANT_CAPACITY_EXCEEDED",
+    "terminal": "completed",
+    "errorCode": null,
+    "cleanupPending": false
+  },
+  "b": {
+    "accepted": 202,
+    "id": "60a48508-b0d2-43f5-9c67-be9a52eb2d1d",
+    "terminal": "completed",
+    "errorCode": null,
+    "cleanupPending": false
+  }
+}

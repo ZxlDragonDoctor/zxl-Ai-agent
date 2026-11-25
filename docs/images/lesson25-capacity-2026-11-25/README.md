@@ -63,3 +63,13 @@ Docker已恢复，专用lesson25_capacity数据库使用真实PG/pgvector，正�
 `18-tenant-pg-observation.json`独立核对持久运行总数2，两项成功；同时发现预算account总数3，拒绝路径曾初始化一个零调用账户。不能宣称拒绝没有任何持久副作用。正在核实账户清理与增长边界，未删库或手工抹掉该记录。账本的零预留仍不证明线程/外部连接归零。
 
 最新工作区图谱重新37项回归和生产构建通过，阅读卡/语言/2D/下一课连续操作通过：[中文](21-verified-course-zh.png)、[英文](22-verified-course-en.png)、[2D](23-verified-course-2d.png)、[下一课](24-verified-next-lesson.png)。它是工作区预览，和5221固定版本的业务截图区分；静态预览的认证未连通限制仍保留，不能当成业务就绪。单参数容量对照与账户副作用修复尚未验收。
+
+## 修复版正式HTTP复验（2026-11-26）
+
+固定0f25ac2c2ac1f5ca880e27a0599df9a3bc3304cd，独立干净JAR SHA256 `62164fe47885910422bf56ae265037cd17d2e87473c66d57f7fa75f0fa8d45ec`，新lesson25_compensation真实PG库，18461/18462/18463及同版干净前端5222；容量设置与上一双租户组相同。未覆盖旧组或原孤立账户。
+
+`26-compensation-live.json`：A第一项202后，连续5次A超额提交均HTTP429且固定租户容量码；B仍202，两项accepted任务最终completed。`27-compensation-pg.json`独立只读快照确认durable run、budget account、run owner均恰好2，孤立账户0；4笔SETTLED、合计4464 token，各运行与周期reserved0，UNKNOWN/未结算0。原lesson25_tenant单独只读确认旧孤立账户仍1，不以抹除现场换取通过。此结果证明本次连续拒绝没有持久残留，不证明初始化过程中完全没有中间事务提交，也不是全局历史清理策略。
+
+两个独立浏览器会话登录同版新前端，各自仅见1条自己的run，不含另一租户run；实际点击完成详情、刷新运行、切英文，回答保持可读，没有发新模型请求。[A中文](28-compensation-a-own-completed.png)、[A英文刷新](29-compensation-a-english-refresh.png)、[B中文](28-compensation-b-own-completed.png)、[B英文刷新](29-compensation-b-english-refresh.png)。真实拒绝HTTP证据与这组只读页面操作分开记录；15/16仍为拦截夹具的拒绝提示图。
+
+本节补齐新失败补偿的真实链路验收，不改写旧缺陷。单参数本地队列对照见25-queue-comparison.json；完整生产容量基线、严格公平调度、多实例配额、全量供应商/数据库/消息总线压测仍不作通过声明。
