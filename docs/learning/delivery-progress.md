@@ -36,7 +36,7 @@
 | 22 | Agent 评估与持续改进 | **进行中**。30 个固定案例和离线评分器已实现，真实冒烟、证据汇总和报告面板已接通。已实测空召回拒答和模型等待超时。已跑一组真实提示词配对。已实测两道拒答保留题，页面区分实测与缺证据。5 道知识引用题已实测，4 道通过。权限组 5 题、2 道草稿待审批题已有真实证据。空库冗余向量请求已修正，25 项检索测试通过，新 Worker 已有真实 HTTP 无降级拒答证据；保留旧模型与降级失败。全量案例与重复对照待完成 | [课程](22-agent-evaluation.md) |
 | 23 | 预算、路由与降级 | **进行中**。可选开关接入正式多 Agent/Research，真实 HTTP 拒答闭环结算 1869 token；有限主备通过夹具验收。已补运行创建日归集的租户共享周期预算，29项定向回归通过；新周期机制真实HTTP双层结算2114已验证；其他入口与持久审计待补齐 | [课程与边界](23-budget-routing-and-fallback.md) · [调用边界](23-usage-integration.md) |
 | 24 | 可复现部署与交付 | 进行中：低权限容器、真实模型、有序恢复和PG逻辑备份恢复已验证，12表/1024维向量/报告预算匹配；文件卷与PG成对恢复及新写入已验证；兼容小版本A/B回退及数据读写已验证；本地CA HTTPS、Secure Cookie、SSE与可信重启已实测；云端CI通过814项Java/真实PG、115项前端、136项交付工具测试；产物核验见持续集成记录。公网证书续期和完整业务待补齐 | [任务](24-reproducible-deployment.md) · [备份恢复证据](../images/lesson24-recovery-2026-11-23/README.md) · [文件卷恢复](../images/lesson24-paired-recovery-2026-11-23/README.md) · [应用回退](../images/lesson24-release-2026-11-24/README.md) · [HTTPS](../images/lesson24-tls-2026-11-24/README.md) · [CI](24-continuous-integration.md) |
-| 25 | 容量、性能与背压 | 路线已规划；已有有界队列可复用，容量基线未验收 | [路线第 7 阶段](enterprise-agent-roadmap.md) |
+| 25 | 容量、性能与背压 | **进行中**：已实现正式HTTP有界闭环探针和独立运行/worker拒绝计数；Runtime相关21项、本地探针9项通过。云端发现观察截止分类竞争，已补挂起HTTP复现并修复，重跑待核对。固定8630d0e源码JAR干净构建成功；真实模型负载、恢复后新运行、页面截图和图谱同步待验收，不构成容量基线 | [设计](25-capacity-design.md) · [Runtime指标](25-runtime-capacity-metrics.md) · [负载探针](../../scripts/lesson25/README.md) |
 | 26 | 故障演练与恢复 | 路线已规划；复用前课故障用例，综合演练待完成 | [路线第 7 阶段](enterprise-agent-roadmap.md) |
 | 27 | 完整业务链验收 | 路线已规划；两租户闭环与架构材料待完成 | [路线第 7 阶段](enterprise-agent-roadmap.md) |
 | 28 | 面试复盘与独立设计 | 路线已规划；是否掌握取决于独立设计、编码、排障和表达证据 | [路线第 7 阶段](enterprise-agent-roadmap.md) |
