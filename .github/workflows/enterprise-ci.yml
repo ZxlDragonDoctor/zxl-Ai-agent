@@ -99,7 +99,7 @@ jobs:
           cache-dependency-path: zxl-Ai-agent-fronted/package-lock.json
           package-manager-cache: false
       - name: Test delivery and evidence tools
-        run: node --test scripts/lesson22/*.test.mjs scripts/lesson23/*.test.mjs scripts/lesson24/*.test.mjs deploy/enterprise/*.test.mjs
+        run: node --test scripts/lesson22/*.test.mjs scripts/lesson23/*.test.mjs scripts/lesson24/*.test.mjs scripts/lesson25/*.test.mjs deploy/enterprise/*.test.mjs
       - name: Install locked frontend dependencies
         working-directory: zxl-Ai-agent-fronted
         run: npm ci --no-audit --no-fund
