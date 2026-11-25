@@ -1,0 +1,22 @@
+{
+  "observations" : [ {
+    "rejected" : 4,
+    "threads" : 1,
+    "offered" : 6,
+    "runQueueCapacity" : 1,
+    "completed" : 2
+  }, {
+    "rejected" : 1,
+    "threads" : 1,
+    "offered" : 6,
+    "runQueueCapacity" : 4,
+    "completed" : 5
+  }, {
+    "rejected" : 4,
+    "threads" : 1,
+    "offered" : 6,
+    "runQueueCapacity" : 1,
+    "completed" : 2
+  } ],
+  "scope" : "Actual local executor with latch-controlled service. Only runQueueCapacity changes 1/4/1; no HTTP, PG, model, latency or throughput claim."
+}
