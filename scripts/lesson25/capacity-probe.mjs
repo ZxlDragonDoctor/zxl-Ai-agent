@@ -38,7 +38,7 @@ export async function runProbe(options){
   const start=performance.now(),s={index,outcome:'transportFailed',submissionMs:null,observedMs:null,cleanupPending:null,cancelAcknowledged:false};let id=null,finished=false,deadline=null;
   try{
    const submitted=await request('/api/ai/multiagent/runs','POST',{goal:o.goal,timeoutMs:o.runBudgetMs});s.submissionMs=elapsed(start);s.httpStatus=submitted.status;
-   if(submitted.status!==202){s.outcome=submitted.status===429?'httpRejected':'httpFailed';return;}
+   if(submitted.status!==202){s.outcome=submitted.status===429?'httpRejected':'httpFailed';if(submitted.status===429&&submitted.value?.code==='AGENT_TENANT_CAPACITY_EXCEEDED')s.capacityDomain='tenant';return;}
    if(typeof submitted.value?.executionId!=='string'||!uuid.test(submitted.value.executionId)){s.outcome='protocolFailed';return;}
    id=submitted.value.executionId;s.executionId=id;
    deadline=performance.now()+o.observeTimeoutMs;
@@ -52,7 +52,8 @@ export async function runProbe(options){
     if(terminal.has(report.status)){
      finished=true;s.observedMs=elapsed(start);
      const code=report.error?.code;
-     s.outcome=report.status==='failed'?(code==='AGENT_CAPACITY_EXCEEDED'?'capacityFailed':code==='CAPACITY_QUEUE_TIMEOUT'?'queueTimedOut':'failed'):report.status;
+     if(code==='AGENT_TENANT_CAPACITY_EXCEEDED')s.capacityDomain='tenant';
+     s.outcome=report.status==='failed'?(['AGENT_CAPACITY_EXCEEDED','AGENT_TENANT_CAPACITY_EXCEEDED'].includes(code)?'capacityFailed':code==='CAPACITY_QUEUE_TIMEOUT'?'queueTimedOut':'failed'):report.status;
      return;
     }
     await sleep(Math.min(o.pollIntervalMs,Math.max(0,deadline-performance.now())));

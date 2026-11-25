@@ -50,6 +50,14 @@ test('observation timeout attempts one cancellation without claiming terminal or
   assert.equal(r.samples[0].cancelAcknowledged,true);assert.equal(r.samples[0].cleanupPending,true);assert.equal(r.latency.terminal.completed.samples,0);
  });
 });
+test('trusted tenant capacity failures are recognized without outputting unknown rejection payloads',async()=>{
+ await fixture((req,res)=>req.method==='POST'?json(res,202,{executionId:id(1)}):json(res,200,{run:{report:{status:'failed',error:{code:'AGENT_TENANT_CAPACITY_EXCEEDED'}},runtime:{cleanupPending:false}}}),async origin=>{
+  const r=await runProbe({...options(origin),requests:1,concurrency:1});assert.equal(r.counts.capacityFailed,1);assert.equal(r.samples[0].capacityDomain,'tenant');
+ });
+ await fixture((req,res)=>json(res,429,{code:'AGENT_TENANT_CAPACITY_EXCEEDED'}),async origin=>{
+  const r=await runProbe({...options(origin),requests:1,concurrency:1});assert.equal(r.counts.httpRejected,1);assert.equal(r.samples[0].capacityDomain,'tenant');
+ });
+});
 test('redirects do not forward credentials and untrusted error codes are suppressed',async()=>{
  let redirected=0;await fixture((req,res)=>{if(req.url==='/leak'){redirected++;return res.end('private');}res.writeHead(307,{Location:'/leak'});res.end();},async origin=>{
   const r=await runProbe({...options(origin),requests:1,concurrency:1});assert.equal(redirected,0);assert.equal(r.counts.httpFailed,1);
