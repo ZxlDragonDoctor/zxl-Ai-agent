@@ -47,3 +47,11 @@ Docker已恢复，专用lesson25_capacity数据库使用真实PG/pgvector，正�
 ## 租户准入提示的页面夹具
 
 [中文](15-tenant-fixture-zh.png) / [英文](16-tenant-fixture-en.png)：本地5220工作区生产构建，Playwright拦截全部/api请求，使用明确合成身份及HTTP429 `AGENT_TENANT_CAPACITY_EXCEEDED`，没有向真实模型或数据库提交任务。实际点击提交后中文提示工作空间占用上限，切英文后提示同一限额和等待清理；均符合预期。不是新租户准入后端已部署、真实双租户公平性或之前真实负载的新截图。容量提示纯函数2项测试及生产构建通过，仍有既有chunk警告。此工作区包含其他原有未提交页面改动，未混入本次提交。
+
+## 新版本双租户实测
+
+固定2318eb2317af286077e75fa575fe913c8cefdecd独立干净构建，JAR SHA256 `38833ed331c59b0c949f837903946f067315f320f6db73e95b9c7fd230dfb6f0`；专用PG库lesson25_tenant，迁移lesson12v1-v3/lesson17v1-v9成功。main18451/worker18452/MCP18453，required和usage启用；运行2、队列4、租户上限1、模型2、排队30000ms。与前述旧实验改变了多个参数，**不能作为单参数性能对照**。旧数据库与运行组保留。
+
+`17-live-tenant-admission.json`来自两个真实登录会话及最多两个真实模型代码运行：A第一项202；A第二项立即429且固定码AGENT_TENANT_CAPACITY_EXCEEDED；B第一项仍202。随后A/B均完成，无业务错误，最终快照cleanupPending=false。结果证明该单实例、该配置下租户准入隔离生效，不证明严格轮转、所有租户SLA、多实例配额或供应商线程清零。最新云端Java尚在运行时不写成通过。
+
+同版干净前端已构建并启动5221，真实新后端的页面逐状态验收和PG独立核对待继续；前述15/16仍保留为夹具截图，不能挪作本次实测页面证据。

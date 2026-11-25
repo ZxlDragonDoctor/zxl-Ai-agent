@@ -1,0 +1,20 @@
+{
+  "sourceCommit": "2318eb2",
+  "scope": "Two real authenticated tenant sessions; bounded two model runs; not strict scheduling fairness or distributed quota.",
+  "a": {
+    "accepted": 202,
+    "id": "a7bdca68-9a22-402d-bfaa-2a6efc98af90",
+    "rejected": 429,
+    "code": "AGENT_TENANT_CAPACITY_EXCEEDED",
+    "terminal": "completed",
+    "errorCode": null,
+    "cleanupPending": false
+  },
+  "b": {
+    "accepted": 202,
+    "id": "4c2e1e1b-fde7-4942-b873-bc6034d24f55",
+    "terminal": "completed",
+    "errorCode": null,
+    "cleanupPending": false
+  }
+}
