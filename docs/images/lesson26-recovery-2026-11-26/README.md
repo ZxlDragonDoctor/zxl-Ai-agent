@@ -15,3 +15,11 @@
 | 切换2D | 所选内容保留，可定位FormalWorkerRecoveryPgTest | [2D](03-course-en-2d.png) |
 
 这是课程阅读与入口验收，不是业务故障页面验收。静态预览认证后端未连通，若顶部出现REQUEST_FAILED如实保留；不能写整页服务就绪。本课后续仍需正式主服务/MCP/HTTPembedding的停机及恢复页面、真实模型等待故障、PG故障与预算UNKNOWN等综合演练证据。下一课材料与图谱继续维护，不将个人掌握状态自动设为完成。
+
+## 真实页面演练的部分结果（2026-11-26）
+
+使用此前固定0f25ac2干净JAR/前端5222、正式main/Worker和真实PG，独立课堂knowledge-maintainer账号。页面导入合成`lesson26-before`成功，Worker配置HTTP embedding；这是实际知识写入，未调用聊天模型。[基线](04-live-baseline.png)。
+
+首轮控制助手使用旧PowerShell，因缺Get-FileHash在身份检查阶段失败，尚未停止Worker。换当前pwsh后，先核对JAR SHA256及Worker角色/PID27448，再仅停止该进程，点击“刷新连接与文档”，页面明确显示KNOWLEDGE_WORKER_UNAVAILABLE；[停机页面](05-live-worker-unavailable.png)，未伪装为空库成功。助手随后用同JAR/同端口恢复Worker，新PID17896，经身份检查和TCP18462可达确认，未重复启动其他角色。
+
+恢复后读取旧原文与新写入的页面流程尚未通过：脚本在worker-restored阶段失败，重试登录实际HTTP503/AUTHORITY_UNAVAILABLE，main日志同期有授权数据库不可用；Docker查询仍在等待，不据此断言数据库容器已经停止。旧原文、新写入、embedding供应商与PG数据独立核对均待依赖恢复后继续。不将进程可连等同于完整业务恢复，也不把已有Java demo-embedding恢复用例冒充本次真实HTTPembedding页面通过。未删改数据库/旧实验组，脚本未完成的新资料不记作成功。
